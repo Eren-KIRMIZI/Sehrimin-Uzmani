@@ -28,7 +28,6 @@ class ServiceRequestUpdate(BaseModel):
     preferred_date: Optional[datetime] = None
     preferred_time: Optional[str] = None
     urgency: Optional[str] = None
-    status: Optional[str] = None
 
 
 class ServiceRequestResponse(BaseModel):

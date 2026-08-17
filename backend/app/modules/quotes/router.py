@@ -102,7 +102,7 @@ def accept_quote(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    quote = db.query(Quote).filter(Quote.id == quote_id).first()
+    quote = db.query(Quote).filter(Quote.id == quote_id).with_for_update().first()
     if not quote:
         raise NotFoundException("Teklif")
 

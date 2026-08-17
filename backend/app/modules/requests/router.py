@@ -83,6 +83,21 @@ def get_request(request_id: int, current_user: User = Depends(get_current_user),
     if not request:
         raise NotFoundException("Talep")
 
+    is_owner = request.customer_id == current_user.id
+    is_admin = current_user.role in ["ADMIN", "MODERATOR"]
+    is_quoted_provider = False
+    if not is_owner and not is_admin:
+        from app.modules.providers.models import ProviderProfile
+        from app.modules.quotes.models import Quote
+        provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+        if provider:
+            has_quote = db.query(Quote).filter(
+                Quote.request_id == request_id, Quote.provider_id == provider.id
+            ).first()
+            is_quoted_provider = has_quote is not None
+    if not is_owner and not is_admin and not is_quoted_provider:
+        raise ForbiddenException("Bu talebi goruntuleme yetkiniz yok")
+
     files = db.query(RequestFile).filter(RequestFile.request_id == request_id).all()
 
     return {
@@ -124,8 +139,11 @@ def update_request(
     if request.customer_id != current_user.id:
         raise ForbiddenException("Bu talebi düzenleme yetkiniz yok")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(request, field, value)
+    allowed_fields = {"title", "description", "budget_min", "budget_max", "preferred_date", "preferred_time", "urgency"}
+    updates = data.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        if field in allowed_fields:
+            setattr(request, field, value)
     db.commit()
     db.refresh(request)
     return {"message": "Talep güncellendi", "request": request}

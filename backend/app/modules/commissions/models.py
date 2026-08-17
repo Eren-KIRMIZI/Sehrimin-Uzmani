@@ -1,8 +1,9 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, hybrid_property
 from datetime import datetime
 import enum
 from app.core.database import Base
+from app.core.encryption import encrypt, decrypt
 
 
 class CommissionStatus(str, enum.Enum):
@@ -67,11 +68,52 @@ class PayoutRequest(Base):
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Float, nullable=False)
     bank_name = Column(String(100), nullable=True)
-    iban = Column(String(50), nullable=True)
-    account_holder = Column(String(100), nullable=True)
+    iban = Column(String(200), nullable=True)
+    account_holder = Column(String(200), nullable=True)
     status = Column(String(20), default="pending")
     processed_at = Column(DateTime, nullable=True)
     admin_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     provider = relationship("User", lazy="joined")
+
+    _iban_plain = None
+    _account_holder_plain = None
+
+    @hybrid_property
+    def iban_decrypted(self):
+        if self._iban_plain is not None:
+            return self._iban_plain
+        if self.iban:
+            try:
+                return decrypt(self.iban)
+            except Exception:
+                return self.iban
+        return None
+
+    @iban_decrypted.setter
+    def iban_decrypted(self, value):
+        self._iban_plain = value
+        if value:
+            self.iban = encrypt(value)
+        else:
+            self.iban = None
+
+    @hybrid_property
+    def account_holder_decrypted(self):
+        if self._account_holder_plain is not None:
+            return self._account_holder_plain
+        if self.account_holder:
+            try:
+                return decrypt(self.account_holder)
+            except Exception:
+                return self.account_holder
+        return None
+
+    @account_holder_decrypted.setter
+    def account_holder_decrypted(self, value):
+        self._account_holder_plain = value
+        if value:
+            self.account_holder = encrypt(value)
+        else:
+            self.account_holder = None

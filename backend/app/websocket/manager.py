@@ -3,6 +3,7 @@ from typing import Dict, Set
 from fastapi import WebSocket, WebSocketDisconnect
 from app.core.security import decode_token
 from app.core.database import SessionLocal
+from app.core.security import check_token_blacklist
 from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.messaging.models import Conversation, Message
@@ -86,6 +87,10 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
     db = SessionLocal()
     try:
+        if check_token_blacklist(payload, db):
+            await websocket.close(code=4001)
+            return
+
         user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
         if not user:
             await websocket.close(code=4001)

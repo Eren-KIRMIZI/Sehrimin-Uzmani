@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
+from app.core.rate_limiter import rate_limiter, get_client_ip
 from app.modules.users.models import User
 from app.modules.promotions.models import PromotedProvider, PromotionLog
 from app.modules.categories.models import Category
@@ -217,8 +218,12 @@ def update_bid(
 @router.post("/{promotion_id}/impression")
 def record_impression(
     promotion_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    ip = get_client_ip(request)
+    rate_limiter.check(f"promo_imp:{ip}", max_requests=60, window_seconds=300)
+
     promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
     if not promo or promo.status != "active":
         return {"recorded": False}
@@ -245,8 +250,12 @@ def record_impression(
 @router.post("/{promotion_id}/click")
 def record_click(
     promotion_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
+    ip = get_client_ip(request)
+    rate_limiter.check(f"promo_click:{ip}", max_requests=20, window_seconds=300)
+
     promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
     if not promo or promo.status != "active":
         return {"recorded": False}

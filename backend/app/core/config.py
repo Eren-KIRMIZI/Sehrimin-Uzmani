@@ -18,7 +18,7 @@ if not _DEFAULT_SECRET:
 class Settings(BaseSettings):
     APP_NAME: str = "SehrininUzmani"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = False
     SECRET_KEY: str = _DEFAULT_SECRET
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -41,5 +41,13 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
+    def validate_security(self):
+        if len(self.SECRET_KEY) < 32:
+            raise ValueError("SECRET_KEY 32 karakterden uzun olmalidir")
+        if self.DEBUG:
+            import warnings
+            warnings.warn("DEBUG modu aktif! Uretim ortaminda DEBUG=false yapin.", stacklevel=1)
+
 
 settings = Settings()
+settings.validate_security()

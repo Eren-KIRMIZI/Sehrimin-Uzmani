@@ -166,7 +166,7 @@ def complete_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).with_for_update().first()
     if not appointment:
         raise NotFoundException("Randevu")
 
@@ -225,7 +225,7 @@ def complete_appointment(
 
         earning = db.query(ProviderEarning).filter(
             ProviderEarning.provider_id == appointment.provider_id
-        ).first()
+        ).with_for_update().first()
         if not earning:
             earning = ProviderEarning(provider_id=appointment.provider_id)
             db.add(earning)

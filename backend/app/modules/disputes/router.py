@@ -208,6 +208,11 @@ def add_evidence(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
 
+    is_participant = dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    is_admin = current_user.role in ["ADMIN", "MODERATOR"]
+    if not is_participant and not is_admin:
+        raise HTTPException(status_code=403, detail="Yetkiniz yok")
+
     ev = DisputeEvidence(
         dispute_id=dispute_id,
         uploaded_by=current_user.id,

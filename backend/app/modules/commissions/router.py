@@ -4,6 +4,7 @@ from sqlalchemy import func as sql_func
 from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
+from app.core.encryption import encrypt, decrypt
 from app.modules.users.models import User
 from app.modules.commissions.models import CommissionRate, Transaction, ProviderEarning, PayoutRequest
 from app.modules.appointments.models import Appointment
@@ -196,9 +197,9 @@ def request_payout(
         provider_id=current_user.id,
         amount=amount,
         bank_name=bank_name,
-        iban=iban,
-        account_holder=account_holder,
     )
+    payout.iban_decrypted = iban
+    payout.account_holder_decrypted = account_holder
     db.add(payout)
     db.commit()
     db.refresh(payout)
@@ -240,8 +241,8 @@ def pending_payouts(
             "provider_name": p.provider.full_name if p.provider else None,
             "amount": p.amount,
             "bank_name": p.bank_name,
-            "iban": p.iban,
-            "account_holder": p.account_holder,
+            "iban": p.iban_decrypted,
+            "account_holder": p.account_holder_decrypted,
             "created_at": p.created_at.isoformat() if p.created_at else None,
         }
         for p in items
