@@ -107,17 +107,17 @@ class ProviderMatcher:
         elif review_count >= 20:
             score += 5
 
-        if profile.years_of_experience:
-            if profile.years_of_experience >= 10:
+        if profile.experience_years:
+            if profile.experience_years >= 10:
                 score += 10
-            elif profile.years_of_experience >= 5:
+            elif profile.experience_years >= 5:
                 score += 7
-            elif profile.years_of_experience >= 2:
+            elif profile.experience_years >= 2:
                 score += 4
 
-        if profile.verification_level in ["professional", "business"]:
+        if profile.verification_status in ("professional", "business"):
             score += 10
-        elif profile.verification_level == "identity":
+        elif profile.verification_status == "identity":
             score += 5
 
         sub = data["subscriptions"].get(provider.id)
@@ -155,17 +155,14 @@ class ProviderMatcher:
                 elif city_id and location.city_id == city_id:
                     score += 7
 
-        if budget and profile.hourly_rate:
-            rate_diff = abs(profile.hourly_rate - budget) / budget if budget > 0 else 1
-            if rate_diff <= 0.1:
-                score += 8
-            elif rate_diff <= 0.25:
-                score += 5
-            elif rate_diff <= 0.5:
-                score += 2
+        if budget:
+            provider_locations = data["locations"].get(provider.id)
+            if provider_locations and provider_locations.latitude and provider_locations.longitude:
+                score += 3
 
-        if profile.portfolio_images:
-            score += min(len(profile.portfolio_images) * 0.5, 5)
+        portfolio_count = len(profile.portfolio_items) if profile.portfolio_items else 0
+        if portfolio_count:
+            score += min(portfolio_count * 0.5, 5)
 
         return round(score, 2)
 
@@ -253,9 +250,8 @@ class ProviderMatcher:
                 "match_score": score,
                 "rating": round(float(avg_rating or 0), 1),
                 "review_count": int(review_count or 0),
-                "hourly_rate": profile.hourly_rate if profile else None,
-                "years_experience": profile.years_of_experience if profile else None,
-                "verification_level": profile.verification_level if profile else "none",
+                "experience_years": profile.experience_years if profile else None,
+                "verification_status": profile.verification_status if profile else "none",
                 "is_promoted": promoted_obj is not None,
                 "promoted_badge": promoted_obj.badge_text if promoted_obj else None,
                 "city_name": location.city.name if location and location.city else None,
