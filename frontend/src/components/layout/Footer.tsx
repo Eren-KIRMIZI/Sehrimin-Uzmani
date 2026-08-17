@@ -40,11 +40,12 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Platform</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li><Link to="/register" className="hover:text-accent transition-colors">Uzman Ol</Link></li>
-              <li><Link to="/how-it-works" className="hover:text-accent transition-colors">Nasıl Çalışır?</Link></li>
-              <li><Link to="/about" className="hover:text-accent transition-colors">Hakkımızda</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">İletişim</Link></li>
-              <li><Link to="/terms" className="hover:text-accent transition-colors">Kullanım Şartları</Link></li>
-              <li><Link to="/privacy" className="hover:text-accent transition-colors">Gizlilik Politikası</Link></li>
+              <li><Link to="/pricing" className="hover:text-accent transition-colors">Uzman Planlari</Link></li>
+              <li><Link to="/how-it-works" className="hover:text-accent transition-colors">Nasil Calisir?</Link></li>
+              <li><Link to="/about" className="hover:text-accent transition-colors">Hakkimizda</Link></li>
+              <li><Link to="/contact" className="hover:text-accent transition-colors">Iletisim</Link></li>
+              <li><Link to="/terms" className="hover:text-accent transition-colors">Kullanim Sartlari</Link></li>
+              <li><Link to="/privacy" className="hover:text-accent transition-colors">Gizlilik Politikasi</Link></li>
             </ul>
           </div>
         </div>

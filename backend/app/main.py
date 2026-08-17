@@ -36,11 +36,10 @@ async def ws_endpoint(websocket: WebSocket, token: str):
 def startup():
     Base.metadata.create_all(bind=engine)
     from app.core.database import SessionLocal
-    from app.seed import seed_cities, seed_categories
+    from app.seed import run_all_seeds
     db = SessionLocal()
     try:
-        seed_cities(db)
-        seed_categories(db)
+        run_all_seeds(db)
     finally:
         db.close()
 

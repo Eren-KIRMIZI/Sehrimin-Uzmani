@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { LayoutDashboard, FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, Clock, CheckCircle, CreditCard, AlertTriangle, DollarSign, Megaphone } from 'lucide-react';
 import api from '../../services/api';
 
 export default function DashboardPage() {
@@ -16,12 +16,16 @@ export default function DashboardPage() {
 
   const menuItems = [
     { icon: FileText, label: 'Taleplerim', link: '/dashboard/requests', count: stats.requests },
-    { icon: Calendar, label: 'Randevularım', link: '/dashboard/appointments' },
-    { icon: MessageCircle, label: 'Mesajlarım', link: '/dashboard/messages' },
+    { icon: Calendar, label: 'Randevularim', link: '/dashboard/appointments' },
+    { icon: MessageCircle, label: 'Mesajlarim', link: '/chat' },
     { icon: Heart, label: 'Favorilerim', link: '/dashboard/favorites' },
-    { icon: Star, label: 'Değerlendirmelerim', link: '/dashboard/reviews' },
+    { icon: Star, label: 'Degerlendirmelerim', link: '/dashboard/reviews' },
     { icon: Bell, label: 'Bildirimler', link: '/dashboard/notifications', count: stats.notifications },
-    { icon: Settings, label: 'Profil Ayarları', link: '/dashboard/settings' },
+    { icon: CreditCard, label: 'Abonelikler', link: '/pricing' },
+    { icon: DollarSign, label: 'Kazanc Takibi', link: '/earnings' },
+    { icon: Megaphone, label: 'Tanitim Kampanyalari', link: '/promotions' },
+    { icon: AlertTriangle, label: 'Anlasmazliklar', link: '/disputes' },
+    { icon: Settings, label: 'Profil Ayarlari', link: '/dashboard/settings' },
   ];
 
   return (

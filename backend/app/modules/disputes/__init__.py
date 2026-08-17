@@ -1,0 +1,1 @@
+# Anlasmazlik Cozum Sistemi

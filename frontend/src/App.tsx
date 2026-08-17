@@ -11,6 +11,10 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import ServiceRequestForm from './pages/ServiceRequestForm';
 import ChatPage from './pages/ChatPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import PricingPage from './pages/PricingPage';
+import DisputesPage from './pages/DisputesPage';
+import EarningsPage from './pages/EarningsPage';
+import PromotionsPage from './pages/PromotionsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +39,10 @@ export default function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:conversationId" element={<ChatPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/disputes" element={<DisputesPage />} />
+            <Route path="/earnings" element={<EarningsPage />} />
+            <Route path="/promotions" element={<PromotionsPage />} />
             <Route path="/categories" element={<HomePage />} />
             <Route path="/category/:slug" element={<HomePage />} />
             <Route path="/how-it-works" element={<HomePage />} />

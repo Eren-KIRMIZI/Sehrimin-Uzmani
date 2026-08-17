@@ -490,3 +490,190 @@ def seed_categories(db: Session):
                 db.add(service)
 
     db.commit()
+
+
+SUBSCRIPTION_PLANS_DATA = [
+    {
+        "name": "Baslangic",
+        "slug": "free",
+        "description": "Yeni baslayan uzmanlar icin ucretsiz plan",
+        "price_monthly": 0,
+        "price_quarterly": 0,
+        "price_yearly": 0,
+        "commission_discount": 0.0,
+        "featured_listings": 0,
+        "priority_support": False,
+        "advanced_analytics": False,
+        "highlighted_profile": False,
+        "badge_type": "free",
+        "max_portfolio_images": 5,
+        "max_services": 3,
+        "sort_order": 0,
+        "features": [
+            {"name": "Profil Olusturma", "included": True},
+            {"name": "3 Hizmet Ekleme", "included": True},
+            {"name": "5 Portfoy Fotografi", "included": True},
+            {"name": "Musteri Mesajlari", "included": True},
+            {"name": "Randevu Yonetimi", "included": True},
+            {"name": "One Cikarilmis Profil", "included": False},
+            {"name": "Gelismis Analitik", "included": False},
+            {"name": "Oncelikli Destek", "included": False},
+        ],
+    },
+    {
+        "name": "Bronz",
+        "slug": "bronze",
+        "description": "Buyuyen uzmanlar icin ideal plan",
+        "price_monthly": 99,
+        "price_quarterly": 249,
+        "price_yearly": 899,
+        "commission_discount": 0.05,
+        "featured_listings": 2,
+        "priority_support": False,
+        "advanced_analytics": False,
+        "highlighted_profile": True,
+        "badge_type": "bronze",
+        "max_portfolio_images": 15,
+        "max_services": 8,
+        "sort_order": 1,
+        "features": [
+            {"name": "Tum Ucretsiz Ozellikler", "included": True},
+            {"name": "8 Hizmet Ekleme", "included": True},
+            {"name": "15 Portfoy Fotografi", "included": True},
+            {"name": "%5 Komisyon Indirimi", "included": True},
+            {"name": "2 One Cikarilmis Listeleme", "included": True},
+            {"name": "Profilde Bronz Rozet", "included": True},
+            {"name": "Gelismis Analitik", "included": False},
+            {"name": "Oncelikli Destek", "included": False},
+        ],
+    },
+    {
+        "name": "Gumus",
+        "slug": "silver",
+        "description": "Profesyonel uzmanlar icin gelismis plan",
+        "price_monthly": 199,
+        "price_quarterly": 499,
+        "price_yearly": 1799,
+        "commission_discount": 0.10,
+        "featured_listings": 5,
+        "priority_support": True,
+        "advanced_analytics": True,
+        "highlighted_profile": True,
+        "badge_type": "silver",
+        "max_portfolio_images": 30,
+        "max_services": 15,
+        "sort_order": 2,
+        "features": [
+            {"name": "Tum Bronz Ozellikleri", "included": True},
+            {"name": "15 Hizmet Ekleme", "included": True},
+            {"name": "30 Portfoy Fotografi", "included": True},
+            {"name": "%10 Komisyon Indirimi", "included": True},
+            {"name": "5 One Cikarilmis Listeleme", "included": True},
+            {"name": "Profilde Gumus Rozet", "included": True},
+            {"name": "Gelismis Analitik", "included": True},
+            {"name": "Oncelikli Destek", "included": False},
+        ],
+    },
+    {
+        "name": "Altin",
+        "slug": "gold",
+        "description": "En populer plan - max gorunurluk",
+        "price_monthly": 399,
+        "price_quarterly": 999,
+        "price_yearly": 3599,
+        "commission_discount": 0.15,
+        "featured_listings": 10,
+        "priority_support": True,
+        "advanced_analytics": True,
+        "highlighted_profile": True,
+        "badge_type": "gold",
+        "max_portfolio_images": 50,
+        "max_services": 30,
+        "sort_order": 3,
+        "features": [
+            {"name": "Tum Gumus Ozellikleri", "included": True},
+            {"name": "30 Hizmet Ekleme", "included": True},
+            {"name": "50 Portfoy Fotografi", "included": True},
+            {"name": "%15 Komisyon Indirimi", "included": True},
+            {"name": "10 One Cikarilmis Listeleme", "included": True},
+            {"name": "Profilde Altin Rozet", "included": True},
+            {"name": "Gelismis Analitik", "included": True},
+            {"name": "Oncelikli Destek", "included": True},
+        ],
+    },
+    {
+        "name": "Elmas",
+        "slug": "diamond",
+        "description": "Premium kurumsal uzmanlar icin",
+        "price_monthly": 799,
+        "price_quarterly": 1999,
+        "price_yearly": 7199,
+        "commission_discount": 0.20,
+        "featured_listings": 20,
+        "priority_support": True,
+        "advanced_analytics": True,
+        "highlighted_profile": True,
+        "badge_type": "diamond",
+        "max_portfolio_images": 100,
+        "max_services": 999,
+        "sort_order": 4,
+        "features": [
+            {"name": "Tum Altin Ozellikleri", "included": True},
+            {"name": "Sinirsiz Hizmet", "included": True},
+            {"name": "100 Portfoy Fotografi", "included": True},
+            {"name": "%20 Komisyon Indirimi", "included": True},
+            {"name": "20 One Cikarilmis Listeleme", "included": True},
+            {"name": "Profilde Elmas Rozet", "included": True},
+            {"name": "Gelismis Analitik", "included": True},
+            {"name": "Oncelikli Destek", "included": True},
+        ],
+    },
+]
+
+COMMISSION_RATES_DATA = [
+    {"rate": 0.10, "description": "Genel komisyon orani"},
+]
+
+
+def seed_subscription_plans(db: Session):
+    from app.modules.subscriptions.models import SubscriptionPlan, PlanFeature
+    existing = db.query(SubscriptionPlan).count()
+    if existing > 0:
+        return
+
+    for plan_data in SUBSCRIPTION_PLANS_DATA:
+        features = plan_data.pop("features")
+        plan = SubscriptionPlan(**plan_data)
+        db.add(plan)
+        db.flush()
+
+        for i, f in enumerate(features):
+            feature = PlanFeature(
+                plan_id=plan.id,
+                feature_name=f["name"],
+                is_included=f["included"],
+                sort_order=i,
+            )
+            db.add(feature)
+
+    db.commit()
+
+
+def seed_commission_rates(db: Session):
+    from app.modules.commissions.models import CommissionRate
+    existing = db.query(CommissionRate).count()
+    if existing > 0:
+        return
+
+    for rate_data in COMMISSION_RATES_DATA:
+        rate = CommissionRate(**rate_data)
+        db.add(rate)
+
+    db.commit()
+
+
+def run_all_seeds(db: Session):
+    seed_cities(db)
+    seed_categories(db)
+    seed_subscription_plans(db)
+    seed_commission_rates(db)

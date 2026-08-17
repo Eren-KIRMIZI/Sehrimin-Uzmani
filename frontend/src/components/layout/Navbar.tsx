@@ -29,7 +29,8 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-8">
             <Link to="/search" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Uzmanlar</Link>
             <Link to="/categories" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Kategoriler</Link>
-            <Link to="/how-it-works" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Nasıl Çalışır?</Link>
+            <Link to="/how-it-works" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Nasil Calisir?</Link>
+            <Link to="/pricing" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Uzman Planlari</Link>
           </div>
 
           <div className="flex items-center gap-3">
@@ -90,7 +91,8 @@ export default function Navbar() {
           <div className="md:hidden py-4 border-t border-border-light fade-in">
             <Link to="/search" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Uzmanlar</Link>
             <Link to="/categories" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Kategoriler</Link>
-            <Link to="/how-it-works" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Nasıl Çalışır?</Link>
+            <Link to="/how-it-works" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Nasil Calisir?</Link>
+            <Link to="/pricing" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Uzman Planlari</Link>
           </div>
         )}
       </div>
