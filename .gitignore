@@ -1,0 +1,67 @@
+# Ortam degiskenleri - HASSAS BILGILER
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+ENV/
+
+# FastAPI
+uploads/
+
+# Node.js
+node_modules/
+.pnp
+.pnp.js
+
+# Frontend build
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+python-log*.log
+
+# Test
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# SQLite (eger kullanilirsa)
+*.db
+*.sqlite3
+
+# Uploads
+uploads/
+
+# OS
+.DS_Store
+Desktop.ini
+ehthumbs.db
