@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Star, Shield, MapPin, Clock, Phone, MessageCircle, Calendar, ChevronRight, Award, Briefcase } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Star, Shield, MapPin, Clock, MessageCircle, Calendar, Briefcase } from 'lucide-react';
 import api from '../services/api';
 import type { ProviderProfile, Review } from '../types';
 

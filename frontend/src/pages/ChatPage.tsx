@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Send, ArrowLeft, Image, Paperclip } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface Message {
   id: number;
@@ -23,13 +24,32 @@ interface Conversation {
 export default function ChatPage() {
   const { conversationId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const getWsUrl = useCallback(() => {
+    const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
+    if (!tokens?.access_token) return '';
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.host}/ws/${tokens.access_token}`;
+  }, []);
+
+  const handleWsMessage = useCallback((data: any) => {
+    if (data.action === 'new_message' && data.message) {
+      setMessages(prev => [...prev, data.message]);
+      loadConversations();
+    }
+  }, []);
+
+  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useWebSocket({
+    url: getWsUrl(),
+    onMessage: handleWsMessage,
+    reconnect: true,
+    maxRetries: 8,
+  });
 
   useEffect(() => {
     loadConversations();
@@ -38,9 +58,9 @@ export default function ChatPage() {
   useEffect(() => {
     if (conversationId) {
       loadMessages(Number(conversationId));
-      connectWebSocket();
+      wsConnect();
     }
-    return () => { ws?.close(); };
+    return () => { wsDisconnect(); };
   }, [conversationId]);
 
   useEffect(() => {
@@ -51,10 +71,8 @@ export default function ChatPage() {
     try {
       const res = await api.get('/messaging/conversations');
       setConversations(res.data);
-      setError('');
     } catch (e: any) {
       console.error('Konusmalar yuklenemedi:', e);
-      setError('Konusmalar yuklenemedi. Lutfen tekrar deneyin.');
     }
   };
 
@@ -62,49 +80,20 @@ export default function ChatPage() {
     try {
       const res = await api.get(`/messaging/conversations/${convId}/messages`);
       setMessages(res.data);
-      setError('');
     } catch (e: any) {
       console.error('Mesajlar yuklenemedi:', e);
-      setError('Mesajlar yuklenemedi.');
     }
   };
 
-  const connectWebSocket = () => {
-    const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
-    if (!tokens?.access_token) return;
-
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.host;
-    const socket = new WebSocket(`${wsProtocol}//${wsHost}/ws/${tokens.access_token}`);
-
-    socket.onopen = () => {
-      console.log('WebSocket connected');
-    };
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.action === 'new_message' && data.message) {
-        setMessages(prev => [...prev, data.message]);
-        loadConversations();
-      }
-    };
-
-    socket.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    setWs(socket);
-  };
-
   const sendMessage = () => {
-    if (!newMessage.trim() || !conversationId || !ws) return;
+    if (!newMessage.trim() || !conversationId || !isConnected) return;
 
-    ws.send(JSON.stringify({
+    wsSend({
       action: 'send_message',
       conversation_id: Number(conversationId),
       content: newMessage,
       message_type: 'TEXT',
-    }));
+    });
 
     setNewMessage('');
   };

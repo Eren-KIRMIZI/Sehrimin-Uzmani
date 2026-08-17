@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, Upload, X, MapPin, Calendar, Clock, DollarSign, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Upload, MapPin, Calendar, DollarSign } from 'lucide-react';
 import api from '../services/api';
-import { useLocationStore } from '../stores/locationStore';
 import type { Category, City, District } from '../types';
 
 const STEPS = [
@@ -20,7 +19,7 @@ const STEPS = [
 
 export default function ServiceRequestForm() {
   const navigate = useNavigate();
-  const { selectedCity, setSelectedCity } = useLocationStore();
+
   const [step, setStep] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -62,7 +61,6 @@ export default function ServiceRequestForm() {
   const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
   const selectedCategory = categories.find(c => c.id === form.category_id);
-  const selectedSubcategory = selectedCategory?.subcategories?.find(s => s.id === form.subcategory_id);
 
   const canProceed = () => {
     switch (step) {

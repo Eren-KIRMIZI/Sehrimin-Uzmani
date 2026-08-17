@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-import { Menu, X, Search, ChevronDown, User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { useAuthStore } from '../../stores/authStore';
+import type { AuthState } from '../../stores/authStore';
+import { Menu, X, ChevronDown, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 
 export default function Navbar() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const user = useAuthStore((s: AuthState) => s.user);
+  const isAuthenticated = useAuthStore((s: AuthState) => s.isAuthenticated);
+  const logout = useAuthStore((s: AuthState) => s.logout);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();

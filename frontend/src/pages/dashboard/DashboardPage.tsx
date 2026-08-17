@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { LayoutDashboard, FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, Clock, CheckCircle, CreditCard, AlertTriangle, DollarSign, Megaphone } from 'lucide-react';
+import { FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, CreditCard, AlertTriangle, DollarSign, Megaphone } from 'lucide-react';
 import api from '../../services/api';
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
   const [stats, setStats] = useState({ requests: 0, appointments: 0, favorites: 0, notifications: 0 });
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
 

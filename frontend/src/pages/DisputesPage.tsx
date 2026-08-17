@@ -64,7 +64,7 @@ export default function DisputesPage() {
     description: '',
     amount_involved: '',
   });
-  const { user } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     fetchDisputes();
@@ -296,7 +296,7 @@ export default function DisputesPage() {
                       <div
                         key={m.id}
                         className={`p-3 rounded-xl max-w-[80%] ${
-                          m.sender_name === user?.full_name
+                          m.sender_name === `${user?.first_name} ${user?.last_name}`
                             ? 'bg-primary-100 ml-auto'
                             : m.is_admin
                             ? 'bg-yellow-50 border border-yellow-200'

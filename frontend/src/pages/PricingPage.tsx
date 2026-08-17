@@ -174,7 +174,7 @@ export default function PricingPage() {
                         )}
                       </svg>
                       <span className={`text-sm ${f.included ? 'text-gray-700' : 'text-gray-400'}`}>
-                        {f.feature_name}
+                        {f.name}
                         {f.value && <span className="text-gray-500"> ({f.value})</span>}
                       </span>
                     </div>

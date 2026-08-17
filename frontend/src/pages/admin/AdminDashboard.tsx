@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, Briefcase, FileText, CheckCircle, Settings, Shield, Star, TrendingUp, Activity, ChevronRight, Search, Eye, Edit, Trash2 } from 'lucide-react';
+import { Users, Briefcase, FileText, CheckCircle, Settings, Shield, Star, TrendingUp, Activity, ChevronRight, Search, Eye, Edit } from 'lucide-react';
 import api from '../../services/api';
 
 interface DashboardStats {
@@ -18,26 +17,20 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
   const loadDashboard = async () => {
-    setLoading(true);
     try {
       const [statsRes] = await Promise.all([
         api.get('/admin/dashboard'),
       ]);
       setStats(statsRes.data);
-      setError('');
     } catch (e: any) {
       console.error('Dashboard yuklenemedi:', e);
-      setError('Dashboard verileri yuklenemedi.');
-    } finally {
-      setLoading(false);
     }
   };
 

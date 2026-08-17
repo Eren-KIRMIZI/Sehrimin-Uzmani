@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, MapPin, Star, Shield, Filter, X, ChevronDown, Grid, List } from 'lucide-react';
+import { Search, MapPin, Star, Shield, Filter, Grid, List } from 'lucide-react';
 import api from '../services/api';
 import type { ProviderProfile, Category, City } from '../types';
 import { useLocationStore } from '../stores/locationStore';
@@ -17,8 +17,6 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [searchError, setSearchError] = useState('');
-
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     minRating: searchParams.get('min_rating') || '',
@@ -53,7 +51,6 @@ export default function SearchPage() {
       setTotal(res.data.total || 0);
     } catch {
       setProviders([]);
-      setSearchError('Arama sirasinda bir hata olustu.');
     } finally {
       setLoading(false);
     }

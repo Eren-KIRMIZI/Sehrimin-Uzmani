@@ -8,7 +8,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { login, isLoading } = useAuthStore();
+  const login = useAuthStore((s) => s.login);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

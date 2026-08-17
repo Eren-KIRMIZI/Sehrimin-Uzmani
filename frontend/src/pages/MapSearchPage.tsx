@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, MapPin, Star, Shield, Filter, X } from 'lucide-react';
+import { Search, MapPin, Star, Shield } from 'lucide-react';
 import api from '../services/api';
 import MapView from '../components/map/MapView';
-import type { ProviderProfile, Category, City } from '../types';
+import type { ProviderProfile, City } from '../types';
 import { useLocationStore } from '../stores/locationStore';
 
 export default function MapSearchPage() {
@@ -11,14 +11,10 @@ export default function MapSearchPage() {
   const { selectedCity, setSelectedCity } = useLocationStore();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [providers, setProviders] = useState<ProviderProfile[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searchError, setSearchError] = useState('');
-
   useEffect(() => {
-    api.get('/categories').then(res => setCategories(res.data)).catch(() => {});
     api.get('/locations/cities').then(res => setCities(res.data)).catch(() => {});
   }, []);
 
@@ -37,7 +33,6 @@ export default function MapSearchPage() {
       setProviders(res.data.items || []);
     } catch {
       setProviders([]);
-      setSearchError('Arama sirasinda bir hata olustu.');
     } finally {
       setLoading(false);
     }

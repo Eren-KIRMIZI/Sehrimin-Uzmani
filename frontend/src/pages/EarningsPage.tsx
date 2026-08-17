@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
 
 interface EarningData {
@@ -39,9 +37,6 @@ export default function EarningsPage() {
   const [tab, setTab] = useState<'overview' | 'transactions' | 'payouts'>('overview');
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ amount: '', bank_name: '', iban: '', account_holder: '' });
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
-
   useEffect(() => {
     fetchData();
   }, []);

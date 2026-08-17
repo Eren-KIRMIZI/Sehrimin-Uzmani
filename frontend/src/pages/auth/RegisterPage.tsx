@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Phone, Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -15,7 +15,8 @@ export default function RegisterPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { register, isLoading } = useAuthStore();
+  const register = useAuthStore((s) => s.register);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
