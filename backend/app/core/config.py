@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "SehrininUzmani"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
-    SECRET_KEY: str = "super-secret-key-change-in-production-2024"
+    SECRET_KEY: str = "CHANGE-ME-IN-PRODUCTION"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 

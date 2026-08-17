@@ -136,6 +136,14 @@ def add_provider_service(
     if not profile:
         raise NotFoundException("Uzman profili")
 
+    existing_service = db.query(ProviderService).filter(
+        ProviderService.provider_id == profile.id,
+        ProviderService.service_id == data.service_id,
+    ).first()
+    if existing_service:
+        from app.core.exceptions import ConflictException
+        raise ConflictException("Bu hizmeti zaten eklediniz")
+
     ps = ProviderService(provider_id=profile.id, **data.model_dump())
     db.add(ps)
     db.commit()

@@ -106,6 +106,10 @@ def accept_quote(
     if not quote:
         raise NotFoundException("Teklif")
 
+    if quote.status != "PENDING":
+        from app.core.exceptions import BadRequestException
+        raise BadRequestException("Sadece bekleyen teklifler kabul edilebilir")
+
     request = db.query(ServiceRequest).filter(ServiceRequest.id == quote.request_id).first()
     if not request or request.customer_id != current_user.id:
         raise ForbiddenException("Bu teklifi onaylama yetkiniz yok")

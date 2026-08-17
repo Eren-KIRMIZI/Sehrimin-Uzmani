@@ -66,7 +66,7 @@ def list_my_requests(
 
 
 @router.get("/{request_id}")
-def get_request(request_id: int, db: Session = Depends(get_db)):
+def get_request(request_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     request = (
         db.query(ServiceRequest)
         .options(
@@ -142,6 +142,10 @@ def delete_request(
         raise NotFoundException("Talep")
     if request.customer_id != current_user.id:
         raise ForbiddenException("Bu talebi silme yetkiniz yok")
+
+    if request.status not in ("DRAFT", "PUBLISHED", "CANCELLED"):
+        from app.core.exceptions import BadRequestException
+        raise BadRequestException("Aktif durumdaki talepler silinemez, iptal edin")
 
     db.delete(request)
     db.commit()

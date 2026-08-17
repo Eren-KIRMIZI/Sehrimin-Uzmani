@@ -15,32 +15,82 @@ class ProviderMatcher:
     def __init__(self, db: Session):
         self.db = db
 
+    def _bulk_load_provider_data(self, provider_ids: list[int]) -> dict:
+        if not provider_ids:
+            return {}
+
+        profiles = {
+            p.user_id: p
+            for p in self.db.query(ProviderProfile).filter(ProviderProfile.user_id.in_(provider_ids)).all()
+        }
+
+        rating_data = dict(
+            self.db.query(
+                Review.provider_id,
+                sql_func.avg(Review.rating),
+                sql_func.count(Review.id),
+            )
+            .filter(Review.provider_id.in_(provider_ids), Review.is_visible == True)
+            .group_by(Review.provider_id)
+            .all()
+        )
+
+        locations = {
+            pl.provider_id: pl
+            for pl in self.db.query(ProviderLocation).filter(ProviderLocation.provider_id.in_(provider_ids)).all()
+        }
+
+        subscriptions = {
+            s.provider_id: s
+            for s in self.db.query(ProviderSubscription).filter(
+                ProviderSubscription.provider_id.in_(provider_ids),
+                ProviderSubscription.status == "active",
+            ).all()
+        }
+
+        promoted = {
+            p.provider_id: p
+            for p in self.db.query(PromotedProvider).filter(
+                PromotedProvider.provider_id.in_(provider_ids),
+                PromotedProvider.status == "active",
+            ).all()
+        }
+
+        services_by_provider = {}
+        for ps in self.db.query(ProviderService).filter(ProviderService.provider_id.in_(provider_ids)).all():
+            services_by_provider.setdefault(ps.provider_id, []).append(ps.service_id)
+
+        return {
+            "profiles": profiles,
+            "rating_data": rating_data,
+            "locations": locations,
+            "subscriptions": subscriptions,
+            "promoted": promoted,
+            "services": services_by_provider,
+        }
+
     def score_provider(
         self,
         provider: User,
+        data: dict,
         service_id: int = None,
         category_id: int = None,
         city_id: int = None,
         district_id: int = None,
         budget: float = None,
     ) -> float:
-        profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == provider.id).first()
+        profile = data["profiles"].get(provider.id)
         if not profile:
             return 0.0
 
         score = 0.0
 
-        rating = db.query(sql_func.avg(Review.rating)).filter(
-            Review.provider_id == provider.id,
-            Review.is_visible == True,
-        ).scalar()
-        rating = rating or 0
-        score += rating * 15
+        avg_rating, review_count = data["rating_data"].get(provider.id, (0, 0))
+        avg_rating = float(avg_rating or 0)
+        review_count = int(review_count or 0)
 
-        review_count = db.query(Review).filter(
-            Review.provider_id == provider.id,
-            Review.is_visible == True,
-        ).count()
+        score += avg_rating * 15
+
         if review_count >= 50:
             score += 20
         elif review_count >= 20:
@@ -50,15 +100,11 @@ class ProviderMatcher:
         elif review_count >= 5:
             score += 5
 
-        completion_count = db.query(Review).filter(
-            Review.provider_id == provider.id,
-            Review.is_visible == True,
-        ).count()
-        if completion_count >= 100:
+        if review_count >= 100:
             score += 15
-        elif completion_count >= 50:
+        elif review_count >= 50:
             score += 10
-        elif completion_count >= 20:
+        elif review_count >= 20:
             score += 5
 
         if profile.years_of_experience:
@@ -74,10 +120,7 @@ class ProviderMatcher:
         elif profile.verification_level == "identity":
             score += 5
 
-        sub = db.query(ProviderSubscription).filter(
-            ProviderSubscription.provider_id == provider.id,
-            ProviderSubscription.status == "active",
-        ).first()
+        sub = data["subscriptions"].get(provider.id)
         if sub and sub.plan:
             score += 8
             if sub.plan.badge_type == "gold":
@@ -85,33 +128,27 @@ class ProviderMatcher:
             elif sub.plan.badge_type == "silver":
                 score += 3
 
-        promoted = db.query(PromotedProvider).filter(
-            PromotedProvider.provider_id == provider.id,
-            PromotedProvider.status == "active",
-        ).first()
-        if promoted:
-            score += promoted.priority_boost * 3
+        promoted_obj = data["promoted"].get(provider.id)
+        if promoted_obj:
+            score += promoted_obj.priority_boost * 3
 
-        if service_id:
-            has_service = db.query(ProviderService).filter(
-                ProviderService.provider_id == provider.id,
-                ProviderService.service_id == service_id,
-            ).first()
-            if has_service:
-                score += 15
+        provider_service_ids = data["services"].get(provider.id, [])
+        if service_id and service_id in provider_service_ids:
+            score += 15
 
         if category_id:
-            has_category = db.query(ProviderService).join(Service).filter(
-                ProviderService.provider_id == provider.id,
-                Service.category_id == category_id,
-            ).first()
-            if has_category:
+            service_ids_for_cat = set(
+                ps.service_id
+                for ps in self.db.query(ProviderService)
+                .join(Service)
+                .filter(ProviderService.provider_id == provider.id, Service.category_id == category_id)
+                .all()
+            )
+            if provider_service_ids and any(s in service_ids_for_cat for s in provider_service_ids):
                 score += 10
 
         if city_id or district_id:
-            location = db.query(ProviderLocation).filter(
-                ProviderLocation.provider_id == provider.id,
-            ).first()
+            location = data["locations"].get(provider.id)
             if location:
                 if district_id and location.district_id == district_id:
                     score += 10
@@ -143,6 +180,9 @@ class ProviderMatcher:
         limit: int = 10,
         offset: int = 0,
     ) -> list:
+        limit = min(limit, 50)
+        offset = max(0, offset)
+
         q = self.db.query(User).filter(
             User.role == "provider",
             User.is_active == True,
@@ -179,11 +219,14 @@ class ProviderMatcher:
                 q = q.filter(User.id.in_(location_provider_ids))
 
         all_providers = q.all()
+        all_ids = [p.id for p in all_providers]
+        data = self._bulk_load_provider_data(all_ids)
 
         scored = []
         for p in all_providers:
             s = self.score_provider(
                 p,
+                data,
                 service_id=service_id,
                 category_id=category_id,
                 city_id=city_id,
@@ -197,22 +240,10 @@ class ProviderMatcher:
 
         results = []
         for provider, score in paginated:
-            profile = self.db.query(ProviderProfile).filter(ProviderProfile.user_id == provider.id).first()
-            rating = self.db.query(sql_func.avg(Review.rating)).filter(
-                Review.provider_id == provider.id,
-                Review.is_visible == True,
-            ).scalar() or 0
-            review_count = self.db.query(Review).filter(
-                Review.provider_id == provider.id,
-                Review.is_visible == True,
-            ).count()
-            location = self.db.query(ProviderLocation).filter(
-                ProviderLocation.provider_id == provider.id
-            ).first()
-            promoted = self.db.query(PromotedProvider).filter(
-                PromotedProvider.provider_id == provider.id,
-                PromotedProvider.status == "active",
-            ).first()
+            profile = data["profiles"].get(provider.id)
+            avg_rating, review_count = data["rating_data"].get(provider.id, (0, 0))
+            location = data["locations"].get(provider.id)
+            promoted_obj = data["promoted"].get(provider.id)
 
             results.append({
                 "provider_id": provider.id,
@@ -220,13 +251,13 @@ class ProviderMatcher:
                 "slug": provider.slug,
                 "avatar_url": provider.avatar_url,
                 "match_score": score,
-                "rating": round(float(rating), 1),
-                "review_count": review_count,
+                "rating": round(float(avg_rating or 0), 1),
+                "review_count": int(review_count or 0),
                 "hourly_rate": profile.hourly_rate if profile else None,
                 "years_experience": profile.years_of_experience if profile else None,
                 "verification_level": profile.verification_level if profile else "none",
-                "is_promoted": promoted is not None,
-                "promoted_badge": promoted.badge_text if promoted else None,
+                "is_promoted": promoted_obj is not None,
+                "promoted_badge": promoted_obj.badge_text if promoted_obj else None,
                 "city_name": location.city.name if location and location.city else None,
                 "district_name": location.district.name if location and location.district else None,
             })

@@ -64,7 +64,9 @@ export default function ChatPage() {
     const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
     if (!tokens?.access_token) return;
 
-    const socket = new WebSocket(`ws://localhost:8000/ws/${tokens.access_token}`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.host;
+    const socket = new WebSocket(`${wsProtocol}//${wsHost}/ws/${tokens.access_token}`);
 
     socket.onopen = () => {
       console.log('WebSocket connected');

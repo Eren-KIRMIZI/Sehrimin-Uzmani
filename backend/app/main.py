@@ -34,12 +34,30 @@ async def ws_endpoint(websocket: WebSocket, token: str):
 
 @app.on_event("startup")
 def startup():
+    from app.modules.auth.models import RevokedToken
     Base.metadata.create_all(bind=engine)
     from app.core.database import SessionLocal
     from app.seed import run_all_seeds
+    from app.modules.subscriptions.models import ProviderSubscription
+    from app.modules.users.models import User
     db = SessionLocal()
     try:
         run_all_seeds(db)
+
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        expired = db.query(ProviderSubscription).filter(
+            ProviderSubscription.status == "active",
+            ProviderSubscription.expires_at < now,
+        ).all()
+        for sub in expired:
+            sub.status = "expired"
+            user = db.query(User).filter(User.id == sub.provider_id).first()
+            if user:
+                user.subscription_plan = None
+                user.commission_discount = 0.0
+        if expired:
+            db.commit()
     finally:
         db.close()
 

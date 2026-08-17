@@ -6,8 +6,10 @@ from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.appointments.models import Appointment
 from app.modules.requests.models import ServiceRequest
+from app.modules.quotes.models import Quote
+from app.modules.commissions.models import Transaction, ProviderEarning, CommissionRate
 from app.modules.appointments.schemas import AppointmentCreate, AppointmentUpdate
-from app.core.exceptions import NotFoundException, ForbiddenException
+from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
 
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
@@ -24,7 +26,17 @@ def create_appointment(
 
     provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
     if not provider:
-        provider_id = request.customer_id
+        raise ForbiddenException("Uzman profili olusturmadan randevu olusturamazsiniz")
+
+    if data.quote_id:
+        quote = db.query(Quote).filter(Quote.id == data.quote_id).first()
+        if not quote:
+            raise NotFoundException("Teklif")
+        if quote.status != "ACCEPTED":
+            raise BadRequestException("Sadece kabul edilmis teklifler icin randevu olusturulabilir")
+        if quote.provider_id != provider.id:
+            raise ForbiddenException("Bu teklif size ait degil")
+        provider_id = provider.id
     else:
         provider_id = provider.id
 
@@ -43,7 +55,7 @@ def create_appointment(
     request.status = "IN_PROGRESS"
     db.commit()
     db.refresh(appointment)
-    return {"message": "Randevu oluşturuldu", "appointment": appointment}
+    return {"message": "Randevu olusturuldu", "appointment": appointment}
 
 
 @router.get("")
@@ -63,7 +75,7 @@ def list_my_appointments(
     if status:
         query = query.filter(Appointment.status == status)
 
-    appointments = query.order_by(Appointment.start_at.desc()).all()
+    appointments = query.order_by(Appointment.start_at.desc()).limit(100).all()
     return [
         {
             "id": a.id,
@@ -80,11 +92,32 @@ def list_my_appointments(
 
 
 @router.get("/{appointment_id}")
-def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
+def get_appointment(appointment_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise NotFoundException("Randevu")
-    return appointment
+
+    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    is_customer = appointment.customer_id == current_user.id
+    is_provider = provider and appointment.provider_id == provider.id
+    is_admin = current_user.role in ["ADMIN", "MODERATOR"]
+
+    if not is_customer and not is_provider and not is_admin:
+        raise ForbiddenException("Bu randevuyu goruntuleme yetkiniz yok")
+
+    return {
+        "id": appointment.id,
+        "request_id": appointment.request_id,
+        "provider_id": appointment.provider_id,
+        "customer_id": appointment.customer_id,
+        "quote_id": appointment.quote_id,
+        "start_at": appointment.start_at,
+        "end_at": appointment.end_at,
+        "status": appointment.status,
+        "location": appointment.location,
+        "notes": appointment.notes,
+        "created_at": appointment.created_at,
+    }
 
 
 @router.patch("/{appointment_id}")
@@ -98,11 +131,22 @@ def update_appointment(
     if not appointment:
         raise NotFoundException("Randevu")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(appointment, field, value)
+    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    is_customer = appointment.customer_id == current_user.id
+    is_provider = provider and appointment.provider_id == provider.id
+
+    if not is_customer and not is_provider:
+        raise ForbiddenException("Bu randevuyu duzenleme yetkiniz yok")
+
+    allowed_fields = {"location", "notes", "start_at", "end_at"}
+    updates = data.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        if field in allowed_fields:
+            setattr(appointment, field, value)
+
     db.commit()
     db.refresh(appointment)
-    return {"message": "Randevu güncellendi", "appointment": appointment}
+    return {"message": "Randevu guncellendi", "appointment": appointment}
 
 
 @router.post("/{appointment_id}/complete")
@@ -115,14 +159,64 @@ def complete_appointment(
     if not appointment:
         raise NotFoundException("Randevu")
 
+    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    is_customer = appointment.customer_id == current_user.id
+    is_provider = provider and appointment.provider_id == provider.id
+
+    if not is_customer and not is_provider:
+        raise ForbiddenException("Bu randevuyu tamamlama yetkiniz yok")
+
+    if appointment.status not in ("CONFIRMED", "IN_PROGRESS"):
+        raise BadRequestException(f"Durum '{appointment.status}' olan randevu tamamlanamaz")
+
     appointment.status = "COMPLETED"
 
     request = db.query(ServiceRequest).filter(ServiceRequest.id == appointment.request_id).first()
     if request:
         request.status = "COMPLETED"
 
+    quote = None
+    if appointment.quote_id:
+        quote = db.query(Quote).filter(Quote.id == appointment.quote_id).first()
+
+    if quote and quote.price:
+        rate_obj = db.query(CommissionRate).filter(CommissionRate.is_active == True).first()
+        rate = rate_obj.rate if rate_obj else 0.10
+
+        user_discount = current_user.commission_discount if current_user.role == "PROVIDER" else 0
+        provider_user = db.query(User).filter(User.id == appointment.customer_id).first() if not is_provider else current_user
+        if provider_user and provider_user.commission_discount:
+            user_discount = provider_user.commission_discount
+
+        effective_rate = rate * (1 - user_discount)
+        commission_amount = round(quote.price * effective_rate, 2)
+        provider_earning = round(quote.price - commission_amount, 2)
+
+        transaction = Transaction(
+            provider_id=appointment.provider_id,
+            appointment_id=appointment.id,
+            amount=quote.price,
+            commission_rate=effective_rate,
+            commission_amount=commission_amount,
+            provider_earning=provider_earning,
+            status="completed",
+            description=f"Randevu #{appointment.id} tamamlandi",
+        )
+        db.add(transaction)
+
+        earning = db.query(ProviderEarning).filter(
+            ProviderEarning.provider_id == appointment.provider_id
+        ).first()
+        if not earning:
+            earning = ProviderEarning(provider_id=appointment.provider_id)
+            db.add(earning)
+
+        earning.total_earned += provider_earning
+        earning.total_commission_paid += commission_amount
+        earning.pending_amount += provider_earning
+
     db.commit()
-    return {"message": "Randevu tamamlandı"}
+    return {"message": "Randevu tamamlandi", "commission": commission_amount if quote and quote.price else 0}
 
 
 @router.post("/{appointment_id}/cancel")
@@ -134,6 +228,16 @@ def cancel_appointment(
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise NotFoundException("Randevu")
+
+    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    is_customer = appointment.customer_id == current_user.id
+    is_provider = provider and appointment.provider_id == provider.id
+
+    if not is_customer and not is_provider:
+        raise ForbiddenException("Bu randevuyu iptal etme yetkiniz yok")
+
+    if appointment.status in ("COMPLETED", "CANCELLED"):
+        raise BadRequestException(f"Durum '{appointment.status}' olan randevu iptal edilemez")
 
     appointment.status = "CANCELLED"
 

@@ -7,6 +7,23 @@ from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.messaging.models import Conversation, Message
 
+BLOCKED_PATTERNS = [
+    "whatsapp", "telegram", "instagram", "facebook",
+    "arama yapiyorum", "arama yapıyorum",
+    "numaram", "numaramı", "numara ver",
+    "disarida bulusalim", "dışarıda buluşalım",
+    "platform disinda", "platform dışı",
+    "site disinda", "site dışı",
+    "@gmail.com", "@hotmail.com", "@outlook.com", "@yahoo.com",
+]
+
+def _is_content_blocked(content: str) -> bool:
+    lower = content.lower()
+    for pattern in BLOCKED_PATTERNS:
+        if pattern in lower:
+            return True
+    return False
+
 
 class ConnectionManager:
     def __init__(self):
@@ -84,6 +101,16 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     conversation_id = msg_data.get("conversation_id")
                     content = msg_data.get("content", "")
                     message_type = msg_data.get("message_type", "TEXT")
+
+                    if not content or len(content.strip()) == 0:
+                        await websocket.send_json({"error": "Mesaj icerigi bos olamaz"})
+                        continue
+                    if len(content) > 2000:
+                        await websocket.send_json({"error": "Mesaj icerigi 2000 karakterden uzun olamaz"})
+                        continue
+                    if _is_content_blocked(content):
+                        await websocket.send_json({"error": "Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)"})
+                        continue
 
                     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
                     if not conv:

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/layout/Layout';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import MapSearchPage from './pages/MapSearchPage';
@@ -34,18 +35,18 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/map" element={<MapSearchPage />} />
             <Route path="/provider/:id" element={<ProviderProfilePage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/request/create" element={<ServiceRequestForm />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/chat/:conversationId" element={<ChatPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/pricing" element={<PricingPage />} />
-            <Route path="/disputes" element={<DisputesPage />} />
-            <Route path="/earnings" element={<EarningsPage />} />
-            <Route path="/promotions" element={<PromotionsPage />} />
             <Route path="/categories" element={<HomePage />} />
             <Route path="/category/:slug" element={<HomePage />} />
             <Route path="/how-it-works" element={<HomePage />} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/request/create" element={<ProtectedRoute><ServiceRequestForm /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute roles={["ADMIN"]}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/disputes" element={<ProtectedRoute><DisputesPage /></ProtectedRoute>} />
+            <Route path="/earnings" element={<ProtectedRoute roles={["PROVIDER"]}><EarningsPage /></ProtectedRoute>} />
+            <Route path="/promotions" element={<ProtectedRoute roles={["PROVIDER"]}><PromotionsPage /></ProtectedRoute>} />
           </Route>
         </Routes>
       </BrowserRouter>

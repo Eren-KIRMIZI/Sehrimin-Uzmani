@@ -7,7 +7,7 @@ T = TypeVar("T")
 class PaginationParams:
     def __init__(self, page: int = 1, limit: int = 20):
         self.page = max(1, page)
-        self.limit = min(max(1, limit), 100)
+        self.limit = min(max(1, limit), 50)
         self.offset = (self.page - 1) * self.limit
 
 

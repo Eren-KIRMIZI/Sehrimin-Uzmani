@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func as sql_func
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -7,6 +7,7 @@ from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.reviews.models import Review
 from app.modules.requests.models import ServiceRequest
+from app.modules.appointments.models import Appointment
 from app.modules.reviews.schemas import ReviewCreate
 from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
 
@@ -32,7 +33,17 @@ def create_review(
     ).first()
     if existing:
         from app.core.exceptions import ConflictException
-        raise ConflictException("Bu hizmeti zaten değerlendirdiniz")
+        raise ConflictException("Bu hizmeti zaten degerlendirdiniz")
+
+    appointment = db.query(Appointment).filter(
+        Appointment.request_id == data.request_id,
+        Appointment.status == "COMPLETED",
+    ).first()
+    if not appointment:
+        raise BadRequestException("Bu talep icin tamamlanmis randevu bulunamadi")
+
+    if data.provider_id != appointment.provider_id:
+        raise ForbiddenException("Sadece gercekten hizmet veren uzmani degerlendirebilirsiniz")
 
     review = Review(customer_id=current_user.id, **data.model_dump())
     db.add(review)
@@ -55,29 +66,47 @@ def create_review(
 
 
 @router.get("/provider/{provider_id}")
-def list_provider_reviews(provider_id: int, db: Session = Depends(get_db)):
+def list_provider_reviews(
+    provider_id: int,
+    page: int = 1,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    limit = min(max(1, limit), 50)
+    offset = (max(1, page) - 1) * limit
+
     reviews = (
         db.query(Review)
+        .options(joinedload(Review.customer))
         .filter(Review.provider_id == provider_id, Review.status == "ACTIVE")
         .order_by(Review.created_at.desc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
 
-    return [
-        {
-            "id": r.id,
-            "rating": r.rating,
-            "communication_rating": r.communication_rating,
-            "quality_rating": r.quality_rating,
-            "price_rating": r.price_rating,
-            "punctuality_rating": r.punctuality_rating,
-            "comment": r.comment,
-            "created_at": r.created_at,
-            "customer": {
-                "first_name": r.customer.first_name if r.customer else None,
-                "last_name": r.customer.last_name if r.customer else None,
-                "avatar": r.customer.avatar if r.customer else None,
-            },
-        }
-        for r in reviews
-    ]
+    total = db.query(Review).filter(Review.provider_id == provider_id, Review.status == "ACTIVE").count()
+
+    return {
+        "items": [
+            {
+                "id": r.id,
+                "rating": r.rating,
+                "communication_rating": r.communication_rating,
+                "quality_rating": r.quality_rating,
+                "price_rating": r.price_rating,
+                "punctuality_rating": r.punctuality_rating,
+                "comment": r.comment,
+                "created_at": r.created_at,
+                "customer": {
+                    "first_name": r.customer.first_name if r.customer else None,
+                    "last_name": r.customer.last_name if r.customer else None,
+                    "avatar": r.customer.avatar if r.customer else None,
+                },
+            }
+            for r in reviews
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }

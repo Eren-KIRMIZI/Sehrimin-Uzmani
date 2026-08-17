@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.rate_limiter import rate_limiter, get_client_ip
 from app.modules.auth.schemas import (
     RegisterRequest, LoginRequest, TokenResponse,
     RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest,
@@ -14,7 +15,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post("/register", response_model=dict)
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+def register(data: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limiter.check(f"register:{get_client_ip(request)}", max_requests=3, window_seconds=600)
     service = AuthService(db)
     result = service.register(data)
     user = result["user"]
@@ -33,7 +35,8 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=dict)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limiter.check(f"login:{get_client_ip(request)}", max_requests=5, window_seconds=300)
     service = AuthService(db)
     result = service.login(data)
     user = result["user"]
@@ -52,7 +55,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=dict)
-def refresh(data: RefreshRequest, db: Session = Depends(get_db)):
+def refresh(data: RefreshRequest, request: Request, db: Session = Depends(get_db)):
+    rate_limiter.check(f"refresh:{get_client_ip(request)}", max_requests=10, window_seconds=300)
     service = AuthService(db)
     result = service.refresh_token(data.refresh_token)
     user = result["user"]
@@ -75,5 +79,11 @@ def get_me(current_user: User = Depends(get_current_user)):
         "avatar": current_user.avatar,
         "email_verified": current_user.email_verified,
         "phone_verified": current_user.phone_verified,
+        "subscription_plan": current_user.subscription_plan,
         "created_at": current_user.created_at,
     }
+
+
+@router.post("/logout")
+def logout(current_user: User = Depends(get_current_user)):
+    return {"message": "Basariyla cikis yapildi"}

@@ -43,6 +43,7 @@ def list_favorites(
         db.query(Favorite)
         .filter(Favorite.user_id == current_user.id)
         .order_by(Favorite.created_at.desc())
+        .limit(50)
         .all()
     )
 

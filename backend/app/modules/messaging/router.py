@@ -6,9 +6,26 @@ from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.messaging.models import Conversation, Message
 from app.modules.messaging.schemas import ConversationCreate, MessageSend
-from app.core.exceptions import NotFoundException, ForbiddenException
+from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
 
 router = APIRouter(prefix="/messaging", tags=["Messaging"])
+
+BLOCKED_PATTERNS = [
+    "whatsapp", "telegram", "instagram", "facebook",
+    "arama yapiyorum", "arama yapıyorum",
+    "numaram", "numaramı", "numara ver",
+    "disarida bulusalim", "dışarıda buluşalım",
+    "platform disinda", "platform dışı",
+    "site disinda", "site dışı",
+    "@gmail.com", "@hotmail.com", "@outlook.com", "@yahoo.com",
+]
+
+def check_content(content: str) -> str:
+    lower = content.lower()
+    for pattern in BLOCKED_PATTERNS:
+        if pattern in lower:
+            return None
+    return content
 
 
 @router.post("/conversations")
@@ -41,9 +58,14 @@ def create_conversation(
 
 @router.get("/conversations")
 def list_conversations(
+    page: int = 1,
+    limit: int = 20,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    limit = min(limit, 50)
+    page = max(1, page)
+
     provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
 
     if provider:
@@ -96,6 +118,8 @@ def list_messages(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    limit = min(limit, 100)
+
     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
     if not conv:
         raise NotFoundException("Konusma")
@@ -162,6 +186,15 @@ def send_message_rest(
 
     if not is_participant:
         raise ForbiddenException("Bu konusmaya mesaj gonderme yetkiniz yok")
+
+    if not data.content or len(data.content.strip()) == 0:
+        raise BadRequestException("Mesaj icerigi bos olamaz")
+    if len(data.content) > 2000:
+        raise BadRequestException("Mesaj icerigi 2000 karakterden uzun olamaz")
+
+    filtered = check_content(data.content)
+    if filtered is None:
+        raise BadRequestException("Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)")
 
     message = Message(
         conversation_id=conversation_id,

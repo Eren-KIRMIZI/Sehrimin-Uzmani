@@ -47,15 +47,26 @@ def decode_token(token: str) -> dict:
         )
 
 
+def check_token_blacklist(token: str, db: Session) -> bool:
+    from app.modules.auth.models import RevokedToken
+    revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
+    return revoked is not None
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
     from app.modules.users.models import User
 
-    payload = decode_token(credentials.credentials)
+    token = credentials.credentials
+
+    if check_token_blacklist(token, db):
+        raise HTTPException(status_code=401, detail="Token iptal edilmis")
+
+    payload = decode_token(token)
     if payload.get("type") != "access":
-        raise HTTPException(status_code=401, detail="Geçersiz token türü")
+        raise HTTPException(status_code=401, detail="Gecersiz token turu")
 
     user_id = payload.get("sub")
     if user_id is None:
@@ -71,9 +82,13 @@ def get_current_user(
 
 
 def get_current_active_user(current_user=Depends(get_current_user)):
-    if not current_user.is_active:
-        raise HTTPException(status_code=403, detail="Hesap pasif")
     return current_user
+
+
+def check_token_blacklist(token: str, db: Session) -> bool:
+    from app.modules.auth.models import RevokedToken
+    revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
+    return revoked is not None
 
 
 def require_role(*roles):
