@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Text, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -57,6 +57,7 @@ class ProviderService(Base):
     __tablename__ = "provider_services"
     __table_args__ = (
         UniqueConstraint("provider_id", "service_id", name="uq_provider_service"),
+        Index("ix_provider_service_provider_service", "provider_id", "service_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)

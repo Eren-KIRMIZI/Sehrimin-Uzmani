@@ -71,24 +71,27 @@ def get_recommendations(
         if appt.category_id:
             category_ids.add(appt.category_id)
 
-    results = []
+    all_matches = []
     seen = set()
-    for sid in service_ids:
-        matches = matcher.find_best_matches(service_id=sid, limit=3)
-        for m in matches:
-            if m["provider_id"] not in seen:
-                results.append(m)
-                seen.add(m["provider_id"])
 
-    for cid in category_ids:
-        matches = matcher.find_best_matches(category_id=cid, limit=3)
-        for m in matches:
-            if m["provider_id"] not in seen:
-                results.append(m)
-                seen.add(m["provider_id"])
+    if service_ids:
+        for sid in service_ids:
+            matches = matcher.find_best_matches(service_id=sid, limit=3)
+            for m in matches:
+                if m["provider_id"] not in seen:
+                    all_matches.append(m)
+                    seen.add(m["provider_id"])
 
-    if not results:
-        results = matcher.find_best_matches(limit=limit)
+    if category_ids:
+        for cid in category_ids:
+            matches = matcher.find_best_matches(category_id=cid, limit=3)
+            for m in matches:
+                if m["provider_id"] not in seen:
+                    all_matches.append(m)
+                    seen.add(m["provider_id"])
 
-    results.sort(key=lambda x: x["match_score"], reverse=True)
-    return results[:limit]
+    if not all_matches:
+        all_matches = matcher.find_best_matches(limit=limit)
+
+    all_matches.sort(key=lambda x: x["match_score"], reverse=True)
+    return all_matches[:limit]

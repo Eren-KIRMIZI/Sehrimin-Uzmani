@@ -1,16 +1,27 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func as sql_func
+from sqlalchemy import func as sql_func, and_, literal_column
+from math import radians, sin, cos, sqrt, atan2
 from app.core.database import get_db
 from app.modules.providers.models import ProviderProfile
 from app.modules.locations.models import ProviderLocation
 from app.modules.categories.models import ProviderService, Service, SubCategory, Category
 from app.modules.users.models import User
 from app.shared.pagination import PaginationParams, PaginatedResponse
-from app.shared.utils import haversine
 from typing import Optional
 
 router = APIRouter(prefix="/search", tags=["Search"])
+
+
+def _haversine_sql(lat: float, lng: float):
+    lat_rad = radians(lat)
+    lng_rad = radians(lng)
+    lat_col = sql_func.radians(ProviderLocation.latitude)
+    lng_col = sql_func.radians(ProviderLocation.longitude)
+    dlat = lat_col - lat_rad
+    dlng = lng_col - lng_rad
+    a = sql_func.sin(dlat / 2) ** 2 + sql_func.cos(lat_rad) * sql_func.cos(lat_col) * sql_func.sin(dlng / 2) ** 2
+    return 6371 * 2 * sql_func.atan2(sql_func.sqrt(a), sql_func.sqrt(1 - a))
 
 
 @router.get("/providers")
@@ -36,27 +47,33 @@ def search_providers(
 ):
     pagination = PaginationParams(page, limit)
 
-    query = (
-        db.query(ProviderProfile)
-        .join(User, ProviderProfile.user_id == User.id)
-        .filter(ProviderProfile.is_available == True, User.is_active == True)
-    )
+    need_location_join = bool(city_id or district_id or (lat and lng))
+
+    if need_location_join:
+        query = (
+            db.query(ProviderProfile)
+            .join(User, ProviderProfile.user_id == User.id)
+            .join(ProviderLocation, ProviderLocation.provider_id == ProviderProfile.id)
+            .filter(ProviderProfile.is_available == True, User.is_active == True)
+        )
+    else:
+        query = (
+            db.query(ProviderProfile)
+            .join(User, ProviderProfile.user_id == User.id)
+            .filter(ProviderProfile.is_available == True, User.is_active == True)
+        )
 
     if city_id:
-        location_subq = (
-            db.query(ProviderLocation.provider_id)
-            .filter(ProviderLocation.city_id == city_id)
-            .subquery()
-        )
-        query = query.filter(ProviderProfile.id.in_(location_subq))
+        query = query.filter(ProviderLocation.city_id == city_id)
 
     if district_id:
-        location_subq = (
-            db.query(ProviderLocation.provider_id)
-            .filter(ProviderLocation.district_id == district_id)
-            .subquery()
-        )
-        query = query.filter(ProviderProfile.id.in_(location_subq))
+        query = query.filter(ProviderLocation.district_id == district_id)
+
+    if lat and lng:
+        distance_col = _haversine_sql(lat, lng).label("distance_km")
+        query = query.filter(distance_col <= radius)
+    else:
+        distance_col = None
 
     if service:
         service_subq = (
@@ -105,9 +122,15 @@ def search_providers(
             (User.last_name.ilike(search_term))
         )
 
+    if need_location_join:
+        query = query.group_by(ProviderProfile.id)
+
     total = query.count()
 
-    if sort == "rating":
+    if lat and lng and distance_col is not None:
+        query = query.add_columns(distance_col)
+        query = query.order_by(distance_col.asc())
+    elif sort == "rating":
         query = query.order_by(ProviderProfile.rating.desc())
     elif sort == "reviews":
         query = query.order_by(ProviderProfile.review_count.desc())
@@ -116,22 +139,51 @@ def search_providers(
     else:
         query = query.order_by(ProviderProfile.rating.desc(), ProviderProfile.review_count.desc())
 
-    providers = query.offset(pagination.offset).limit(pagination.limit).all()
+    rows = query.offset(pagination.offset).limit(pagination.limit).all()
 
-    result = []
-    for p in providers:
-        user = db.query(User).filter(User.id == p.user_id).first()
-        locations = db.query(ProviderLocation).filter(ProviderLocation.provider_id == p.id).all()
-        services = (
+    provider_ids = []
+    distance_map = {}
+    for row in rows:
+        if lat and lng:
+            profile = row[0]
+            dist = row[-1]
+            provider_ids.append(profile.id)
+            distance_map[profile.id] = round(float(dist), 2) if dist else None
+        else:
+            provider_ids.append(row.id)
+
+    users_map = {}
+    if provider_ids:
+        users = db.query(User).filter(User.id.in_(provider_ids)).all()
+        users_map = {u.id: u for u in users}
+
+    locations_map = {}
+    if provider_ids:
+        locs = db.query(ProviderLocation).filter(ProviderLocation.provider_id.in_(provider_ids)).all()
+        for loc in locs:
+            locations_map.setdefault(loc.provider_id, []).append(loc)
+
+    services_map = {}
+    if provider_ids:
+        svcs = (
             db.query(ProviderService)
             .join(Service, ProviderService.service_id == Service.id)
-            .filter(ProviderService.provider_id == p.id)
+            .filter(ProviderService.provider_id.in_(provider_ids))
             .all()
         )
+        for s in svcs:
+            services_map.setdefault(s.provider_id, []).append(s)
 
-        dist_km = None
-        if lat and lng and p.latitude and p.longitude:
-            dist_km = haversine(lat, lng, p.latitude, p.longitude)
+    result = []
+    for row in rows:
+        if lat and lng:
+            p = row[0]
+        else:
+            p = row
+
+        user = users_map.get(p.user_id)
+        locs = locations_map.get(p.id, [])
+        svcs = services_map.get(p.id, [])
 
         result.append({
             "id": p.id,
@@ -148,13 +200,13 @@ def search_providers(
             },
             "services": [
                 {"name": s.service.name if s.service else None, "starting_price": s.starting_price}
-                for s in services
+                for s in svcs
             ],
             "locations": [
                 {"city": loc.city.name if loc.city else None, "district": loc.district.name if loc.district else None}
-                for loc in locations
+                for loc in locs
             ],
-            "distance_km": dist_km,
+            "distance_km": distance_map.get(p.id),
         })
 
     return PaginatedResponse.create(items=result, total=total, page=pagination.page, limit=pagination.limit)
@@ -162,7 +214,14 @@ def search_providers(
 
 @router.get("/autocomplete")
 def autocomplete(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
+    from app.core.cache import ref_cache
+
     search_term = f"%{q}%"
+
+    cache_key_cats = f"cat_search:{q}"
+    cached_cats = ref_cache.get(cache_key_cats)
+    if cached_cats is not None:
+        return cached_cats
 
     categories = db.query(Category).filter(Category.name.ilike(search_term), Category.is_active == True).limit(5).all()
     subcategories = db.query(SubCategory).filter(SubCategory.name.ilike(search_term), SubCategory.is_active == True).limit(5).all()
@@ -176,7 +235,9 @@ def autocomplete(q: str = Query(..., min_length=2), db: Session = Depends(get_db
     for s in services:
         results.append({"type": "service", "name": s.name, "slug": s.slug})
 
-    return results[:10]
+    final = results[:10]
+    ref_cache.set(cache_key_cats, final)
+    return final
 
 
 @router.post("/detect")
