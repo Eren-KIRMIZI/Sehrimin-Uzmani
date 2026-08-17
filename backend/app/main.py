@@ -3,9 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.logging import setup_logging
 from app.api.router import api_router
 from app.modules.messaging.router import router as messaging_router
 from app.websocket.manager import websocket_endpoint
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Şehrinin Uzmani API",
@@ -34,12 +38,13 @@ async def ws_endpoint(websocket: WebSocket, token: str):
 
 @app.on_event("startup")
 def startup():
+    setup_logging()
+    logger.info("Uygulama baslatiliyor...")
     from app.modules.auth.models import RevokedToken
     Base.metadata.create_all(bind=engine)
     from app.core.database import SessionLocal
     from app.seed import run_all_seeds
-    from app.modules.subscriptions.models import ProviderSubscription
-    from app.modules.users.models import User
+    from app.core.jobs import start_scheduler
     db = SessionLocal()
     try:
         run_all_seeds(db)
@@ -60,13 +65,21 @@ def startup():
             db.commit()
     finally:
         db.close()
+    start_scheduler()
+
+
+@app.on_event("shutdown")
+def shutdown():
+    from app.core.jobs import stop_scheduler
+    stop_scheduler()
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Hatali istek: %s %s - %s", request.method, request.url.path, str(exc), exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Sunucu hatası oluştu"},
+        content={"detail": "Sunucu hatasi olustu"},
     )
 
 

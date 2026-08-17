@@ -20,6 +20,9 @@ class Review(Base):
     price_rating = Column(Float, nullable=True)
     punctuality_rating = Column(Float, nullable=True)
     comment = Column(Text, nullable=True)
+    provider_reply = Column(Text, nullable=True)
+    provider_replied_at = Column(DateTime(timezone=True), nullable=True)
+    is_visible = Column(Integer, default=1)
     status = Column(String(20), default="ACTIVE")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

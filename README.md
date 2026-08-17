@@ -1,6 +1,6 @@
-# Sehrinin Uzmani
+﻿# Sehrinin Uzmani
 
-Yerel hizmet pazaryeri platformu. Insanlarin yasadiklari sehrde ihtiyac duydugunu uzmani, hizmet saglayiciyi veya profesyoneli kolayca bulmasini; uzmanlarin ise kendi hizmetlerini, calisma bolgelerini, fiyatlarini ve uygunluk durumlarini sergileyerek yeni musteri ulasmasini saglayan modern marketplace platformu.
+Yerel hizmet pazaryeri platformu. Insanlarin yasadiklari sehrde ihtiyac duydugu uzmani, hizmet saglayiciyi veya profesyoneli kolayca bulmasini; uzmanlarin ise kendi hizmetlerini, calisma bolgelerini, fiyatlarini ve uygunluk durumlarini sergileyerek yeni musteri ulasmasini saglayan modern marketplace platformu.
 
 ---
 
@@ -12,7 +12,7 @@ Yerel hizmet pazaryeri platformu. Insanlarin yasadiklari sehrde ihtiyac duydugun
                     |  React + TS + TW  |
                     +---------+---------+
                               |
-                         REST / WebSocket
+                     REST + WebSocket
                               |
                     +---------v---------+
                     |     FastAPI       |
@@ -40,6 +40,23 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 
 ---
 
+## Sayilarla Proje
+
+| Metrik | Deger |
+|--------|-------|
+| Backend API Endpoint | 113 REST + 1 WebSocket |
+| Veritabani Tablosu | 39 SQLAlchemy Model |
+| Backend Modul | 18 domain modulu |
+| Frontend Sayfasi | 14 sayfa |
+| Frontend Bileseni | 5 bilesen (Layout haric) |
+| TypeScript Interface | 25+ |
+| Enum Tipi | 13 |
+| Kategori | 13 ana, 40+ alt, 150+ hizmet |
+| Kaynak Dosya | ~110 |
+| Toplam Satir Kod | ~12.500+ |
+
+---
+
 ## Teknoloji Yiginlari
 
 ### Backend
@@ -55,6 +72,9 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 | Password Hashing | bcrypt via passlib |
 | Validation | Pydantic v2 |
 | API Docs | OpenAPI / Swagger |
+| Background Jobs | APScheduler |
+| 2FA | TOTP (pyotp) |
+| Rate Limiting | In-memory IP-based |
 
 ### Frontend
 
@@ -71,6 +91,7 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 | Harita | Leaflet + React-Leaflet |
 | Icon | Lucide React |
 | Utility | date-fns, clsx |
+| i18n | TR / EN destekli |
 
 ---
 
@@ -80,80 +101,83 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 sehriminUzmani/
 |
 +-- .gitignore
++-- .github/workflows/ci.yml          CI/CD pipeline
 +-- README.md
-+-- V1-CHANGELOG.md
-+-- V2-CHANGELOG.md
-+-- V3-CHANGELOG.md
++-- docs/kvkk.md                       KVKK aydinlatma metni
 |
 +-- backend/
 |   +-- app/
-|   |   +-- main.py                     FastAPI uygulama girisi
+|   |   +-- main.py                     FastAPI uygulama girisi, startup, scheduler
 |   |   +-- seed.py                     Veri tohumlama (sehirler, kategoriler, planlar)
 |   |   |
 |   |   +-- core/
-|   |   |   +-- config.py               Uygulama ayarlari (Pydantic Settings)
+|   |   |   +-- config.py               Uygulama ayarlari (Pydantic Settings, SECRET_KEY)
 |   |   |   +-- database.py             SQLAlchemy engine ve session yonetimi
 |   |   |   +-- redis.py                Redis baglanti yonetimi
 |   |   |   +-- security.py             JWT uretimi, sifre hashleme, yetkilendirme
 |   |   |   +-- exceptions.py           Ozel hata siniflari
+|   |   |   +-- rate_limiter.py         In-memory IP bazli rate limiting
+|   |   |   +-- logging.py              Python logging yapilandirmasi
+|   |   |   +-- jobs.py                 APScheduler background gorevleri
 |   |   |
 |   |   +-- api/
 |   |   |   +-- router.py               Tum API routerlarini birlestiren merkezi router
 |   |   |
 |   |   +-- shared/
-|   |   |   +-- enums.py                Tum enum tanimlari (18 enum)
-|   |   |   +-- pagination.py           Sayfalama yapisi
+|   |   |   +-- enums.py                Tum enum tanimlari (13 enum)
+|   |   |   +-- pagination.py           Sayfalama yapisi (max 50)
 |   |   |   +-- utils.py                Yardimci fonksiyonlar (haversine, vb.)
 |   |   |
 |   |   +-- websocket/
 |   |   |   +-- manager.py              WebSocket baglanti yonetimi
 |   |   |
 |   |   +-- modules/
-|   |       +-- auth/                   Kimlik dogrulama (register, login, JWT, refresh)
-|   |       +-- users/                  Kullanici yonetimi
-|   |       +-- providers/              Uzman profilleri, hizmetler, portfoy, musaitlik, dogrulama
-|   |       +-- categories/             Kategori hiyerarsisi (3 seviye)
-|   |       +-- locations/              Sehir ve ilce verileri
-|   |       +-- search/                 Arama, filtreleme, AI kategori algilama, eslestirme
-|   |       +-- requests/               Hizmet talepleri
-|   |       +-- quotes/                 Teklif sistemi
-|   |       +-- appointments/           Randevu yonetimi
-|   |       +-- reviews/                Yorum ve puanlama
-|   |       +-- favorites/              Favori listesi
-|   |       +-- notifications/          Bildirim sistemi
-|   |       +-- messaging/              Gercek zamanli mesajlasma
-|   |       +-- commissions/            Komisyon sistemi, kazanc takibi, odemeler
-|   |       +-- disputes/               Anlasmazlik cozum sistemi
-|   |       +-- subscriptions/          Abonelik planlari ve yonetimi
-|   |       +-- promotions/             Promoted provider (one cikarilmis uzman)
-|   |       +-- admin/                  Admin paneli endpointleri
+|   |       +-- auth/                   Kimlik dogrulama (12 endpoint)
+|   |       +-- users/                  Kullanici yonetimi (3 endpoint)
+|   |       +-- providers/              Uzman profilleri (8 endpoint)
+|   |       +-- categories/             Kategori hiyerarsisi (6 endpoint)
+|   |       +-- locations/              Sehir ve ilce verileri (2 endpoint)
+|   |       +-- search/                 Arama, AI kategori algilama (3 endpoint)
+|   |       +-- search/matching_router  AI eslestirme (3 endpoint)
+|   |       +-- requests/               Hizmet talepleri (5 endpoint)
+|   |       +-- quotes/                 Teklif sistemi (5 endpoint)
+|   |       +-- appointments/           Randevu yonetimi (6 endpoint)
+|   |       +-- reviews/                Yorum, puanlama, yanit (3 endpoint)
+|   |       +-- favorites/              Favori listesi (3 endpoint)
+|   |       +-- notifications/          Bildirim sistemi (4 endpoint)
+|   |       +-- messaging/              Gercek zamanli mesajlasma (6 endpoint)
+|   |       +-- commissions/            Komisyon, kazanc, odeme (11 endpoint)
+|   |       +-- disputes/               Anlasmazlik cozum sistemi (10 endpoint)
+|   |       +-- subscriptions/          Abonelik planlari (9 endpoint)
+|   |       +-- promotions/             Tanitim kampanyasi (11 endpoint)
+|   |       +-- admin/                  Admin paneli (8 endpoint)
 |   |       +-- integrations/           Harita, odeme, eposta entegrasyonlari
 |   |
-|   +-- migrations/                     Veritabani goc dosyalari
-|   +-- tests/                          Test dosyalari
+|   +-- tests/                          Test dosyalari (auth, security)
 |   +-- requirements.txt                Python bagimliliklari
 |   +-- .env                            Ortam degiskenleri (git disinda)
-|   +-- .env.example                    Ortam degiskenleri sablonu
 |
 +-- frontend/
     +-- src/
     |   +-- main.tsx                    Uygulama girisi
-    |   +-- App.tsx                     Rota tanimlari (18 rota)
+    |   +-- App.tsx                     Rota tanimlari (14 rota, ProtectedRoute)
     |   +-- index.css                   Global stiller, Tailwind tema, animasyonlar
     |   |
     |   +-- types/                      TypeScript arayuz tanimlari (25+ interface)
     |   +-- services/                   API istemcisi (Axios + JWT interceptor)
     |   +-- stores/                     Zustand durum depolari (auth, location)
+    |   +-- i18n/                       Coklu dil destegi (tr.ts, en.ts)
     |   |
     |   +-- components/
     |   |   +-- layout/                 Navbar, Footer, Layout
+    |   |   +-- auth/                   ProtectedRoute bileseni
     |   |   +-- map/                    Leaflet harita bileseni
     |   |
     |   +-- pages/
-    |       +-- HomePage.tsx            Ana sayfa (Hero, Kategoriler, Onerilenler, Sehirler)
+    |       +-- HomePage.tsx            Ana sayfa (Hero, Kategoriler, Onerilenler)
     |       +-- SearchPage.tsx          Arama ve filtreleme (grid/list, skeleton)
     |       +-- MapSearchPage.tsx       Harita + liste gorunumu
-    |       +-- ProviderProfilePage.tsx Uzman profili (Hizmetler, Yorumlar, Hakkinda)
+    |       +-- ProviderProfilePage.tsx Uzman profili
     |       +-- ServiceRequestForm.tsx  10 adimli hizmet talebi formu
     |       +-- ChatPage.tsx            Gercek zamanli mesajlasma (WebSocket)
     |       +-- PricingPage.tsx         Abonelik planlari
@@ -161,29 +185,28 @@ sehriminUzmani/
     |       +-- PromotionsPage.tsx      Tanitim kampanyalari
     |       +-- DisputesPage.tsx        Anlasmazlik yonetimi
     |       +-- auth/                   Giris ve kayit sayfalari
-    |       +-- dashboard/              Kullanici paneli (V3 ile genisletildi)
-    |       +-- admin/                  Admin dashboard (istatistik, yonetim)
+    |       +-- dashboard/              Kullanici paneli
+    |       +-- admin/                  Admin dashboard
     |
-    +-- package.json                    Node bagimliliklari
-    +-- vite.config.ts                  Vite yapilandirmasi (proxy + Tailwind)
-    +-- tsconfig.json                   TypeScript ayarlari
-    +-- index.html                      HTML sablonu
+    +-- package.json
+    +-- vite.config.ts
+    +-- index.html                      HTML sablonu (SEO, OpenGraph, JSON-LD)
 ```
 
 ---
 
-## Veritabani Tablolari
+## Veritabani Tablolari (39 Model)
 
 ### Temel Tablolar
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
-| users | Tum kullanicilar | email, phone, password_hash, role, subscription_plan, commission_discount |
+| users | Tum kullanicilar | email, phone, password_hash, role, subscription_plan, commission_discount, two_factor_enabled |
 | provider_profiles | Uzman profilleri | user_id (FK), business_name, rating, verification_level, hourly_rate |
 | categories | Ana kategoriler | name, slug, icon |
 | subcategories | Alt kategoriler | category_id (FK), name, slug |
 | services | Hizmet turleri | subcategory_id (FK), name, slug |
-| provider_services | Uzman-hizmet iliskisi | provider_id (FK), service_id (FK), starting_price |
+| provider_services | Uzman-hizmet iliskisi | provider_id (FK), service_id (FK), starting_price (UNIQUE) |
 
 ### Konum Tablolari
 
@@ -191,7 +214,7 @@ sehriminUzmani/
 |-------|----------|-----------------|
 | cities | 81 il | name, plate_code |
 | districts | Ilceler | city_id (FK), name |
-| provider_locations | Uzman calisma bolgeleri | provider_id (FK), city_id (FK), district_id (FK) |
+| provider_locations | Uzman calisma bolgeleri | provider_id (FK), city_id (FK), district_id (FK) (COMPOSITE INDEX) |
 
 ### Is Akis Tablolari
 
@@ -200,7 +223,7 @@ sehriminUzmani/
 | service_requests | Hizmet talepleri | customer_id (FK), title, status, urgency, budget_min/max |
 | quotes | Teklifler | request_id (FK), provider_id (FK), price, status |
 | appointments | Randevular | request_id (FK), provider_id (FK), customer_id (FK), start_at, status |
-| reviews | Yorumlar | provider_id (FK), rating, communication_rating, quality_rating |
+| reviews | Yorumlar | provider_id (FK), rating, customer_id (FK), provider_reply (UNIQUE: request+customer) |
 | favorites | Favoriler | user_id (FK), provider_id (FK) |
 
 ### Iletisim Tablolari
@@ -211,7 +234,7 @@ sehriminUzmani/
 | messages | Mesajlar | conversation_id (FK), sender_id (FK), content, message_type |
 | notifications | Bildirimler | user_id (FK), type, title, is_read |
 
-### Finansal Tablolar (V3)
+### Finansal Tablolar
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
@@ -220,7 +243,7 @@ sehriminUzmani/
 | provider_earnings | Uzman kazanclari | provider_id (FK), total_earned, pending_amount, paid_amount |
 | payout_requests | Odeme talepleri | provider_id (FK), amount, iban, bank_name, status |
 
-### Abonelik Tablolari (V3)
+### Abonelik Tablolari
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
@@ -229,14 +252,14 @@ sehriminUzmani/
 | provider_subscriptions | Uzman abonelikleri | provider_id (FK), plan_id (FK), interval, status, expires_at |
 | subscription_payments | Abonelik odemeleri | subscription_id (FK), amount, status |
 
-### Tanitim Tablolari (V3)
+### Tanitim Tablolari
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
 | promoted_providers | One cikarilmis uzmanlar | provider_id (FK), category_id (FK), budget, bid_amount, status |
 | promotion_logs | Tanitim loglari | promoted_id (FK), event_type, budget_spent, impressions, clicks |
 
-### Anlasmazlik Tablolari (V3)
+### Anlasmazlik Tablolari
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
@@ -244,10 +267,11 @@ sehriminUzmani/
 | dispute_messages | Anlasmazlik mesajlari | dispute_id (FK), sender_id (FK), message, is_admin |
 | dispute_evidence | Anlasmazlik kanitlari | dispute_id (FK), uploaded_by (FK), file_url |
 
-### Yonetim Tablolari
+### Yonetim ve Guvenlik Tablolari
 
 | Tablo | Aciklama | Onemli Kolonlar |
 |-------|----------|-----------------|
+| revoked_tokens | Iptal edilen tokenlar | user_id (FK), token, expires_at |
 | verification_requests | Dogrulama talepleri | provider_id (FK), verification_type, status |
 | audit_logs | Audit kayitlari | user_id (FK), action, entity, entity_id |
 | provider_availability | Uzman musaitlikleri | provider_id (FK), day_of_week, start_time, end_time |
@@ -256,39 +280,47 @@ sehriminUzmani/
 
 ---
 
-## API Endpointleri
+## API Endpointleri (113 REST + 1 WebSocket)
 
-### Kimlik Dogrulama (Auth)
+### Kimlik Dogrulama (Auth) - 12 Endpoint
 
 ```
-POST   /api/v1/auth/register              Yeni kullanici kaydi
-POST   /api/v1/auth/login                 Giris yapma
-POST   /api/v1/auth/refresh               Token yenileme
+POST   /api/v1/auth/register              Yeni kullanici kaydi (USER/PROVIDER)
+POST   /api/v1/auth/login                 Giris yapma (2FA destekli)
+POST   /api/v1/auth/login/2fa             2FA dogrulama ile giris
+POST   /api/v1/auth/refresh               Token yenileme (rotation)
 GET    /api/v1/auth/me                    Mevcut kullanici bilgisi
+POST   /api/v1/auth/logout                Cikis yapma
+POST   /api/v1/auth/forgot-password       Sifre sifirlama istegi (30 dk token)
+POST   /api/v1/auth/reset-password        Sifre sifirlama (token ile)
+POST   /api/v1/auth/change-password       Sifre degistirme (mevcut sifre ile)
+POST   /api/v1/auth/2fa/enable            2FA kurulumu baslatma
+POST   /api/v1/auth/2fa/verify            2FA kurulumu dogrulama
+POST   /api/v1/auth/2fa/disable           2FA devre disi birakma
 ```
 
-### Kullanici (Users)
+### Kullanici (Users) - 3 Endpoint
 
 ```
-GET    /api/v1/users/me                   Profili goruntuleme
-PATCH  /api/v1/users/me                   Profil guncelleme
-DELETE /api/v1/users/me                   Hesabi pasiflestirme
+GET    /api/v1/users/me                   Profil goruntuleme
+PATCH  /api/v1/users/me                   Profil guncelleme (whitelist: ad, soyad, telefon, avatar)
+DELETE /api/v1/users/me                   Hesabi pasiflestirme + token iptali
 ```
 
-### Uzman (Providers)
+### Uzman (Providers) - 8 Endpoint
 
 ```
 POST   /api/v1/providers/profile                      Uzman profili olusturma
 GET    /api/v1/providers/me                           Benim uzman profilim
 PATCH  /api/v1/providers/me                           Uzman profili guncelleme
-GET    /api/v1/providers/{id}                         Uzman profili goruntuleme
-POST   /api/v1/providers/services                     Hizmet ekleme
-POST   /api/v1/providers/portfolio                    Portfoy ekleme
-POST   /api/v1/providers/locations                    Konum ekleme
+GET    /api/v1/providers/{id}                         Uzman profili goruntuleme (eager load)
+POST   /api/v1/providers/services                     Hizmet ekleme (duplicate kontrol)
+POST   /api/v1/providers/portfolio                    Portfoy ekleme (max 30)
+POST   /api/v1/providers/locations                    Konum ekleme (max 10)
 POST   /api/v1/providers/availability                 Musaitlik ekleme
 ```
 
-### Uzman Dogrulama (Verification)
+### Uzman Dogrulama (Verification) - 5 Endpoint
 
 ```
 POST   /api/v1/verification/apply                     Dogrulama icin basvurma
@@ -298,7 +330,7 @@ POST   /api/v1/verification/{id}/approve              Dogrulama onaylama (admin)
 POST   /api/v1/verification/{id}/reject               Dogrulama reddetme (admin)
 ```
 
-### Kategori (Categories)
+### Kategori (Categories) - 6 Endpoint
 
 ```
 GET    /api/v1/categories                             Tum kategoriler
@@ -309,156 +341,157 @@ POST   /api/v1/categories/admin/{id}/subcategories    Alt kategori olusturma (ad
 POST   /api/v1/categories/admin/subcategories/{id}/services  Hizmet olusturma (admin)
 ```
 
-### Konum (Locations)
+### Konum (Locations) - 2 Endpoint
 
 ```
-GET    /api/v1/locations/cities                       Tum sehirler
+GET    /api/v1/locations/cities                       Tum sehirler (81 il)
 GET    /api/v1/locations/cities/{id}/districts        Sehirdeki ilceler
 ```
 
-### Arama (Search)
+### Arama (Search) - 3 Endpoint
 
 ```
 GET    /api/v1/search/providers                       Uzman arama ve filtreleme
 GET    /api/v1/search/autocomplete                    Otomatik tamamlama
-POST   /api/v1/search/detect                          AI kategori algilama
+POST   /api/v1/search/detect                          AI kategori algilama (80+ anahtar kelime)
 ```
 
-### AI Eslestirme (Matching)
+### AI Eslestirme (Matching) - 3 Endpoint
 
 ```
 POST   /api/v1/matching/find                          Uzman bul (filtreleme)
-POST   /api/v1/matching/ai                            AI destekli eslestirme
+POST   /api/v1/matching/ai                            AI destekli eslestirme (10 kriterli puanlama)
 GET    /api/v1/matching/recommendations               Oneriler
 ```
 
-Arama parametreleri: q, category, subcategory, service, city_id, district_id, min_price, max_price, min_rating, verified, lat, lng, radius, sort, page, limit
-
-### Hizmet Talepleri (Requests)
+### Hizmet Talepleri (Requests) - 5 Endpoint
 
 ```
 POST   /api/v1/requests                               Talep olusturma
-GET    /api/v1/requests                               Talepleri listeleme
-GET    /api/v1/requests/{id}                          Talep detayi
+GET    /api/v1/requests                               Talepleri listeleme (sayfalama)
+GET    /api/v1/requests/{id}                          Talep detayi (auth gerekli)
 PATCH  /api/v1/requests/{id}                          Talep guncelleme
-DELETE /api/v1/requests/{id}                          Talep silme
+DELETE /api/v1/requests/{id}                          Talep silme (aktif durumda silinemez)
 ```
 
-### Teklifler (Quotes)
+### Teklifler (Quotes) - 5 Endpoint
 
 ```
 POST   /api/v1/quotes/requests/{request_id}           Teklif gonderme
 GET    /api/v1/quotes/requests/{request_id}           Talepteki teklifler
-POST   /api/v1/quotes/{id}/accept                     Teklifi kabul etme
+POST   /api/v1/quotes/{id}/accept                     Teklifi kabul etme (PENDING kontrolu + digerleri red)
 POST   /api/v1/quotes/{id}/reject                     Teklifi reddetme
-GET    /api/v1/quotes/my                              Benim tekliflerim
+GET    /api/v1/quotes/my                              Benim tekliflerim (sayfalama)
 ```
 
-### Randevular (Appointments)
+### Randevular (Appointments) - 6 Endpoint
 
 ```
-POST   /api/v1/appointments                           Randevu olusturma
-GET    /api/v1/appointments                           Randevulari listeleme
-GET    /api/v1/appointments/{id}                      Randevu detayi
-PATCH  /api/v1/appointments/{id}                      Randevu guncelleme
-POST   /api/v1/appointments/{id}/complete             Randevuyu tamamlama
-POST   /api/v1/appointments/{id}/cancel               Randevuyu iptal etme
+POST   /api/v1/appointments                           Randevu olusturma (quote_id opsiyonel)
+GET    /api/v1/appointments                           Randevulari listeleme (sayfalama, rol bazli filtre)
+GET    /api/v1/appointments/{id}                      Randevu detayi (sahip veya admin)
+PATCH  /api/v1/appointments/{id}                      Randevu guncelleme (whitelist: location, notes, start_at, end_at)
+POST   /api/v1/appointments/{id}/complete             Tamamlama + komisyon hesaplama
+POST   /api/v1/appointments/{id}/cancel               Iptal etme (sahip olan)
 ```
 
-### Yorumlar (Reviews)
+### Yorumlar (Reviews) - 3 Endpoint
 
 ```
-POST   /api/v1/reviews                                Yorum yapma
-GET    /api/v1/reviews/provider/{provider_id}         Uzemandaki yorumlar
+POST   /api/v1/reviews                                Yorum yapma (sadece COMPLETED + request sahibi + provider dogrulama)
+GET    /api/v1/reviews/provider/{provider_id}         Uzemandaki yorumlar (sayfalama, eager load)
+POST   /api/v1/reviews/{review_id}/reply              Uzmanin yoruma yaniti (max 1000 karakter, tek yanit)
 ```
 
-### Favoriler (Favorites)
+### Favoriler (Favorites) - 3 Endpoint
 
 ```
-POST   /api/v1/favorites/{provider_id}                Favoriye ekleme / kaldirma
+POST   /api/v1/favorites/{provider_id}                Favoriye ekleme / kaldirma (toggle)
 GET    /api/v1/favorites                              Favorileri listeleme
 DELETE /api/v1/favorites/{provider_id}                Favoriden kaldirma
 ```
 
-### Bildirimler (Notifications)
+### Bildirimler (Notifications) - 4 Endpoint
 
 ```
 GET    /api/v1/notifications                          Bildirimleri listeleme
 GET    /api/v1/notifications/unread-count             Okunmamis bildirim sayisi
-POST   /api/v1/notifications/{id}/read                Okundu isaretleme
+POST   /api/v1/notifications/{id}/read                Okundu isaretleme (participant kontrolu)
 POST   /api/v1/notifications/read-all                 Hepsi okundu
 ```
 
-### Mesajlasma (Messaging)
+### Mesajlasma (Messaging) - 6 Endpoint + 1 WebSocket
 
 ```
-POST   /api/v1/messaging/conversations                Conversation olusturma
-GET    /api/v1/messaging/conversations                Conversation listesi
-GET    /api/v1/messaging/conversations/{id}/messages  Mesajlari listeleme
-POST   /api/v1/messaging/conversations/{id}/messages  Mesaj gonderme
+POST   /api/v1/messaging/conversations                Conversation olusturma (duplicate kontrol)
+GET    /api/v1/messaging/conversations                Conversation listesi (sayfalama)
+GET    /api/v1/messaging/conversations/{id}/messages  Mesajlari listeleme (sayfalama, participant kontrol)
+POST   /api/v1/messaging/conversations/{id}/messages  Mesaj gonderme (icerik filtresi)
 GET    /api/v1/messaging/unread-count                 Okunmamis mesaj sayisi
-WS     /ws/{token}                                    WebSocket mesajlasma
+WS     /ws/{token}                                    WebSocket mesajlasma (access token ile baglanti)
 ```
 
-### Komisyon Sistemi (Commissions)
+### Komisyon Sistemi (Commissions) - 11 Endpoint
 
 ```
 GET    /api/v1/commissions/rates                      Komisyon oranlari
-POST   /api/v1/commissions/rates                      Komisyon orani olusturma (admin)
+POST   /api/v1/commissions/rates                      Komisyon orani olusturma/guncelleme (admin)
 DELETE /api/v1/commissions/rates/{id}                 Komisyon orani silme (admin)
-GET    /api/v1/commissions/transactions               Islemler
+GET    /api/v1/commissions/transactions               Islemler (sayfalama, rol bazli)
 GET    /api/v1/commissions/earnings                   Kazanc ozeti
-GET    /api/v1/commissions/earnings/history           Kazanc gecmisi
-POST   /api/v1/commissions/payout/request             Odeme talebi
+GET    /api/v1/commissions/earnings/history           Kazanc gecmisi (sayfalama)
+POST   /api/v1/commissions/payout/request             Odeme talebi (with_for_update, bakiye kontrolu)
 GET    /api/v1/commissions/payout/my                  Odeme taleplerim
 GET    /api/v1/commissions/payout/pending             Bekleyen odemeler (admin)
-POST   /api/v1/commissions/payout/{id}/approve        Odeme onay (admin)
-POST   /api/v1/commissions/payout/{id}/reject         Odeme red (admin)
+POST   /api/v1/commissions/payout/{id}/approve        Odeme onay (admin, with_for_update)
+POST   /api/v1/commissions/payout/{id}/reject         Odeme red (admin, bakiye iadesi)
 ```
 
-### Anlasmazlik Cozum Sistemi (Disputes)
+### Anlasmazlik Cozum Sistemi (Disputes) - 10 Endpoint
 
 ```
 POST   /api/v1/disputes                               Anlasmazlik acma
-GET    /api/v1/disputes                               Anlasmazliklarim
+GET    /api/v1/disputes                               Anlasmazliklarim (sayfalama)
 GET    /api/v1/disputes/admin/all                     Tum anlasmazliklar (admin)
-GET    /api/v1/disputes/{id}                          Anlasmazlik detay
-POST   /api/v1/disputes/{id}/messages                 Mesaj ekleme
+GET    /api/v1/disputes/{id}                          Anlasmazlik detay (mesaj + kanit dahil)
+POST   /api/v1/disputes/{id}/messages                 Mesaj ekleme (participant veya admin)
 POST   /api/v1/disputes/{id}/evidence                 Kanit ekleme
-POST   /api/v1/disputes/{id}/resolve                  Anlasmazlik cozme (admin)
-POST   /api/v1/disputes/{id}/close                    Anlasmazlik kapatma
+POST   /api/v1/disputes/{id}/resolve                  Anlasmazlik cozme + iade (admin)
+POST   /api/v1/disputes/{id}/close                    Anlasmazlik kapatma (participant)
 POST   /api/v1/disputes/{id}/priority                 Oncelik belirleme (admin)
 GET    /api/v1/disputes/stats/summary                 Istatistikler (admin)
 ```
 
-### Abonelik Sistemi (Subscriptions)
+### Abonelik Sistemi (Subscriptions) - 9 Endpoint
 
 ```
-GET    /api/v1/subscriptions/plans                    Abonelik planlari
+GET    /api/v1/subscriptions/plans                    Abonelik planlari (aktif)
 POST   /api/v1/subscriptions/plans                    Plan olusturma (admin)
 PUT    /api/v1/subscriptions/plans/{id}               Plan guncelleme (admin)
 POST   /api/v1/subscriptions/plans/{id}/features      Ozellik ekleme (admin)
-POST   /api/v1/subscriptions/subscribe                Abone olma
+POST   /api/v1/subscriptions/subscribe                Abone olma (aylik/3 aylik/yillik)
 GET    /api/v1/subscriptions/my                       Abonelik bilgisi
 POST   /api/v1/subscriptions/cancel                   Abonelik iptal
 GET    /api/v1/subscriptions/payments                 Odemelerim
 GET    /api/v1/subscriptions/admin/all                Tum abonelikler (admin)
 ```
 
-### Tanitim Sistemi (Promotions)
+### Tanitim Sistemi (Promotions) - 11 Endpoint
 
 ```
 POST   /api/v1/promotions                             Tanitim kampanyasi olusturma
 GET    /api/v1/promotions/my                          Tanitimlarim
-GET    /api/v1/promotions/featured                    One cikarilmis uzmanlar
+GET    /api/v1/promotions/featured                    One cikarilmis uzmanlar (kategori/sehir filtresi)
 GET    /api/v1/promotions/leaderboard                 Siralama (admin)
 POST   /api/v1/promotions/{id}/pause                  Duraklatma
 POST   /api/v1/promotions/{id}/resume                 Devam ettirme
 POST   /api/v1/promotions/{id}/cancel                 Iptal etme
-POST   /api/v1/promotions/{id}/bid                    Teklif guncelleme
+POST   /api/v1/promotions/{id}/bid                    Teklif guncelleme (with_for_update)
+POST   /api/v1/promotions/{id}/impression             Goruntulenme kaydi + butce harcama
+POST   /api/v1/promotions/{id}/click                  Tiklama kaydi + butce harcama
 ```
 
-### Admin
+### Admin - 8 Endpoint
 
 ```
 GET    /api/v1/admin/dashboard                        Dashboard istatistikleri
@@ -478,7 +511,7 @@ GET    /api/v1/admin/audit-logs                       Audit loglari
 | Rol | Yetkiler |
 |-----|----------|
 | USER | Profil yonetimi, talep olusturma, teklif kabul/reddet, yorum yapma, favori ekleme, mesajlasma, anlasmazlik acma |
-| PROVIDER | Tum USER yetkileri + uzman profili, hizmet ekleme, teklif gonderme, randevu yonetimi, portfoy, kazanc takibi, tanitim kampanyasi |
+| PROVIDER | Tum USER yetkileri + uzman profili, hizmet ekleme, teklif gonderme, randevu yonetimi, portfoy, kazanc takibi, tanitim kampanyasi, yoruma yanit |
 | ADMIN | Tum yetkiler + kullanici/uzman/kategori/yorum yonetimi, dogrulama onay, komisyon yonetimi, abonelik yonetimi, anlasmazlik cozme, odeme onay |
 | MODERATOR | Kismi yonetim yetkileri (anlasmazlik inceleme, yorum moderasyonu) |
 
@@ -489,24 +522,45 @@ GET    /api/v1/admin/audit-logs                       Audit loglari
 ```
 Kayit:
   Kullanici bilgileri -> POST /auth/register
-  -> Sifre hashlenir (bcrypt)
-  -> Kullanici olusturulur
+  -> Sadece USER/PROVIDER rolleri kabul edilir
+  -> Sifre hashlenir (bcrypt, 8+ karakter, buyuk/kucuk harf/rakam zorunlu)
   -> Access token + Refresh token dondurulur
 
 Giris:
   E-posta + sifre -> POST /auth/login
   -> Sifre dogrulanir
+  -> 2FA aktifse temp_token dondurulur
+  -> 2FA ile giris: temp_token + kod -> POST /auth/login/2fa
   -> Access token + Refresh token dondurulur
 
 Token Yenileme:
   Refresh token -> POST /auth/refresh
-  -> Yeni access token + refresh token dondurulur
+  -> Eski refresh token iptal edilir (RevokedToken)
+  -> Yeni access token + refresh token dondurulur (rotation)
+
+Sifre Sifirlama:
+  E-posta -> POST /auth/forgot-password
+  -> 30 dakika gecerli reset token uretilir
+  -> Token ile yeni sifre belirlenir
 
 Yetkilendirme:
   Her istekte Authorization header'da Bearer token gonderilir
   -> Token cozulur, kullanici dogrulanir
   -> Rol kontrolu yapilir
+  -> Revoked token kontrolu yapilir
 ```
+
+---
+
+## 2FA (Iki Faktorlu Kimlik Dogrulama)
+
+TOTP tabanli iki faktorlu dogrulama destegi:
+
+1. Kullanici `POST /auth/2fa/enable` ile kurulum baslatir (QR kod URI'si doner)
+2. Dogrulama uygulamasindaki kodu `POST /auth/2fa/verify` ile girer
+3. 2FA aktif hale gelir
+4. Giris yaparken sifre dogrulamasindan sonra `POST /auth/login/2fa` ile kod gerekir
+5. `POST /auth/2fa/disable` ile sifre dogrulamasiyla devre disi birakilir
 
 ---
 
@@ -546,13 +600,11 @@ Ana Kategori (ornegin: Teknik Hizmetler)
 | Gayrimenkul | Emlak, Satis, Kiralama, Degerleme |
 | Etkinlik ve Organizasyon | Dugun, Konser, Sirket Etkinligi, Foto-Video |
 | Dijital Hizmetler | Yazilim, Tasarim, Dijital Pazarlama, Video, Veri |
-| Guzellik | Sac, Tirnak-Cilt, Makyaj, spa |
+| Gzellik | Sac, Tirnak-Cilt, Makyaj, spa |
 
 ---
 
 ## Arama ve Filtreleme
-
-Arama motoru su filtreleri destekler:
 
 | Filtre | Tip | Aciklama |
 |--------|-----|----------|
@@ -626,7 +678,7 @@ Cikis: {
 10. Talebi yayinlar
 ```
 
-Sonrasinda: Uzmanlar teklif gonderir -> Kullanici teklifleri karsilastirir -> Bir teklifi kabul eder -> Randevu olusturulur -> Hizmet tamamlanir -> Degerlendirme yapilir.
+Sonrasinda: Uzmanlar teklif gonderir -> Kullanici teklifleri karsilastirir -> Bir teklifi kabul eder -> Randevu olusturulur -> Hizmet tamamlanir -> Degerlendirme yapilir -> Komisyon otomatik hesaplanir.
 
 ---
 
@@ -654,13 +706,11 @@ Sadece tamamlanmis hizmetler degerlendirilebilir. 5 yildizli genel puanlama yani
 - Fiyat / Performans
 - Zamaninda Gelme
 
-Her kullanici bir hizmet icin yalnizca bir kez yorum yapabilir.
+Her kullanici bir hizmet icin yalnizca bir kez yorum yapabilir. Uzmanlar yoruma tek seferlik yanit verebilir.
 
 ---
 
 ## Dogrulama Sistemi
-
-Uzmanlar icin 5 dogrulama seviyesi vardir:
 
 | Seviye | Gereklilikler |
 |--------|---------------|
@@ -674,13 +724,13 @@ Uzmanlar icin 5 dogrulama seviyesi vardir:
 
 ## Komisyon Sistemi
 
-Platform her basarili hizmet uzerinden komisyon alir:
-
 - Varsayilan komisyon orani: %10
 - Kategori bazli farkli oranlar belirlenebilir
 - Abonelik planina gore komisyon indirimi (5% - 20%)
+- Etkin oran = temel oran x (1 - max(kullanici indirimi, plan indirimi))
 - Uzmanlar kazanclarini takip edebilir
 - Odeme talebi ile para cekebilirler (IBAN)
+- Odeme islemleri with_for_update ile yarisi onler
 
 ---
 
@@ -694,26 +744,23 @@ Platform her basarili hizmet uzerinden komisyon alir:
 | Altin | 399 TL | %15 | 10 | Altin |
 | Elmas | 799 TL | %20 | 20 | Elmas |
 
-Her plan farkli ozellikler sunar: portfoy fotograf limiti, hizmet sayisi, destek onceligi, gelismis analitik.
+Her plan farkli ozellikler sunar: portfoy fotograf limiti, hizmet sayisi, destek onceligi, gelismis analitik. Abonelik suresi doldugunda arka planda otomatik pasiflestirilir.
 
 ---
 
 ## Promoted Provider (One Cikarilmis Uzman)
 
-Uzmanlar ucretli tanitim kampanyasi baslatabilir:
-
 - Kategori bazli hedefleme
 - Gunluk butce belirleme
-- Teklif tutari ile oncelik kazanma
+- Teklif tutari ile oncelik kazanma (priority_boost = 1 + bid * 0.1)
 - Goruntulenme / tiklama / CTR takibi
+- Butce doldugunda otomatik expire
 - One cikarilmis uzmanlar arama sonuclarinin ustunde gosterilir
 - Duraklatma / devam / iptal imkani
 
 ---
 
 ## Anlasmazlik Cozum Sistemi
-
-Kullanici ve uzmanlar arasindaki sorunlar icin:
 
 | Neden | Aciklama |
 |-------|----------|
@@ -725,19 +772,20 @@ Kullanici ve uzmanlar arasindaki sorunlar icin:
 | Dolandiricilik | Suistimal |
 | Diger | Diger nedenler |
 
-Sistem: Anlasmazlik acma -> Karsi taraf ile mesajlasma -> Kanit ekleme -> Admin inceleme -> Cozum uretme
+Sistem: Anlasmazlik acma -> Karsi taraf ile mesajlasma -> Kanit ekleme -> Admin inceleme -> Cozum uretme (para iadesi dahil)
 
 ---
 
 ## WebSocket Mesajlasma
 
-Gercek zamanli mesajlasma sistemi:
-
-- JWT token ile WebSocket baglantisi
+- JWT token ile WebSocket baglantisi (access token gerekli, refresh token red)
 - Conversation bazli mesajlasma
 - Mesaj tipleri: TEXT, IMAGE, FILE, QUOTE, APPOINTMENT, LOCATION, SYSTEM
 - Okunmamis mesaj sayisi takibi
 - Ayni anda birden fazla conversation
+- Icerik filtresi: WhatsApp, telefon numarasi, e-posta, Telegram gibi platform disi iletisim bilgileri engellenir
+- Mesaj uzunluk siniri: 2000 karakter
+- mark_read islemi sadece participant tarafindan yapilabilir
 
 ---
 
@@ -752,16 +800,63 @@ Gercek zamanli mesajlasma sistemi:
 
 ## Guvenlik
 
-Uygulamada uygulanan guvenlik onlemleri:
-
+### Kimlik Dogrulama ve Yetkilendirme
 - JWT tabanli kimlik dogrulama (access + refresh token)
+- Refresh token rotation (eski token RevokedToken tablosuna kaydedilir)
 - Rol tabanli yetkilendirme (RBAC)
-- Sifre hashleme (bcrypt)
-- Girdi dogrulama (Pydantic)
+- Sifre hashleme (bcrypt, 8+ karakter, buyuk/kucuk harf/rakam zorunlu)
+- 2FA destegi (TOTP tabanli)
+
+### Rate Limiting
+- Giris: 5 deneme / 5 dakika
+- Kayit: 3 deneme / 10 dakika
+- Token yenileme: 10 deneme / 5 dakika
+- Sifre sifirlama: 3 deneme / 10 dakika
+
+### Veri Guvenligi
+- Girdi dogrulama (Pydantic v2, @field_validator ile rol kisitlama)
 - SQL enjeksiyon korumasi (SQLAlchemy ORM)
 - CORS yapilandirmasi
+- SECRET_KEY ortam degiskeninden okunur, yoksa otomatik uretilir (uyari ile)
+- Aktif olmayan kullanicilar token ile erisemez
+
+### Uygulama Seviyesi
 - Audit loglama
-- WebSocket kimlik dogrulama
+- WebSocket kimlik dogrulama (sadece access token, refresh token red)
+- Mesaj icerik filtresi (platform disi iletisim engeli)
+- Portfoy limiti (max 30), konum limiti (max 10)
+- Tekrarlanan veri kontrolleri (duplicate service, duplicate review)
+- Randevu durum makinesi kontrolleri
+- Odeme yarisi korumasi (with_for_update)
+- Profil guncelleme whitelist (sadece belirli alanlar degistirilebilir)
+- Telefon numarasi benzersizlik kontrolu
+- Detay endpointleri icin auth zorunlulugu
+
+---
+
+## Background Job Sistemi
+
+APScheduler ile arka plan gorevleri:
+
+| Gorev | Periyot | Aciklama |
+|-------|---------|----------|
+| subscription_expiry_check | 15 dakika | Suresi dolan abonelikleri pasiflestirir |
+| promotion_expiry_check | 30 dakika | Suresi dolan tanitimlari expire eder |
+| daily_budget_reset | Gunluk | Gunluk butce sifirlama |
+
+---
+
+## CI/CD Pipeline
+
+GitHub Actions ile otomatik is akisi:
+
+```
+Push/PR -> Lint -> Test -> Build -> Deploy
+```
+
+- Python lint (flake8) ve test (pytest)
+- Node.js lint (eslint) ve build (vite)
+- Production deploy asamasinda otomatik build
 
 ---
 
@@ -800,7 +895,7 @@ pip install -r requirements.txt
 
 # .env dosyasini duzenle
 # DATABASE_URL satirinda SQL Server sifrenizi guncelleyin
-# .env ornegi icin .env.example dosyasina bakin
+# SECRET_KEY ortam degiskenine bir deger atayin (yoksa otomatik uretilir)
 
 # Uygulamayi baslat
 uvicorn app.main:app --reload --port 8000
@@ -812,6 +907,7 @@ Uygulama baslatildiginda:
 - 13 kategori ve alt kategoriler yuklenir
 - 5 abonelik plani yuklenir
 - Komisyon orani yuklenir
+- APScheduler arka plan gorevleri baslatilir
 
 API dokumantasyonu: http://localhost:8000/docs
 
@@ -835,22 +931,22 @@ Frontend, /api yolu altindaki tum istekleri backend (port 8000) uzerine proxy ol
 
 ## Frontend Rotalar
 
-| Rota | Sayfa | Aciklama |
-|------|-------|----------|
-| `/` | Ana Sayfa | Hero, arama, kategoriler, one cikarilmis uzmanlar, sehirler |
-| `/search` | Arama | Filtreleme, grid/list gorunum, sayfalama |
-| `/map` | Harita Arama | Leaflet harita + yan yana liste |
-| `/provider/:id` | Uzman Profili | Profil, hizmetler, yorumlar, hakkinda |
-| `/request/create` | Talep Olustur | 10 adimli hizmet talebi formu |
-| `/chat` | Mesajlar | Gercek zamanli WebSocket mesajlasma |
-| `/dashboard` | Panel | Istatistikler, hizli erisim, menu |
-| `/pricing` | Uzman Planlari | Abonelik planlari, ozellik karsilastirma |
-| `/earnings` | Kazanc Takibi | Kazanc ozeti, islemler, odeme talebi |
-| `/promotions` | Tanitim Kampanyalari | Kampanya olusturma, durum takibi |
-| `/disputes` | Anlasmazliklar | Anlasmazlik acma, mesajlasma, detay |
-| `/admin` | Admin Dashboard | Istatistikler, kullanici/uzman/talep yonetimi |
-| `/login` | Giris | E-posta + sifre ile giris |
-| `/register` | Kayit | Kullanici/uzman kaydi |
+| Rota | Sayfa | Aciklama | Yetki |
+|------|-------|----------|-------|
+| `/` | Ana Sayfa | Hero, arama, kategoriler, one cikarilmis uzmanlar, sehirler | Acik |
+| `/search` | Arama | Filtreleme, grid/list gorunum, sayfalama | Acik |
+| `/map` | Harita Arama | Leaflet harita + yan yana liste | Acik |
+| `/provider/:id` | Uzman Profili | Profil, hizmetler, yorumlar, hakkinda | Acik |
+| `/request/create` | Talep Olustur | 10 adimli hizmet talebi formu | Giris |
+| `/chat` | Mesajlar | Gercek zamanli WebSocket mesajlasma | Giris |
+| `/dashboard` | Panel | Istatistikler, hizli erisim, menu | Giris |
+| `/pricing` | Uzman Planlari | Abonelik planlari, ozellik karsilastirma | Giris |
+| `/earnings` | Kazanc Takibi | Kazanc ozeti, islemler, odeme talebi | Uzman |
+| `/promotions` | Tanitim Kampanyalari | Kampanya olusturma, durum takibi | Uzman |
+| `/disputes` | Anlasmazliklar | Anlasmazlik acma, mesajlasma, detay | Giris |
+| `/admin` | Admin Dashboard | Istatistikler, kullanici/uzman/talep yonetimi | Admin |
+| `/login` | Giris | E-posta + sifre ile giris (2FA destekli) | Acik |
+| `/register` | Kayit | Kullanici/uzman kaydi | Acik |
 
 ---
 

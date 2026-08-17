@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func as sql_func
+from datetime import datetime, timezone
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_role
 from app.modules.users.models import User
 from app.modules.providers.models import ProviderProfile
 from app.modules.reviews.models import Review
@@ -97,6 +98,8 @@ def list_provider_reviews(
                 "price_rating": r.price_rating,
                 "punctuality_rating": r.punctuality_rating,
                 "comment": r.comment,
+                "provider_reply": r.provider_reply,
+                "provider_replied_at": r.provider_replied_at.isoformat() if r.provider_replied_at else None,
                 "created_at": r.created_at,
                 "customer": {
                     "first_name": r.customer.first_name if r.customer else None,
@@ -110,3 +113,33 @@ def list_provider_reviews(
         "page": page,
         "limit": limit,
     }
+
+
+@router.post("/{review_id}/reply")
+def reply_to_review(
+    review_id: int,
+    reply: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
+):
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise NotFoundException("Degerlendirme")
+
+    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not provider or review.provider_id != provider.id:
+        raise ForbiddenException("Bu degerlendirmeye yanit verme yetkiniz yok")
+
+    if review.provider_reply:
+        raise BadRequestException("Bu degerlendirmeye zaten yanit verilmis")
+
+    if len(reply.strip()) == 0:
+        raise BadRequestException("Yanit icerigi bos olamaz")
+    if len(reply) > 1000:
+        raise BadRequestException("Yanit 1000 karakterden uzun olamaz")
+
+    review.provider_reply = reply
+    review.provider_replied_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return {"message": "Yanit eklendi", "reply": reply}

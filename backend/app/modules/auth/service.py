@@ -44,6 +44,42 @@ class AuthService:
         if not user.is_active:
             raise BadRequestException("Hesabiniz pasif durumda")
 
+        if user.two_factor_enabled:
+            from app.core.security import create_access_token
+            from datetime import timedelta
+            temp_token = create_access_token(
+                {"sub": str(user.id), "type": "2fa_pending"},
+                expires_delta=timedelta(minutes=5),
+            )
+            return {
+                "requires_2fa": True,
+                "temp_token": temp_token,
+                "token_type": "bearer",
+            }
+
+        tokens = self._create_tokens(user.id)
+        return {"user": user, **tokens}
+
+    def verify_2fa_login(self, temp_token: str, code: str) -> dict:
+        import pyotp
+        from app.core.security import decode_token
+
+        payload = decode_token(temp_token)
+        if payload.get("type") != "2fa_pending":
+            raise BadRequestException("Gecersiz token turu")
+
+        user_id = int(payload.get("sub"))
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise NotFoundException("Kullanici")
+
+        if not user.two_factor_enabled or not user.two_factor_secret:
+            raise BadRequestException("2FA aktif degil")
+
+        totp = pyotp.TOTP(user.two_factor_secret)
+        if not totp.verify(code, valid_window=1):
+            raise BadRequestException("Gecersiz dogrulama kodu")
+
         tokens = self._create_tokens(user.id)
         return {"user": user, **tokens}
 

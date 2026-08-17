@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
 from app.modules.users.models import User
 from app.modules.disputes.models import Dispute, DisputeMessage, DisputeEvidence
+from app.modules.commissions.models import Transaction, ProviderEarning, PayoutRequest
 
 router = APIRouter(prefix="/disputes", tags=["Anlasmazlik Cozum Sistemi"])
 
@@ -223,19 +224,63 @@ def add_evidence(
 def resolve_dispute(
     dispute_id: int,
     resolution: str,
+    refund_amount: float = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN", "MODERATOR"])),
 ):
     dispute = db.query(Dispute).filter(Dispute.id == dispute_id).first()
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
+    if dispute.status in ("resolved", "closed"):
+        raise HTTPException(status_code=400, detail="Bu anlasmazlik zaten cozulmus/kapatilmis")
 
     dispute.status = "resolved"
     dispute.resolution = resolution
     dispute.resolved_by = current_user.id
     dispute.resolved_at = datetime.utcnow()
+
+    refund_created = False
+    if refund_amount and refund_amount > 0 and dispute.amount_involved:
+        if refund_amount > dispute.amount_involved:
+            raise HTTPException(status_code=400, detail="Iade tutari ilgili tutardan fazla olamaz")
+
+        if dispute.appointment_id:
+            transaction = db.query(Transaction).filter(
+                Transaction.appointment_id == dispute.appointment_id,
+                Transaction.status == "completed",
+            ).first()
+
+            if transaction:
+                refund_commission = round(refund_amount * transaction.commission_rate, 2)
+
+                refund_txn = Transaction(
+                    provider_id=transaction.provider_id,
+                    appointment_id=dispute.appointment_id,
+                    amount=-refund_amount,
+                    commission_rate=transaction.commission_rate,
+                    commission_amount=-refund_commission,
+                    provider_earning=-(refund_amount - refund_commission),
+                    status="refunded",
+                    description=f"Anlasmazlik #{dispute.id} icin iade",
+                )
+                db.add(refund_txn)
+
+                earning = db.query(ProviderEarning).filter(
+                    ProviderEarning.provider_id == transaction.provider_id
+                ).first()
+                if earning:
+                    earning.total_earned = max(0, earning.total_earned - (refund_amount - refund_commission))
+                    earning.total_commission_paid = max(0, earning.total_commission_paid - refund_commission)
+                    earning.pending_amount = max(0, earning.pending_amount - (refund_amount - refund_commission))
+
+                refund_created = True
+
     db.commit()
-    return {"message": "Anlasmazlik cozuldu"}
+    return {
+        "message": "Anlasmazlik cozuldu",
+        "refund_created": refund_created,
+        "refund_amount": refund_amount if refund_created else 0,
+    }
 
 
 @router.post("/{dispute_id}/close")

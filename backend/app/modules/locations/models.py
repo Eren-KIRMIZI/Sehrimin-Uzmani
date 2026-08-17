@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -33,6 +33,9 @@ class District(Base):
 
 class ProviderLocation(Base):
     __tablename__ = "provider_locations"
+    __table_args__ = (
+        Index("ix_provider_location_city_district", "city_id", "district_id"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)

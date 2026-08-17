@@ -61,9 +61,14 @@ def create_appointment(
 @router.get("")
 def list_my_appointments(
     status: str = None,
+    page: int = 1,
+    limit: int = 20,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    limit = min(max(1, limit), 50)
+    offset = (max(1, page) - 1) * limit
+
     query = db.query(Appointment)
 
     provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
@@ -75,20 +80,26 @@ def list_my_appointments(
     if status:
         query = query.filter(Appointment.status == status)
 
-    appointments = query.order_by(Appointment.start_at.desc()).limit(100).all()
-    return [
-        {
-            "id": a.id,
-            "request_id": a.request_id,
-            "start_at": a.start_at,
-            "end_at": a.end_at,
-            "status": a.status,
-            "location": a.location,
-            "notes": a.notes,
-            "created_at": a.created_at,
-        }
-        for a in appointments
-    ]
+    total = query.count()
+    appointments = query.order_by(Appointment.start_at.desc()).offset(offset).limit(limit).all()
+    return {
+        "items": [
+            {
+                "id": a.id,
+                "request_id": a.request_id,
+                "start_at": a.start_at,
+                "end_at": a.end_at,
+                "status": a.status,
+                "location": a.location,
+                "notes": a.notes,
+                "created_at": a.created_at,
+            }
+            for a in appointments
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }
 
 
 @router.get("/{appointment_id}")
