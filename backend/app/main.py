@@ -1,9 +1,11 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.router import api_router
+from app.modules.messaging.router import router as messaging_router
+from app.websocket.manager import websocket_endpoint
 
 app = FastAPI(
     title="Şehrinin Uzmani API",
@@ -22,6 +24,12 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+app.include_router(messaging_router)
+
+
+@app.websocket("/ws/{token}")
+async def ws_endpoint(websocket: WebSocket, token: str):
+    await websocket_endpoint(websocket, token)
 
 
 @app.on_event("startup")

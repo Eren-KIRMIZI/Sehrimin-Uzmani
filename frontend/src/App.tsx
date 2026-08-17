@@ -3,10 +3,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
+import MapSearchPage from './pages/MapSearchPage';
 import ProviderProfilePage from './pages/ProviderProfilePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
+import ServiceRequestForm from './pages/ServiceRequestForm';
+import ChatPage from './pages/ChatPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,12 +28,16 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/map" element={<MapSearchPage />} />
             <Route path="/provider/:id" element={<ProviderProfilePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/request/create" element={<ServiceRequestForm />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:conversationId" element={<ChatPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/categories" element={<HomePage />} />
             <Route path="/category/:slug" element={<HomePage />} />
             <Route path="/how-it-works" element={<HomePage />} />
-            <Route path="/request/create" element={<HomePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

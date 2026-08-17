@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
 from app.modules.providers.router import router as providers_router
+from app.modules.providers.verification_router import router as verification_router
 from app.modules.categories.router import router as categories_router
 from app.modules.locations.router import router as locations_router
 from app.modules.search.router import router as search_router
@@ -18,6 +19,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(providers_router)
+api_router.include_router(verification_router)
 api_router.include_router(categories_router)
 api_router.include_router(locations_router)
 api_router.include_router(search_router)

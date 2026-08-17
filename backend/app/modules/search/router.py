@@ -177,3 +177,12 @@ def autocomplete(q: str = Query(..., min_length=2), db: Session = Depends(get_db
         results.append({"type": "service", "name": s.name, "slug": s.slug})
 
     return results[:10]
+
+
+@router.post("/detect")
+def detect_category_endpoint(
+    query: str,
+    db: Session = Depends(get_db),
+):
+    from app.modules.search.ai_detector import detect_category
+    return detect_category(query, db)
