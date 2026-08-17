@@ -14,11 +14,14 @@ from app.modules.providers.schemas import (
     ProviderServiceCreate, PortfolioItemCreate,
     ProviderLocationCreate, AvailabilityCreate
 )
-from app.core.exceptions import NotFoundException, ForbiddenException
+from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
 from app.shared.pagination import PaginationParams, PaginatedResponse
 from app.shared.utils import haversine
 
 router = APIRouter(prefix="/providers", tags=["Providers"])
+
+MAX_PORTFOLIO_ITEMS = 30
+MAX_LOCATIONS = 10
 
 
 @router.post("/profile")
@@ -160,10 +163,14 @@ def add_portfolio_item(
     if not profile:
         raise NotFoundException("Uzman profili")
 
+    current_count = db.query(PortfolioItem).filter(PortfolioItem.provider_id == profile.id).count()
+    if current_count >= MAX_PORTFOLIO_ITEMS:
+        raise BadRequestException(f"En fazla {MAX_PORTFOLIO_ITEMS} portfoy ogesi ekleyebilirsiniz")
+
     item = PortfolioItem(provider_id=profile.id, **data.model_dump())
     db.add(item)
     db.commit()
-    return {"message": "Portföy öğesi eklendi"}
+    return {"message": "Portfoy ogesi eklendi", "count": current_count + 1}
 
 
 @router.post("/locations")
@@ -176,10 +183,14 @@ def add_provider_location(
     if not profile:
         raise NotFoundException("Uzman profili")
 
+    current_count = db.query(ProviderLocation).filter(ProviderLocation.provider_id == profile.id).count()
+    if current_count >= MAX_LOCATIONS:
+        raise BadRequestException(f"En fazla {MAX_LOCATIONS} konum ekleyebilirsiniz")
+
     loc = ProviderLocation(provider_id=profile.id, **data.model_dump())
     db.add(loc)
     db.commit()
-    return {"message": "Konum eklendi"}
+    return {"message": "Konum eklendi", "count": current_count + 1}
 
 
 @router.post("/availability")

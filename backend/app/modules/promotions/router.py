@@ -30,6 +30,11 @@ def create_promotion(
     if existing:
         raise HTTPException(status_code=400, detail="Bu kategoride zaten aktif tanitiminz var")
 
+    if budget < 10:
+        raise HTTPException(status_code=400, detail="Minimum butce 10 TL olmalidir")
+    if bid_amount < 0.1:
+        raise HTTPException(status_code=400, detail="Minimum teklif 0.1 TL olmalidir")
+
     promotion = PromotedProvider(
         provider_id=current_user.id,
         category_id=category_id,
@@ -196,12 +201,70 @@ def update_bid(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
     if not promo:
         raise HTTPException(status_code=404, detail="Tanitim bulunamadi")
     if promo.provider_id != current_user.id:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
+    if bid_amount < 0.1:
+        raise HTTPException(status_code=400, detail="Minimum teklif 0.1 TL olmalidir")
     promo.bid_amount = bid_amount
     promo.priority_boost = 1.0 + (bid_amount * 0.1)
     db.commit()
     return {"message": "Teklif guncellendi", "priority_boost": promo.priority_boost}
+
+
+@router.post("/{promotion_id}/impression")
+def record_impression(
+    promotion_id: int,
+    db: Session = Depends(get_db),
+):
+    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
+    if not promo or promo.status != "active":
+        return {"recorded": False}
+
+    promo.impressions += 1
+    cost_per_impression = 0.01
+    promo.spent = round(promo.spent + cost_per_impression, 2)
+
+    log = PromotionLog(
+        promoted_id=promo.id,
+        event_type="impression",
+        budget_spent=cost_per_impression,
+        impressions=1,
+    )
+    db.add(log)
+
+    if promo.spent >= promo.budget:
+        promo.status = "expired"
+
+    db.commit()
+    return {"recorded": True, "impressions": promo.impressions, "spent": promo.spent}
+
+
+@router.post("/{promotion_id}/click")
+def record_click(
+    promotion_id: int,
+    db: Session = Depends(get_db),
+):
+    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
+    if not promo or promo.status != "active":
+        return {"recorded": False}
+
+    promo.clicks += 1
+    cost_per_click = promo.bid_amount * 0.1
+    promo.spent = round(promo.spent + cost_per_click, 2)
+
+    log = PromotionLog(
+        promoted_id=promo.id,
+        event_type="click",
+        budget_spent=cost_per_click,
+        clicks=1,
+    )
+    db.add(log)
+
+    if promo.spent >= promo.budget:
+        promo.status = "expired"
+
+    db.commit()
+    return {"recorded": True, "clicks": promo.clicks, "spent": promo.spent}

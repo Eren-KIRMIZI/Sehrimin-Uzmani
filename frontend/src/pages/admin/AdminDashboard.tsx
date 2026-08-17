@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [providers, setProviders] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadDashboard();
@@ -31,7 +32,11 @@ export default function AdminDashboard() {
         api.get('/admin/dashboard'),
       ]);
       setStats(statsRes.data);
-    } catch {} finally {
+      setError('');
+    } catch (e: any) {
+      console.error('Dashboard yuklenemedi:', e);
+      setError('Dashboard verileri yuklenemedi.');
+    } finally {
       setLoading(false);
     }
   };
@@ -40,21 +45,27 @@ export default function AdminDashboard() {
     try {
       const res = await api.get('/admin/users?limit=50');
       setUsers(res.data.items || []);
-    } catch {}
+    } catch (e: any) {
+      console.error('Kullanicilar yuklenemedi:', e);
+    }
   };
 
   const loadProviders = async () => {
     try {
       const res = await api.get('/admin/providers?limit=50');
       setProviders(res.data.items || []);
-    } catch {}
+    } catch (e: any) {
+      console.error('Uzmanlar yuklenemedi:', e);
+    }
   };
 
   const loadRequests = async () => {
     try {
       const res = await api.get('/admin/requests?limit=50');
       setRequests(res.data.items || []);
-    } catch {}
+    } catch (e: any) {
+      console.error('Talepler yuklenemedi:', e);
+    }
   };
 
   useEffect(() => {

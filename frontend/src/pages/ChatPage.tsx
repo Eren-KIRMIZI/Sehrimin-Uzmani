@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,14 +51,22 @@ export default function ChatPage() {
     try {
       const res = await api.get('/messaging/conversations');
       setConversations(res.data);
-    } catch {}
+      setError('');
+    } catch (e: any) {
+      console.error('Konusmalar yuklenemedi:', e);
+      setError('Konusmalar yuklenemedi. Lutfen tekrar deneyin.');
+    }
   };
 
   const loadMessages = async (convId: number) => {
     try {
       const res = await api.get(`/messaging/conversations/${convId}/messages`);
       setMessages(res.data);
-    } catch {}
+      setError('');
+    } catch (e: any) {
+      console.error('Mesajlar yuklenemedi:', e);
+      setError('Mesajlar yuklenemedi.');
+    }
   };
 
   const connectWebSocket = () => {

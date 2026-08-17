@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -6,6 +6,9 @@ from app.core.database import Base
 
 class Review(Base):
     __tablename__ = "reviews"
+    __table_args__ = (
+        UniqueConstraint("request_id", "customer_id", name="uq_review_request_customer"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     request_id = Column(Integer, ForeignKey("service_requests.id"), nullable=False, index=True)

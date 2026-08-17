@@ -15,6 +15,7 @@ export default function MapSearchPage() {
   const [cities, setCities] = useState<City[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
 
   useEffect(() => {
     api.get('/categories').then(res => setCategories(res.data)).catch(() => {});
@@ -36,6 +37,7 @@ export default function MapSearchPage() {
       setProviders(res.data.items || []);
     } catch {
       setProviders([]);
+      setSearchError('Arama sirasinda bir hata olustu.');
     } finally {
       setLoading(false);
     }

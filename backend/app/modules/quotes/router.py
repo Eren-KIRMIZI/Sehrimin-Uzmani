@@ -146,26 +146,38 @@ def reject_quote(
 
 @router.get("/my")
 def list_my_quotes(
+    page: int = 1,
+    limit: int = 20,
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
+    limit = min(max(1, limit), 50)
+    offset = (max(1, page) - 1) * limit
+
     provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
     if not provider:
         raise NotFoundException("Uzman profili")
 
+    q = db.query(Quote).filter(Quote.provider_id == provider.id)
+    total = q.count()
     quotes = (
-        db.query(Quote)
-        .filter(Quote.provider_id == provider.id)
-        .order_by(Quote.created_at.desc())
+        q.order_by(Quote.created_at.desc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
-    return [
-        {
-            "id": q.id,
-            "request_id": q.request_id,
-            "price": q.price,
-            "status": q.status,
-            "created_at": q.created_at,
-        }
-        for q in quotes
-    ]
+    return {
+        "items": [
+            {
+                "id": q.id,
+                "request_id": q.request_id,
+                "price": q.price,
+                "status": q.status,
+                "created_at": q.created_at,
+            }
+            for q in quotes
+        ],
+        "total": total,
+        "page": page,
+        "limit": limit,
+    }

@@ -85,12 +85,6 @@ def get_current_active_user(current_user=Depends(get_current_user)):
     return current_user
 
 
-def check_token_blacklist(token: str, db: Session) -> bool:
-    from app.modules.auth.models import RevokedToken
-    revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
-    return revoked is not None
-
-
 def require_role(*roles):
     def role_checker(current_user=Depends(get_current_user)):
         if current_user.role not in roles:

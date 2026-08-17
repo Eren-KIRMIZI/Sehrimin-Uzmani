@@ -184,10 +184,14 @@ def request_payout(
 ):
     earning = db.query(ProviderEarning).filter(
         ProviderEarning.provider_id == current_user.id
-    ).first()
+    ).with_for_update().first()
     if not earning or earning.pending_amount < amount:
         raise HTTPException(status_code=400, detail="Yetersiz bakiye")
 
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Gecersiz tutar")
+
+    earning.pending_amount -= amount
     payout = PayoutRequest(
         provider_id=current_user.id,
         amount=amount,
@@ -195,7 +199,6 @@ def request_payout(
         iban=iban,
         account_holder=account_holder,
     )
-    earning.pending_amount -= amount
     db.add(payout)
     db.commit()
     db.refresh(payout)
@@ -251,15 +254,18 @@ def approve_payout(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).first()
+    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).with_for_update().first()
     if not payout:
         raise HTTPException(status_code=404, detail="Odeme talebi bulunamadi")
+    if payout.status != "pending":
+        raise HTTPException(status_code=400, detail="Bu talep zaten islenmis")
+
     payout.status = "approved"
     payout.processed_at = datetime.utcnow()
 
     earning = db.query(ProviderEarning).filter(
         ProviderEarning.provider_id == payout.provider_id
-    ).first()
+    ).with_for_update().first()
     if earning:
         earning.paid_amount += payout.amount
 
@@ -274,15 +280,18 @@ def reject_payout(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).first()
+    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).with_for_update().first()
     if not payout:
         raise HTTPException(status_code=404, detail="Odeme talebi bulunamadi")
+    if payout.status != "pending":
+        raise HTTPException(status_code=400, detail="Bu talep zaten islenmis")
+
     payout.status = "rejected"
     payout.admin_note = admin_note
 
     earning = db.query(ProviderEarning).filter(
         ProviderEarning.provider_id == payout.provider_id
-    ).first()
+    ).with_for_update().first()
     if earning:
         earning.pending_amount += payout.amount
 

@@ -73,6 +73,9 @@ manager = ConnectionManager()
 async def websocket_endpoint(websocket: WebSocket, token: str):
     try:
         payload = decode_token(token)
+        if payload.get("type") != "access":
+            await websocket.close(code=4001)
+            return
         user_id = int(payload.get("sub", 0))
         if not user_id:
             await websocket.close(code=4001)
@@ -83,7 +86,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
         if not user:
             await websocket.close(code=4001)
             return
@@ -154,6 +157,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
                 elif action == "mark_read":
                     conversation_id = msg_data.get("conversation_id")
+                    conv_check = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+                    if not conv_check:
+                        continue
+                    is_part = conv_check.customer_id == user_id or (
+                        conv_check.provider_id and _is_provider_owner(conv_check.provider_id, user_id, db)
+                    )
+                    if not is_part:
+                        await websocket.send_json({"error": "Yetkiniz yok"})
+                        continue
                     db.query(Message).filter(
                         Message.conversation_id == conversation_id,
                         Message.sender_id != user_id,

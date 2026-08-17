@@ -183,10 +183,18 @@ def complete_appointment(
         rate_obj = db.query(CommissionRate).filter(CommissionRate.is_active == True).first()
         rate = rate_obj.rate if rate_obj else 0.10
 
-        user_discount = current_user.commission_discount if current_user.role == "PROVIDER" else 0
-        provider_user = db.query(User).filter(User.id == appointment.customer_id).first() if not is_provider else current_user
-        if provider_user and provider_user.commission_discount:
-            user_discount = provider_user.commission_discount
+        provider_user = db.query(User).filter(User.id == appointment.provider_id).first()
+        user_discount = provider_user.commission_discount if provider_user and provider_user.commission_discount else 0.0
+
+        if rate_obj and rate_obj.category_id:
+            from app.modules.subscriptions.models import ProviderSubscription
+            sub = db.query(ProviderSubscription).filter(
+                ProviderSubscription.provider_id == appointment.provider_id,
+                ProviderSubscription.status == "active",
+            ).first()
+            if sub and sub.plan and sub.plan.commission_discount:
+                plan_discount = sub.plan.commission_discount
+                user_discount = max(user_discount, plan_discount)
 
         effective_rate = rate * (1 - user_discount)
         commission_amount = round(quote.price * effective_rate, 2)

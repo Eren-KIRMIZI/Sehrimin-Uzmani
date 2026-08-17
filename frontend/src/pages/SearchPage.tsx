@@ -17,6 +17,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [searchError, setSearchError] = useState('');
 
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
@@ -52,6 +53,7 @@ export default function SearchPage() {
       setTotal(res.data.total || 0);
     } catch {
       setProviders([]);
+      setSearchError('Arama sirasinda bir hata olustu.');
     } finally {
       setLoading(false);
     }
