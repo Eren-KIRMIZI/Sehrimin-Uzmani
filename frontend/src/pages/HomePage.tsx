@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, ChevronRight, Star, Shield, Zap, ArrowRight } from 'lucide-react';
-import api from '../services/api';
-import type { Category, City, ProviderProfile } from '../types';
+import { useCategories, useCities, useProviderSearch } from '../hooks/useQueries';
 import { useLocationStore } from '../stores/locationStore';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -16,16 +15,12 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { selectedCity, setSelectedCity } = useLocationStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [cities, setCities] = useState<City[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredProviders, setFeaturedProviders] = useState<ProviderProfile[]>([]);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
 
-  useEffect(() => {
-    api.get('/locations/cities').then(res => setCities(res.data)).catch(() => {});
-    api.get('/categories').then(res => setCategories(res.data)).catch(() => {});
-    api.get('/search/providers?limit=6&sort=rating').then(res => setFeaturedProviders(res.data.items || [])).catch(() => {});
-  }, []);
+  const { data: categories = [] } = useCategories();
+  const { data: cities = [] } = useCities();
+  const { data: searchData } = useProviderSearch({ limit: 6, sort: 'rating' });
+  const featuredProviders = searchData?.items || [];
 
   const handleSearch = () => {
     const params = new URLSearchParams();

@@ -1,26 +1,20 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, CreditCard, AlertTriangle, DollarSign, Megaphone } from 'lucide-react';
-import api from '../../services/api';
+import { useRecentRequests, useUnreadNotificationCount } from '../../hooks/useQueries';
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const [stats, setStats] = useState({ requests: 0, appointments: 0, favorites: 0, notifications: 0 });
-  const [recentRequests, setRecentRequests] = useState<any[]>([]);
-
-  useEffect(() => {
-    api.get('/requests?limit=5').then(res => setRecentRequests(res.data.items || [])).catch(() => {});
-    api.get('/notifications/unread-count').then(res => setStats(s => ({ ...s, notifications: res.data.count }))).catch(() => {});
-  }, []);
+  const { data: recentRequests = [] } = useRecentRequests();
+  const { data: notifications = 0 } = useUnreadNotificationCount();
 
   const menuItems = [
-    { icon: FileText, label: 'Taleplerim', link: '/dashboard/requests', count: stats.requests },
+    { icon: FileText, label: 'Taleplerim', link: '/dashboard/requests' },
     { icon: Calendar, label: 'Randevularim', link: '/dashboard/appointments' },
     { icon: MessageCircle, label: 'Mesajlarim', link: '/chat' },
     { icon: Heart, label: 'Favorilerim', link: '/dashboard/favorites' },
     { icon: Star, label: 'Degerlendirmelerim', link: '/dashboard/reviews' },
-    { icon: Bell, label: 'Bildirimler', link: '/dashboard/notifications', count: stats.notifications },
+    { icon: Bell, label: 'Bildirimler', link: '/dashboard/notifications', count: notifications },
     { icon: CreditCard, label: 'Abonelikler', link: '/pricing' },
     { icon: DollarSign, label: 'Kazanc Takibi', link: '/earnings' },
     { icon: Megaphone, label: 'Tanitim Kampanyalari', link: '/promotions' },
@@ -61,10 +55,10 @@ export default function DashboardPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Aktif Talep', value: stats.requests, icon: FileText, color: 'text-accent' },
-                { label: 'Randevu', value: stats.appointments, icon: Calendar, color: 'text-success' },
-                { label: 'Favori', value: stats.favorites, icon: Heart, color: 'text-error' },
-                { label: 'Bildirim', value: stats.notifications, icon: Bell, color: 'text-warning' },
+                { label: 'Aktif Talep', value: recentRequests.length, icon: FileText, color: 'text-accent' },
+                { label: 'Randevu', value: 0, icon: Calendar, color: 'text-success' },
+                { label: 'Favori', value: 0, icon: Heart, color: 'text-error' },
+                { label: 'Bildirim', value: notifications, icon: Bell, color: 'text-warning' },
               ].map(stat => (
                 <div key={stat.label} className="bg-white rounded-xl p-4 border border-border-light">
                   <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />

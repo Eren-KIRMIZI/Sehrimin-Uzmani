@@ -1,46 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search, MapPin, Star, Shield } from 'lucide-react';
-import api from '../services/api';
+import { useCities, useProviderSearch } from '../hooks/useQueries';
 import MapView from '../components/map/MapView';
-import type { ProviderProfile, City } from '../types';
+import type { ProviderProfile } from '../types';
 import { useLocationStore } from '../stores/locationStore';
 
 export default function MapSearchPage() {
   const [searchParams] = useSearchParams();
   const { selectedCity, setSelectedCity } = useLocationStore();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [providers, setProviders] = useState<ProviderProfile[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null);
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    api.get('/locations/cities').then(res => setCities(res.data)).catch(() => {});
-  }, []);
 
-  useEffect(() => {
-    fetchProviders();
-  }, [selectedCity]);
+  const { data: cities = [] } = useCities();
+  const { data: searchData, isLoading: loading, refetch } = useProviderSearch({
+    q: query || undefined,
+    city_id: selectedCity?.id,
+    limit: 50,
+  });
+  const providers = searchData?.items || [];
 
-  const fetchProviders = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (query) params.set('q', query);
-      if (selectedCity) params.set('city_id', String(selectedCity.id));
-      params.set('limit', '50');
-      const res = await api.get(`/search/providers?${params.toString()}`);
-      setProviders(res.data.items || []);
-    } catch {
-      setProviders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = () => {
-    fetchProviders();
-  };
+  const handleSearch = () => { refetch(); };
 
   const mapMarkers = providers
     .filter(p => p.latitude && p.longitude)

@@ -1,84 +1,38 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-
-interface EarningData {
-  total_earned: number;
-  total_commission_paid: number;
-  pending_amount: number;
-  paid_amount: number;
-  transaction_count: number;
-}
-
-interface Transaction {
-  id: number;
-  amount: number;
-  commission_rate: number;
-  commission_amount: number;
-  provider_earning: number;
-  status: string;
-  description: string;
-  created_at: string;
-}
-
-interface PayoutRequest {
-  id: number;
-  amount: number;
-  bank_name: string;
-  status: string;
-  created_at: string;
-}
+import { useEarnings, usePayoutMutation } from '../hooks/useQueries';
+import type { EarningsData, TransactionData, PayoutData } from '../hooks/useQueries';
 
 export default function EarningsPage() {
-  const [earnings, setEarnings] = useState<EarningData | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading } = useEarnings();
+  const earnings = (data?.earnings as EarningsData) || null;
+  const transactions = (data?.transactions || []) as TransactionData[];
+  const payouts = (data?.payouts || []) as PayoutData[];
+  const payoutMutation = usePayoutMutation();
   const [tab, setTab] = useState<'overview' | 'transactions' | 'payouts'>('overview');
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [payoutForm, setPayoutForm] = useState({ amount: '', bank_name: '', iban: '', account_holder: '' });
-  useEffect(() => {
-    fetchData();
-  }, []);
 
-  const fetchData = async () => {
-    try {
-      const [earnRes, txRes, payoutRes] = await Promise.all([
-        api.get('/commissions/earnings'),
-        api.get('/commissions/transactions'),
-        api.get('/commissions/payout/my'),
-      ]);
-      setEarnings(earnRes.data);
-      setTransactions(txRes.data.items || []);
-      setPayouts(payoutRes.data || []);
-    } catch {
-      toast.error('Veriler yuklenemedi');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePayout = async () => {
+  const handlePayout = () => {
     if (!payoutForm.amount || parseFloat(payoutForm.amount) <= 0) {
       toast.error('Gecerli bir tutar girin');
       return;
     }
-    try {
-      await api.post('/commissions/payout/request', null, {
-        params: {
-          amount: parseFloat(payoutForm.amount),
-          bank_name: payoutForm.bank_name || undefined,
-          iban: payoutForm.iban || undefined,
-          account_holder: payoutForm.account_holder || undefined,
+    payoutMutation.mutate(
+      {
+        amount: parseFloat(payoutForm.amount),
+        bank_name: payoutForm.bank_name || undefined,
+        iban: payoutForm.iban || undefined,
+        account_holder: payoutForm.account_holder || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Odeme talebi gonderildi');
+          setShowPayoutForm(false);
+          setPayoutForm({ amount: '', bank_name: '', iban: '', account_holder: '' });
         },
-      });
-      toast.success('Odeme talebi gonderildi');
-      setShowPayoutForm(false);
-      setPayoutForm({ amount: '', bank_name: '', iban: '', account_holder: '' });
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Hata olustu');
-    }
+      }
+    );
   };
 
   if (loading) {

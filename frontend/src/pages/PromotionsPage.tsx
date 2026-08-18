@@ -1,37 +1,14 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-
-interface Promotion {
-  id: number;
-  category_id: number;
-  category_name: string;
-  budget: number;
-  spent: number;
-  daily_budget: number;
-  bid_amount: number;
-  status: string;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  priority_boost: number;
-  is_featured: boolean;
-  badge_text: string | null;
-  start_date: string;
-  end_date: string;
-  ctr: number;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-}
+import { useMyPromotions, useCategories, usePromotionCreateMutation, usePromotionActionMutation } from '../hooks/useQueries';
 
 export default function PromotionsPage() {
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: promotions = [], isLoading: loading } = useMyPromotions();
+  const { data: categories = [] } = useCategories();
+  const createMutation = usePromotionCreateMutation();
+  const pauseMutation = usePromotionActionMutation('pause');
+  const resumeMutation = usePromotionActionMutation('resume');
+  const cancelMutation = usePromotionActionMutation('cancel');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     category_id: '',
@@ -43,74 +20,51 @@ export default function PromotionsPage() {
     badge_text: '',
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [promoRes, catRes] = await Promise.all([
-        api.get('/promotions/my'),
-        api.get('/categories'),
-      ]);
-      setPromotions(promoRes.data);
-      setCategories(catRes.data);
-    } catch {
-      toast.error('Veriler yuklenemedi');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!form.category_id || !form.budget) {
       toast.error('Zorunlu alanlari doldurun');
       return;
     }
-    try {
-      await api.post('/promotions', null, {
-        params: {
-          category_id: parseInt(form.category_id),
-          budget: parseFloat(form.budget),
-          daily_budget: form.daily_budget ? parseFloat(form.daily_budget) : undefined,
-          bid_amount: parseFloat(form.bid_amount),
-          duration_days: parseInt(form.duration_days),
-          is_featured: form.is_featured,
-          badge_text: form.badge_text || undefined,
+    createMutation.mutate(
+      {
+        category_id: parseInt(form.category_id),
+        budget: parseFloat(form.budget),
+        daily_budget: form.daily_budget ? parseFloat(form.daily_budget) : undefined,
+        bid_amount: parseFloat(form.bid_amount),
+        duration_days: parseInt(form.duration_days),
+        is_featured: form.is_featured,
+        badge_text: form.badge_text || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Tanitim baslatildi!');
+          setShowForm(false);
+          setForm({ category_id: '', budget: '', daily_budget: '', bid_amount: '1.0', duration_days: '7', is_featured: false, badge_text: '' });
         },
-      });
-      toast.success('Tanitim baslatildi!');
-      setShowForm(false);
-      setForm({ category_id: '', budget: '', daily_budget: '', bid_amount: '1.0', duration_days: '7', is_featured: false, badge_text: '' });
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Hata olustu');
-    }
+      }
+    );
   };
 
-  const handlePause = async (id: number) => {
-    try {
-      await api.post(`/promotions/${id}/pause`);
-      toast.success('Duraklatildi');
-      fetchData();
-    } catch { toast.error('Hata'); }
+  const handlePause = (id: number) => {
+    pauseMutation.mutate(id, {
+      onSuccess: () => toast.success('Duraklatildi'),
+      onError: () => toast.error('Hata'),
+    });
   };
 
-  const handleResume = async (id: number) => {
-    try {
-      await api.post(`/promotions/${id}/resume`);
-      toast.success('Devam ettirildi');
-      fetchData();
-    } catch { toast.error('Hata'); }
+  const handleResume = (id: number) => {
+    resumeMutation.mutate(id, {
+      onSuccess: () => toast.success('Devam ettirildi'),
+      onError: () => toast.error('Hata'),
+    });
   };
 
-  const handleCancel = async (id: number) => {
+  const handleCancel = (id: number) => {
     if (!confirm('Tanitimi iptal etmek istediginize emin misiniz?')) return;
-    try {
-      await api.post(`/promotions/${id}/cancel`);
-      toast.success('Iptal edildi');
-      fetchData();
-    } catch { toast.error('Hata'); }
+    cancelMutation.mutate(id, {
+      onSuccess: () => toast.success('Iptal edildi'),
+      onError: () => toast.error('Hata'),
+    });
   };
 
   if (loading) {

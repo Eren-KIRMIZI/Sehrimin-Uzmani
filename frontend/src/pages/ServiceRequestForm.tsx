@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Check, Upload, MapPin, Calendar, DollarSign } from 'lucide-react';
 import api from '../services/api';
-import type { Category, City, District } from '../types';
+import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
 
 const STEPS = [
   { id: 1, title: 'Hizmet Kategorisi', icon: '📋' },
@@ -21,9 +21,8 @@ export default function ServiceRequestForm() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
+  const { data: categories = [] } = useCategories();
+  const { data: cities = [] } = useCities();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -47,16 +46,7 @@ export default function ServiceRequestForm() {
     urgency: 'NORMAL',
   });
 
-  useEffect(() => {
-    api.get('/categories').then(res => setCategories(res.data)).catch(() => {});
-    api.get('/locations/cities').then(res => setCities(res.data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (form.city_id) {
-      api.get(`/locations/cities/${form.city_id}/districts`).then(res => setDistricts(res.data)).catch(() => {});
-    }
-  }, [form.city_id]);
+  const { data: districts = [] } = useDistricts(form.city_id);
 
   const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 

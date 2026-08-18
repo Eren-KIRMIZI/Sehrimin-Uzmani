@@ -1,24 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star, Shield, MapPin, Clock, MessageCircle, Calendar, Briefcase } from 'lucide-react';
-import api from '../services/api';
+import { useProviderProfile } from '../hooks/useQueries';
 import type { ProviderProfile, Review } from '../types';
 
 export default function ProviderProfilePage() {
   const { id } = useParams();
-  const [provider, setProvider] = useState<ProviderProfile | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const { data, isLoading: loading } = useProviderProfile(id);
+  const provider = (data?.provider as ProviderProfile) || null;
+  const reviews = (data?.reviews as Review[]) || [];
   const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    Promise.all([
-      api.get(`/providers/${id}`).then(res => setProvider(res.data)),
-      api.get(`/reviews/provider/${id}`).then(res => setReviews(res.data)),
-    ]).finally(() => setLoading(false));
-  }, [id]);
 
   if (loading) {
     return (

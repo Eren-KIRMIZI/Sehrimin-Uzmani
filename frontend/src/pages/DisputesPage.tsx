@@ -1,21 +1,10 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/authStore';
+import { useDisputes, useDisputeDetail, useDisputeCreateMutation, useDisputeMessageMutation, useDisputeCloseMutation } from '../hooks/useQueries';
+import type { DisputeData } from '../hooks/useQueries';
 
-interface Dispute {
-  id: number;
-  reason: string;
-  description: string;
-  status: string;
-  priority: string;
-  reporter_name: string;
-  reported_name: string;
-  amount_involved: number | null;
-  created_at: string;
-}
-
-interface DisputeDetail extends Dispute {
+interface DisputeDetail extends DisputeData {
   resolution: string | null;
   messages: Array<{
     id: number;
@@ -53,87 +42,53 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 export default function DisputesPage() {
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
-  const [selected, setSelected] = useState<DisputeDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [formData, setFormData] = useState({
-    reported_id: '',
-    reason: 'service_not_received',
-    description: '',
-    amount_involved: '',
+    reported_id: '', reason: 'service_not_received', description: '', amount_involved: '',
   });
   const user = useAuthStore((s) => s.user);
 
-  useEffect(() => {
-    fetchDisputes();
-  }, []);
+  const { data: disputes = [], isLoading: loading } = useDisputes();
+  const { data: selected } = useDisputeDetail(selectedId) as { data: DisputeDetail | undefined };
+  const createMutation = useDisputeCreateMutation();
+  const messageMutation = useDisputeMessageMutation();
+  const closeMutation = useDisputeCloseMutation();
 
-  const fetchDisputes = async () => {
-    try {
-      const res = await api.get('/disputes');
-      setDisputes(res.data.items);
-    } catch {
-      toast.error('Anlasmazliklar yuklenemedi');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchDetail = async (id: number) => {
-    try {
-      const res = await api.get(`/disputes/${id}`);
-      setSelected(res.data);
-    } catch {
-      toast.error('Detaylar yuklenemedi');
-    }
-  };
-
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!formData.reported_id || !formData.description) {
       toast.error('Zorunlu alanlari doldurun');
       return;
     }
-    try {
-      await api.post('/disputes', null, {
-        params: {
-          reported_id: parseInt(formData.reported_id),
-          reason: formData.reason,
-          description: formData.description,
-          amount_involved: formData.amount_involved ? parseFloat(formData.amount_involved) : undefined,
-        },
-      });
-      toast.success('Anlasmazlik acildi');
-      setShowForm(false);
-      setFormData({ reported_id: '', reason: 'service_not_received', description: '', amount_involved: '' });
-      fetchDisputes();
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Hata olustu');
-    }
+    createMutation.mutate({
+      reported_id: parseInt(formData.reported_id),
+      reason: formData.reason,
+      description: formData.description,
+      amount_involved: formData.amount_involved ? parseFloat(formData.amount_involved) : undefined,
+    }, {
+      onSuccess: () => {
+        toast.success('Anlasmazlik acildi');
+        setShowForm(false);
+        setFormData({ reported_id: '', reason: 'service_not_received', description: '', amount_involved: '' });
+      },
+      onError: (err: any) => toast.error(err.response?.data?.detail || 'Hata olustu'),
+    });
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!selected || !newMessage.trim()) return;
-    try {
-      await api.post(`/disputes/${selected.id}/messages`, null, { params: { message: newMessage } });
-      setNewMessage('');
-      fetchDetail(selected.id);
-      toast.success('Mesaj gonderildi');
-    } catch {
-      toast.error('Mesaj gonderilemedi');
-    }
+    messageMutation.mutate({ id: selected.id, message: newMessage }, {
+      onSuccess: () => { setNewMessage(''); toast.success('Mesaj gonderildi'); },
+      onError: () => toast.error('Mesaj gonderilemedi'),
+    });
   };
 
-  const handleClose = async (id: number) => {
-    try {
-      await api.post(`/disputes/${id}/close`);
-      toast.success('Anlasmazlik kapatildi');
-      fetchDisputes();
-      setSelected(null);
-    } catch {
-      toast.error('Kapatilamadi');
-    }
+  const handleClose = (id: number) => {
+    closeMutation.mutate(id, {
+      onSuccess: () => { toast.success('Anlasmazlik kapatildi'); setSelectedId(null); },
+      onError: () => toast.error('Kapatilamadi'),
+    });
   };
 
   return (
@@ -227,7 +182,7 @@ export default function DisputesPage() {
               disputes.map((d) => (
                 <button
                   key={d.id}
-                  onClick={() => fetchDetail(d.id)}
+                  onClick={() => setSelectedId(d.id)}
                   className={`w-full text-left bg-white rounded-xl p-4 border-2 transition-all hover:shadow-md ${
                     selected?.id === d.id ? 'border-primary-500 shadow-md' : 'border-transparent'
                   }`}

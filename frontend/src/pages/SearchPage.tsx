@@ -1,20 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search, MapPin, Star, Shield, Filter, Grid, List } from 'lucide-react';
-import api from '../services/api';
-import type { ProviderProfile, Category, City } from '../types';
+import { useCategories, useCities, useProviderSearch } from '../hooks/useQueries';
 import { useLocationStore } from '../stores/locationStore';
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { selectedCity, setSelectedCity } = useLocationStore();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [providers, setProviders] = useState<ProviderProfile[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState({
@@ -24,37 +18,23 @@ export default function SearchPage() {
     sort: searchParams.get('sort') || 'recommended',
   });
 
-  useEffect(() => {
-    api.get('/categories').then(res => setCategories(res.data)).catch(() => {});
-    api.get('/locations/cities').then(res => setCities(res.data)).catch(() => {});
-  }, []);
+  const { data: categories = [] } = useCategories();
+  const { data: cities = [] } = useCities();
 
-  useEffect(() => {
-    fetchProviders();
-  }, [searchParams, page, filters]);
+  const searchQueryParams = useMemo(() => ({
+    q: query || undefined,
+    city_id: selectedCity?.id,
+    category: filters.category || undefined,
+    min_rating: filters.minRating || undefined,
+    verified: filters.verified || undefined,
+    sort: filters.sort,
+    page,
+    limit: 12,
+  }), [query, selectedCity?.id, filters.category, filters.minRating, filters.verified, filters.sort, page]);
 
-  const fetchProviders = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (query) params.set('q', query);
-      if (selectedCity) params.set('city_id', String(selectedCity.id));
-      if (filters.category) params.set('category', filters.category);
-      if (filters.minRating) params.set('min_rating', filters.minRating);
-      if (filters.verified) params.set('verified', 'true');
-      params.set('sort', filters.sort);
-      params.set('page', String(page));
-      params.set('limit', '12');
-
-      const res = await api.get(`/search/providers?${params.toString()}`);
-      setProviders(res.data.items || []);
-      setTotal(res.data.total || 0);
-    } catch {
-      setProviders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: searchData, isLoading: loading } = useProviderSearch(searchQueryParams);
+  const providers = searchData?.items || [];
+  const total = searchData?.total || 0;
 
   const handleSearch = () => {
     setPage(1);

@@ -1,26 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
 import toast from 'react-hot-toast';
-
-interface SubscriptionPlan {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  price_monthly: number;
-  price_quarterly: number | null;
-  price_yearly: number | null;
-  commission_discount: number;
-  featured_listings: number;
-  priority_support: boolean;
-  advanced_analytics: boolean;
-  highlighted_profile: boolean;
-  badge_type: string | null;
-  max_portfolio_images: number;
-  max_services: number;
-  features: Array<{ name: string; value: string | null; included: boolean }>;
-}
+import { useSubscriptionPlans, useSubscribeMutation } from '../hooks/useQueries';
+import type { SubscriptionPlanData } from '../hooks/useQueries';
 
 const BADGE_COLORS: Record<string, string> = {
   free: 'border-gray-200 bg-gray-50 text-gray-800',
@@ -31,41 +13,24 @@ const BADGE_COLORS: Record<string, string> = {
 };
 
 export default function PricingPage() {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [interval, setInterval] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
-  const [subscribing, setSubscribing] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { data: plans = [] as SubscriptionPlanData[], isLoading: loading } = useSubscriptionPlans();
+  const subscribeMutation = useSubscribeMutation();
+  const [interval, setInterval] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  const fetchPlans = async () => {
-    try {
-      const res = await api.get('/subscriptions/plans');
-      setPlans(res.data);
-    } catch {
-      toast.error('Planlar yuklenemedi');
-    } finally {
-      setLoading(false);
-    }
+  const handleSubscribe = (planId: number) => {
+    subscribeMutation.mutate(
+      { planId, interval },
+      {
+        onSuccess: () => {
+          toast.success('Abonelik baslatildi!');
+          navigate('/dashboard');
+        },
+      }
+    );
   };
 
-  const handleSubscribe = async (planId: number) => {
-    setSubscribing(planId);
-    try {
-      await api.post('/subscriptions/subscribe', null, { params: { plan_id: planId, interval } });
-      toast.success('Abonelik baslatildi!');
-      navigate('/dashboard');
-    } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Hata olustu');
-    } finally {
-      setSubscribing(null);
-    }
-  };
-
-  const getPrice = (plan: SubscriptionPlan) => {
+  const getPrice = (plan: SubscriptionPlanData) => {
     switch (interval) {
       case 'monthly': return plan.price_monthly;
       case 'quarterly': return plan.price_quarterly || plan.price_monthly * 3;
@@ -73,7 +38,7 @@ export default function PricingPage() {
     }
   };
 
-  const getMonthlyEquiv = (plan: SubscriptionPlan) => {
+  const getMonthlyEquiv = (plan: SubscriptionPlanData) => {
     const total = getPrice(plan);
     switch (interval) {
       case 'monthly': return total;
@@ -183,14 +148,14 @@ export default function PricingPage() {
 
                 <button
                   onClick={() => handleSubscribe(plan.id)}
-                  disabled={subscribing === plan.id}
+                  disabled={subscribeMutation.isPending}
                   className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${
                     plan.slug === 'gold'
                       ? 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900'
                       : 'bg-primary-600 hover:bg-primary-700 text-white'
                   } disabled:opacity-50`}
                 >
-                  {subscribing === plan.id ? 'Isleniyor...' : 'Hemen Basla'}
+                  {subscribeMutation.isPending ? 'Isleniyor...' : 'Hemen Basla'}
                 </button>
               </div>
             );

@@ -1,6 +1,17 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+
+declare module 'leaflet' {
+  class MarkerClusterGroup extends FeatureGroup {
+    constructor(options?: Record<string, unknown>);
+    clearLayers(): this;
+    addLayer(layer: Layer): this;
+  }
+  function markerClusterGroup(options?: Record<string, unknown>): MarkerClusterGroup;
+}
 
 interface Marker {
   id: number;
@@ -22,7 +33,7 @@ interface MapViewProps {
 export default function MapView({ markers, center = [38.9637, 35.2433], zoom = 6, onMarkerClick, height = '400px' }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
-  const markersLayer = useRef<L.LayerGroup | null>(null);
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -41,7 +52,14 @@ export default function MapView({ markers, center = [38.9637, 35.2433], zoom = 6
       maxZoom: 19,
     }).addTo(mapInstance.current);
 
-    markersLayer.current = L.layerGroup().addTo(mapInstance.current);
+    clusterRef.current = L.markerClusterGroup({
+      chunkedLoading: true,
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+    });
+    mapInstance.current.addLayer(clusterRef.current);
 
     return () => {
       mapInstance.current?.remove();
@@ -50,9 +68,9 @@ export default function MapView({ markers, center = [38.9637, 35.2433], zoom = 6
   }, []);
 
   useEffect(() => {
-    if (!mapInstance.current || !markersLayer.current) return;
+    if (!mapInstance.current || !clusterRef.current) return;
 
-    markersLayer.current.clearLayers();
+    clusterRef.current.clearLayers();
 
     markers.forEach((marker) => {
       const icon = L.divIcon({
@@ -89,7 +107,7 @@ export default function MapView({ markers, center = [38.9637, 35.2433], zoom = 6
         </div>
       `);
 
-      markersLayer.current!.addLayer(m);
+      clusterRef.current!.addLayer(m);
     });
 
     if (markers.length > 0) {

@@ -1,71 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Users, Briefcase, FileText, CheckCircle, Settings, Shield, Star, TrendingUp, Activity, ChevronRight, Search, Eye, Edit } from 'lucide-react';
-import api from '../../services/api';
-
-interface DashboardStats {
-  total_users: number;
-  total_providers: number;
-  active_requests: number;
-  completed_jobs: number;
-  total_categories: number;
-  total_cities: number;
-}
+import { useAdminDashboard, useAdminUsers, useAdminProviders, useAdminRequests } from '../../hooks/useQueries';
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [users, setUsers] = useState<any[]>([]);
-  const [providers, setProviders] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
 
-
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const loadDashboard = async () => {
-    try {
-      const [statsRes] = await Promise.all([
-        api.get('/admin/dashboard'),
-      ]);
-      setStats(statsRes.data);
-    } catch (e: any) {
-      console.error('Dashboard yuklenemedi:', e);
-    }
-  };
-
-  const loadUsers = async () => {
-    try {
-      const res = await api.get('/admin/users?limit=50');
-      setUsers(res.data.items || []);
-    } catch (e: any) {
-      console.error('Kullanicilar yuklenemedi:', e);
-    }
-  };
-
-  const loadProviders = async () => {
-    try {
-      const res = await api.get('/admin/providers?limit=50');
-      setProviders(res.data.items || []);
-    } catch (e: any) {
-      console.error('Uzmanlar yuklenemedi:', e);
-    }
-  };
-
-  const loadRequests = async () => {
-    try {
-      const res = await api.get('/admin/requests?limit=50');
-      setRequests(res.data.items || []);
-    } catch (e: any) {
-      console.error('Talepler yuklenemedi:', e);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'users') loadUsers();
-    if (activeTab === 'providers') loadProviders();
-    if (activeTab === 'requests') loadRequests();
-  }, [activeTab]);
+  const { data: stats } = useAdminDashboard();
+  const { data: users = [] } = useAdminUsers();
+  const { data: providers = [] } = useAdminProviders();
+  const { data: requests = [] } = useAdminRequests();
 
   const tabs = [
     { id: 'overview', label: 'Genel Bakis', icon: Activity },
