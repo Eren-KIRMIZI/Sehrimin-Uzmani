@@ -242,12 +242,29 @@ class ProviderMatcher:
             location = data["locations"].get(provider.id)
             promoted_obj = data["promoted"].get(provider.id)
 
+            match_reasons = []
+            if float(avg_rating or 0) >= 4.5:
+                match_reasons.append("Yüksek müşteri memnuniyeti")
+            if profile and profile.experience_years and profile.experience_years >= 5:
+                match_reasons.append(f"{profile.experience_years} yıl deneyim")
+            if promoted_obj:
+                match_reasons.append("Önerilen uzman")
+            if location and city_id and location.city_id == city_id:
+                if district_id and location.district_id == district_id:
+                    match_reasons.append("Aynı ilçede")
+                else:
+                    match_reasons.append("Aynı şehirde")
+            if profile and profile.verification_status in ("professional", "business"):
+                match_reasons.append("Doğrulanmış profesyonel")
+
             results.append({
                 "provider_id": provider.id,
                 "full_name": provider.full_name,
                 "slug": provider.slug,
                 "avatar_url": provider.avatar_url,
                 "match_score": score,
+                "match_score_pct": min(100, int(score)),
+                "match_reasons": match_reasons,
                 "rating": round(float(avg_rating or 0), 1),
                 "review_count": int(review_count or 0),
                 "experience_years": profile.experience_years if profile else None,

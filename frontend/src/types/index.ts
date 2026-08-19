@@ -49,6 +49,7 @@ export interface ProviderProfile {
   hourly_rate?: number;
   subscription_plan: string;
   badge_type?: string;
+  distance_km?: number;
   user: User;
   services: ProviderService[];
   locations: ProviderLocation[];
@@ -132,6 +133,7 @@ export interface SearchFilters {
   max_price?: number;
   min_rating?: number;
   verified?: boolean;
+  available?: boolean;
   lat?: number;
   lng?: number;
   radius?: number;

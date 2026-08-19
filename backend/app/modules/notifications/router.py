@@ -22,10 +22,12 @@ def list_notifications(
     return [
         {
             "id": n.id,
-            "type": n.type,
+            "user_id": n.user_id,
+            "type": n.type.value if hasattr(n.type, "value") else n.type,
             "title": n.title,
             "message": n.message,
             "data": n.data,
+            "action_url": n.action_url,
             "is_read": n.is_read,
             "created_at": n.created_at,
         }

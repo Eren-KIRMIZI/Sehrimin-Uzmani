@@ -50,6 +50,13 @@ class ConnectionManager:
                 except Exception:
                     pass
 
+    async def send_personal_notification(self, user_id: int, notification: dict):
+        # We wrap the notification in an action for the client
+        await self.send_to_user(user_id, {
+            "action": "new_notification",
+            "notification": notification
+        })
+
     async def broadcast_to_conversation(self, conversation_id: int, sender_id: int, message: dict, db):
         conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
         if not conv:

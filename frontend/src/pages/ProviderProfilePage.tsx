@@ -5,7 +5,7 @@ import {
   Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check, Info, AlertTriangle
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { useProvider, useProviderReviews, useFavorites, useToggleFavorite, useReputation, useBadges } from '../hooks/useQueries';
+import { useProvider, useProviderReviews, useFavorites, useToggleFavorite, useReputation, useBadges, useAvailableSlots } from '../hooks/useQueries';
 import { useAuthStore } from '../stores/authStore';
 import { messagingApi } from '../services';
 import { useNavigate } from 'react-router-dom';
@@ -38,8 +38,9 @@ const ProviderProfilePage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'reviews' | 'portfolio'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'reviews' | 'portfolio' | 'availability'>('about');
   const [contactLoading, setContactLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
 
   const providerId = id ? Number(id) : undefined;
   const { data: provider, isLoading } = useProvider(providerId);
@@ -47,6 +48,7 @@ const ProviderProfilePage: React.FC = () => {
   const { data: favorites } = useFavorites();
   const { data: reputationData } = useReputation(providerId);
   const { data: badgesData } = useBadges(providerId);
+  const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(providerId, selectedDate);
   const toggleFavorite = useToggleFavorite();
 
   const isFavorited = favorites?.some((f: any) => f.provider_id === providerId);
@@ -104,6 +106,7 @@ const ProviderProfilePage: React.FC = () => {
     { key: 'services', label: 'Hizmetler', icon: <Check size={15} /> },
     { key: 'reviews', label: `Yorumlar (${provider.review_count})`, icon: <Star size={15} /> },
     { key: 'portfolio', label: 'Portföy', icon: <Image size={15} /> },
+    { key: 'availability', label: 'Takvim', icon: <Calendar size={15} /> },
   ] as const;
 
   return (
@@ -393,7 +396,7 @@ const ProviderProfilePage: React.FC = () => {
                     <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--color-text-muted)', padding: 60 }}>
                       Portföy öğesi bulunmuyor
                     </div>
-                  ) : provider.portfolio?.map(item => (
+                  ) : provider.portfolio?.map((item: any) => (
                     <div key={item.id} className="group relative" style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', aspectRatio: '1' }}>
                       <img src={item.image_url} alt={item.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} className="group-hover:scale-105" />
                       {item.title && (
@@ -403,6 +406,55 @@ const ProviderProfilePage: React.FC = () => {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {activeTab === 'availability' && (
+                <div className="card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                    <h3 style={{ fontWeight: 700, margin: 0 }}>Müsaitlik Durumu</h3>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      style={{ padding: '8px 12px', border: '1px solid var(--color-border)', borderRadius: 8, fontFamily: 'inherit' }}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  
+                  {slotsLoading ? (
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                      Müsaitlik durumu yükleniyor...
+                    </div>
+                  ) : !slotsData?.slots?.length ? (
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-muted)', background: 'var(--color-surface-2)', borderRadius: 12 }}>
+                      Bu tarihte seçilebilir saat bulunamadı.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 12 }}>
+                      {slotsData.slots.map((slot: any, i: number) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '12px',
+                            textAlign: 'center',
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            border: `1px solid ${slot.available ? 'var(--color-primary-light)' : 'var(--color-border)'}`,
+                            background: slot.available ? 'var(--color-surface)' : 'var(--color-surface-2)',
+                            color: slot.available ? 'var(--color-primary-light)' : 'var(--color-text-dim)',
+                            opacity: slot.available ? 1 : 0.6,
+                            cursor: slot.available ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.2s'
+                          }}
+                          className={slot.available ? 'hover:bg-indigo-50 hover:shadow-sm' : ''}
+                        >
+                          {slot.start}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -36,9 +36,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
       ws.onmessage = (event) => {
         try {
-          const payload: WebSocketMessage = JSON.parse(event.data);
-          if (payload.type === 'message' && payload.data) {
+          const payload = JSON.parse(event.data);
+          // Backend sends {"action": "new_message", "message": {...}} or {"action": "new_notification", "notification": {...}}
+          if (payload.action === 'new_message' && payload.message) {
+            options.onMessage?.(payload.message);
+          } else if (payload.type === 'message' && payload.data) { // Fallback for any older format
             options.onMessage?.(payload.data);
+          }
+          
+          if (payload.action === 'new_notification' && payload.notification) {
+            // Dispatch a custom event so other components (like NotificationCenter) can listen
+            const event = new CustomEvent('new_ws_notification', { detail: payload.notification });
+            window.dispatchEvent(event);
           }
         } catch {
           // ignore

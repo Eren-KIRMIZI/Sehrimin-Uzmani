@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Check, Info, AlertTriangle, AlertCircle, MessageSquare, Briefcase, User, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export interface Notification {
   id: number;
@@ -34,11 +35,28 @@ export const NotificationCenter: React.FC = () => {
     }
   };
 
+  // This will create a WS connection to listen for our custom events from useWebSocket.
+  // Wait, if we call useWebSocket here, we establish a connection.
+  // Since we also listen to 'new_ws_notification' on window, the connection will dispatch it, and we will catch it.
+  useWebSocket();
+
   useEffect(() => {
     fetchNotifications();
-    // In a real app, you would set up a WebSocket connection here
+    
+    const handleNewNotification = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const notification = customEvent.detail;
+      setNotifications(prev => [notification, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    };
+    
+    window.addEventListener('new_ws_notification', handleNewNotification);
     const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      window.removeEventListener('new_ws_notification', handleNewNotification);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {

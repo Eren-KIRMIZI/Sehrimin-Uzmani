@@ -12,13 +12,33 @@ const MapSearchPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null);
   const [cityId, setCityId] = useState<number>();
   const [category, setCategory] = useState<string>();
+  const [available, setAvailable] = useState<boolean>(false);
+  const [lat, setLat] = useState<number>();
+  const [lng, setLng] = useState<number>();
+  const [locating, setLocating] = useState<boolean>(false);
 
   const { data: categories } = useCategories();
   const { data: cities } = useCities();
 
+  const locateUser = () => {
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+        setLocating(false);
+      },
+      (err) => {
+        console.error(err);
+        setLocating(false);
+        alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+      }
+    );
+  };
+
   const { data, isLoading } = useQuery({
-    queryKey: ['map-search', cityId, category],
-    queryFn: () => searchApi.searchProviders({ city_id: cityId, category, limit: 50 }),
+    queryKey: ['map-search', cityId, category, available, lat, lng],
+    queryFn: () => searchApi.searchProviders({ city_id: cityId, category, available: available ? true : undefined, lat, lng, limit: 50 }),
   });
 
   const providers = data?.providers || [];
@@ -49,6 +69,18 @@ const MapSearchPage: React.FC = () => {
                 <option value="">Tüm Kategoriler</option>
                 {categories?.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
               </select>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer', marginTop: 4 }}>
+                <input type="checkbox" checked={available} onChange={e => setAvailable(e.target.checked)} />
+                Şu an müsait
+              </label>
+              <button 
+                className="btn btn-outline btn-sm" 
+                style={{ width: '100%', marginTop: 4 }}
+                onClick={locateUser}
+                disabled={locating}
+              >
+                <MapPin size={14} /> {locating ? 'Konum Bulunuyor...' : lat ? 'Konumuma Yakın' : 'Konumumu Bul'}
+              </button>
             </div>
             <div style={{ marginTop: 10, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
               {isLoading ? 'Aranıyor...' : `${providers.length} uzman bulundu`}
@@ -99,6 +131,11 @@ const MapSearchPage: React.FC = () => {
                         <Shield size={11} style={{ color: '#10b981' }} />
                       )}
                     </div>
+                    {provider.distance_km != null && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 2 }}>
+                        {provider.distance_km.toFixed(1)} km uzakta
+                      </div>
+                    )}
                   </div>
                   {provider.hourly_rate && (
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-light)', flexShrink: 0 }}>

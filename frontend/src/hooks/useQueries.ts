@@ -4,7 +4,7 @@ import {
   searchApi, requestsApi, reviewsApi, favoritesApi,
   notificationsApi, messagingApi, commissionsApi,
   subscriptionsApi, promotionsApi, disputesApi, adminApi,
-  reputationApi, badgesApi,
+  reputationApi, badgesApi, appointmentsApi
 } from '../services';
 import type { SearchFilters } from '../types';
 
@@ -60,6 +60,14 @@ export const useProviderReviews = (providerId?: number, page = 1) =>
 // REQUESTS
 export const useMyRequests = (page = 1) =>
   useQuery({ queryKey: ['requests', page], queryFn: () => requestsApi.getAll({ page, limit: 10 }) });
+
+// APPOINTMENTS
+export const useAvailableSlots = (providerId?: number, date?: string) =>
+  useQuery({
+    queryKey: ['availableSlots', providerId, date],
+    queryFn: () => appointmentsApi.getAvailableSlots(providerId!, date!),
+    enabled: !!providerId && !!date,
+  });
 
 // NOTIFICATIONS
 export const useNotifications = () =>
@@ -131,6 +139,15 @@ export const useDispute = (id?: number) =>
 // ADMIN
 export const useAdminDashboard = () =>
   useQuery({ queryKey: ['adminDashboard'], queryFn: adminApi.getDashboard });
+
+export const useAdminUsers = (page = 1) =>
+  useQuery({ queryKey: ['adminUsers', page], queryFn: () => adminApi.getUsers({ page, limit: 20 }) });
+
+export const useAdminDisputes = (page = 1) =>
+  useQuery({ queryKey: ['adminDisputes', page], queryFn: () => adminApi.getDisputes({ page, limit: 20 }) });
+
+export const useAdminPayouts = (page = 1) =>
+  useQuery({ queryKey: ['adminPayouts', page], queryFn: () => adminApi.getPayouts({ page, limit: 20 }) });
 
 // REPUTATION & BADGES
 export const useReputation = (providerId?: number) =>

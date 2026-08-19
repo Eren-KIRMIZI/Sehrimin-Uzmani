@@ -83,6 +83,50 @@ KEYWORD_MAP = {
 }
 
 
+import re
+
+def extract_urgency(text: str) -> Optional[str]:
+    urgency_patterns = [r"\bacil\b", r"\bhemen\b", r"\bhızlıca\b", r"\bçabuk\b", r"\bşimdi\b", r"\bbugün\b"]
+    for pattern in urgency_patterns:
+        if re.search(pattern, text):
+            if "acil" in pattern or "hemen" in pattern:
+                return "emergency"
+            return "high"
+    return "medium"
+
+def extract_time(text: str) -> Optional[str]:
+    time_patterns = [
+        r"\byarın\b", r"\bhafta sonu\b", r"\bpazartesi\b", r"\bsalı\b", r"\bçarşamba\b", 
+        r"\bperşembe\b", r"\bcuma\b", r"\bcumartesi\b", r"\bpazar\b", r"\bsabah\b", r"\bakşam\b",
+        r"\d+\s+(?:gün|hafta|ay)\s+içinde"
+    ]
+    matches = []
+    for pattern in time_patterns:
+        match = re.search(pattern, text)
+        if match:
+            matches.append(match.group(0))
+    
+    if matches:
+        return matches[0]
+    return None
+
+def extract_budget(text: str) -> Optional[dict]:
+    # Match patterns like "500 tl", "500tl", "1000 lira", "1000-2000 tl"
+    range_pattern = r"(\d+)\s*-\s*(\d+)\s*(?:tl|lira|₺)"
+    exact_pattern = r"(\d+)\s*(?:tl|lira|₺)"
+    
+    range_match = re.search(range_pattern, text)
+    if range_match:
+        return {"min": int(range_match.group(1)), "max": int(range_match.group(2))}
+        
+    exact_match = re.search(exact_pattern, text)
+    if exact_match:
+        val = int(exact_match.group(1))
+        # Arbitrarily range it
+        return {"min": val, "max": val}
+        
+    return None
+
 def detect_category(user_input: str, db: Session) -> dict:
     text = user_input.lower().strip()
 
@@ -94,12 +138,19 @@ def detect_category(user_input: str, db: Session) -> dict:
             best_match = mapping
             best_length = len(keyword)
 
+    urgency = extract_urgency(text)
+    time_pref = extract_time(text)
+    budget = extract_budget(text)
+
     if not best_match:
         return {
             "detected": False,
             "category": None,
             "subcategory": None,
             "service": None,
+            "urgency": urgency,
+            "time_pref": time_pref,
+            "budget": budget,
             "suggestion": "Kategori algilanamadi. Lutfen kategorinizi manuel secin.",
         }
 
@@ -112,5 +163,8 @@ def detect_category(user_input: str, db: Session) -> dict:
         "category": {"id": category.id, "name": category.name, "slug": category.slug} if category else None,
         "subcategory": {"id": subcategory.id, "name": subcategory.name, "slug": subcategory.slug} if subcategory else None,
         "service": {"id": service.id, "name": service.name, "slug": service.slug} if service else None,
+        "urgency": urgency,
+        "time_pref": time_pref,
+        "budget": budget,
         "suggestion": f"Ihtiyaciniz algilandi: {category.name if category else ''} > {subcategory.name if subcategory else ''} > {service.name if service else ''}",
     }

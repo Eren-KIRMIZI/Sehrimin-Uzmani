@@ -3,8 +3,11 @@ import { Shield, Users, AlertTriangle, FileText, Settings, CreditCard, Activity,
 import Layout from '../../components/layout/Layout';
 import { useAuthStore } from '../../stores/authStore';
 import { Navigate } from 'react-router-dom';
-import { useAdminDashboard } from '../../hooks/useQueries';
+import { useAdminDashboard, useAdminUsers, useAdminDisputes, useAdminPayouts } from '../../hooks/useQueries';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AdminUsers } from './AdminUsers';
+import { AdminDisputes } from './AdminDisputes';
+import { AdminPayouts } from './AdminPayouts';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -169,13 +172,18 @@ const AdminPage: React.FC = () => {
               <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 24, textTransform: 'capitalize' }}>
                 {activeTab.replace('_', ' ')}
               </h1>
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100" style={{ padding: 80, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Settings size={32} />
+              {activeTab === 'users' && <AdminUsers />}
+              {activeTab === 'disputes' && <AdminDisputes />}
+              {activeTab === 'payouts' && <AdminPayouts />}
+              {!['users', 'disputes', 'payouts'].includes(activeTab) && (
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100" style={{ padding: 80, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                  <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Settings size={32} />
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-800 mb-2">Modül Hazırlanıyor</h3>
+                  <p className="max-w-md mx-auto">Bu modülün arayüz bileşenleri yapım aşamasındadır. Backend servisleri (`adminApi`) kullanıma hazırdır.</p>
                 </div>
-                <h3 className="font-bold text-xl text-gray-800 mb-2">Modül Hazırlanıyor</h3>
-                <p className="max-w-md mx-auto">Bu modülün arayüz bileşenleri yapım aşamasındadır. Backend servisleri (`adminApi`) kullanıma hazırdır.</p>
-              </div>
+              )}
             </div>
           )}
         </div>

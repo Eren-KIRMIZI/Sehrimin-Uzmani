@@ -158,6 +158,9 @@ export const appointmentsApi = {
 
   complete: (id: number) => api.post(`/appointments/${id}/complete`).then(r => r.data),
   cancel: (id: number) => api.post(`/appointments/${id}/cancel`).then(r => r.data),
+
+  getAvailableSlots: (provider_id: number, date: string) =>
+    api.get<{ date: string; provider_id: number; total_slots: number; slots: { start: string; end: string; available: boolean; }[] }>('/appointments/available-slots', { params: { provider_id, date } }).then(r => r.data),
 };
 
 // ===== REVIEWS =====
