@@ -1,6 +1,16 @@
-# Sehrimin Uzmani
+# Şehrimin Uzmanı
 
-Yerel hizmet pazaryeri platformu. Kullanicilarin kendi sehirlerinde ihtiyac duydugu uzmani, hizmet saglayiciyi veya profesyoneli kolayca bulmasini; uzmanlarin ise kendi hizmetlerini, calisma bolgelerini, fiyatlarini ve musaitlik durumlarini sergileyerek yeni musterilere ulasmasini saglayan modern marketplace platformu.
+> **Talebini yaz → AI senin için anlasın → Sana uygun uzmanları karşılaştır → Teklif, randevu, ödeme ve yorumu tek yerde tamamla.**
+
+Şehrindeki uzmanı, hizmet sağlayıcıyı veya profesyoneli saniyeler içinde bulmana yarayan yerel hizmet pazaryeri. Yapay zeka destekli talep analizi ve şeffaf eşleştirme algoritmasıyla piyasanın en doğal ve güvenilir alternatifi.
+
+## Neden Şehrimin Uzmanı?
+
+| # | Değer Önerisi | Açıklama |
+|---|---------------|----------|
+| 1 | **Talebini Yaz, AI Anlasın** | Uzun formlar yok. "Kombim su akıtıyor, Nevşehir'de acil" yaz; sistem kategori, konum, aciliyet ve bütçeyi otomatik çıkarır. |
+| 2 | **Şeffaf Eşleştirme** | Her uzman önerisi için "Bu uzmanı neden önerdik?" açıklamasını görebilirsin. Algoritma kara kutu değil. |
+| 3 | **Uçtan Uca Tek Platform** | Teklif → randevu → ödeme → yorum işlemlerini farklı uygulamalara dağılmadan tek ekranda tamamla. |
 
 ---
 
@@ -563,16 +573,40 @@ Tum API hatalari asagidaki formatta dondurulur:
 
 ---
 
-## Planlanan Ozellikler
+## Yol Haritası
 
-- Mobil uygulama (React Native)
-- Online odeme altyapisi (iyzico / PayTR)
-- Guvenli odeme tutma (escrow)
-- Tavsiye motoru
-- Gelismis dolandiricilik tespiti
-- E-posta ve SMS bildirimleri
-- Gelismis analitik ve raporlama
-- Cok dil destegi
+> **Geliştirme Felsefesi:**
+> Feature complete → Production hardening → Gerçek para → 50 uzman + 100 müşteri → Ölç → Optimize et
+
+### Faz 2 — Marketplace Optimization 🟠 *(Şu an)*
+
+Gerçek kullanım verisiyle algoritmaları iyileştirmek.
+
+- Match scoring ve recommendation motorunun güçlendirilmesi
+- Uzman sıralama ve availability optimizasyonu
+- Response-time ve notification optimizasyonları
+- Search relevance iyileştirmeleri
+
+### Faz 3 — İlk Gerçek Şehir: Kontrollü Beta 🔴 *(Hedef)*
+
+Özellik geliştirmeden önce pazar uyumunu (Product-Market Fit) kanıtlamak.
+
+| Hedef | Değer |
+|-------|-------|
+| Bölge | **Nevşehir** |
+| Uzman | 50 |
+| Kategori | 5 |
+| Müşteri | 100 |
+
+Amaç para kazanmaktan önce marketplace'in gerçekten çalıştığını kanıtlamak.
+
+### Faz 4 — Bölgesel Büyüme 🟢 *(Sonrası)*
+
+Kontrollü beta sonrası veriye dayalı genişleme:
+
+```
+Nevşehir → Kayseri → Aksaray → Konya → Ankara
+```
 
 ---
 
