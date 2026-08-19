@@ -1,61 +1,56 @@
-import { Component, type ReactNode } from 'react';
+import React, { Component, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
 }
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
-export default class ErrorBoundary extends Component<Props, State> {
+class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary yakaladi:', error, errorInfo);
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, info);
   }
-
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
-  };
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
       return (
-        <div className="min-h-[400px] flex items-center justify-center p-8">
-          <div className="text-center max-w-md">
-            <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-primary mb-2">Bir hata olustu</h2>
-            <p className="text-text-muted text-sm mb-4">
-              Sayfa yuklenirken beklenmeyen bir hata olustu. Lutfen tekrar deneyin.
-            </p>
-            {this.state.error && (
-              <p className="text-xs text-red-500 bg-red-50 p-2 rounded-lg mb-4 font-mono">
-                {this.state.error.message}
-              </p>
-            )}
-            <button
-              onClick={this.handleReset}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-dark transition-colors text-sm"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Tekrar Dene
-            </button>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          minHeight: '60vh', gap: 20, padding: 40, textAlign: 'center',
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'rgba(239, 68, 68, 0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <AlertTriangle size={32} style={{ color: 'var(--color-error)' }} />
           </div>
+          <div>
+            <h2 style={{ fontWeight: 700, marginBottom: 8 }}>Beklenmedik Bir Hata Oluştu</h2>
+            <p style={{ color: 'var(--color-text-muted)', maxWidth: 400 }}>
+              {this.state.error?.message || 'Bir şeyler yanlış gitti.'}
+            </p>
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+            style={{ gap: 8 }}
+          >
+            <RefreshCw size={16} /> Sayfayı Yenile
+          </button>
         </div>
       );
     }
@@ -63,3 +58,5 @@ export default class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+export default ErrorBoundary;

@@ -1,149 +1,158 @@
-import { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { Search, MapPin, Star, Shield } from 'lucide-react';
-import { useCities, useProviderSearch } from '../hooks/useQueries';
-import MapView from '../components/map/MapView';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Star, Shield, MapPin, Filter } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import MapComponent from '../components/map/MapComponent';
+import { useCategories, useCities } from '../hooks/useQueries';
+import { searchApi } from '../services';
+import { useQuery } from '@tanstack/react-query';
 import type { ProviderProfile } from '../types';
-import { useLocationStore } from '../stores/locationStore';
 
-export default function MapSearchPage() {
-  const [searchParams] = useSearchParams();
-  const { selectedCity, setSelectedCity } = useLocationStore();
-  const [query, setQuery] = useState(searchParams.get('q') || '');
+const MapSearchPage: React.FC = () => {
   const [selectedProvider, setSelectedProvider] = useState<ProviderProfile | null>(null);
+  const [cityId, setCityId] = useState<number>();
+  const [category, setCategory] = useState<string>();
 
-  const { data: cities = [] } = useCities();
-  const { data: searchData, isLoading: loading, refetch } = useProviderSearch({
-    q: query || undefined,
-    city_id: selectedCity?.id,
-    limit: 50,
+  const { data: categories } = useCategories();
+  const { data: cities } = useCities();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['map-search', cityId, category],
+    queryFn: () => searchApi.searchProviders({ city_id: cityId, category, limit: 50 }),
   });
-  const providers = searchData?.items || [];
 
-  const handleSearch = () => { refetch(); };
-
-  const mapMarkers = providers
-    .filter(p => p.latitude && p.longitude)
-    .map(p => ({
-      id: p.id,
-      lat: p.latitude!,
-      lng: p.longitude!,
-      name: p.business_name || `${p.user?.first_name} ${p.user?.last_name}`,
-      rating: p.rating,
-    }));
+  const providers = data?.providers || [];
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Search Bar */}
-      <div className="bg-white border-b border-border-light sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex gap-3">
-            <div className="flex-1 flex items-center gap-3 bg-bg rounded-xl px-4">
-              <Search className="w-5 h-5 text-text-muted" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Uzman ara..."
-                className="w-full py-3 text-sm outline-none bg-transparent"
-              />
+    <Layout noFooter>
+      <div style={{ display: 'flex', height: 'calc(100vh - 64px)' }}>
+        {/* Left panel */}
+        <div style={{
+          width: 380, flexShrink: 0,
+          background: 'var(--color-surface)',
+          borderRight: '1px solid var(--color-border)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Filters */}
+          <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 style={{ fontWeight: 700, marginBottom: 12, fontSize: '1rem' }}>
+              <MapPin size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+              Haritada Uzman Ara
+            </h2>
+            <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
+              <select className="input" style={{ height: 38 }} value={cityId || ''} onChange={e => setCityId(e.target.value ? Number(e.target.value) : undefined)}>
+                <option value="">Tüm Şehirler</option>
+                {cities?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select className="input" style={{ height: 38 }} value={category || ''} onChange={e => setCategory(e.target.value || undefined)}>
+                <option value="">Tüm Kategoriler</option>
+                {categories?.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+              </select>
             </div>
-            <select
-              value={selectedCity?.id || ''}
-              onChange={(e) => {
-                const city = cities.find(c => c.id === Number(e.target.value));
-                setSelectedCity(city ? { id: city.id, name: city.name } : null);
-              }}
-              className="px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-            >
-              <option value="">Tum Sehirler</option>
-              {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button onClick={handleSearch} className="px-6 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-dark transition-colors">
-              Ara
-            </button>
+            <div style={{ marginTop: 10, fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+              {isLoading ? 'Aranıyor...' : `${providers.length} uzman bulundu`}
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-primary">{providers.length} uzman bulundu</h1>
-          <Link to="/search" className="text-accent text-sm font-medium">Liste Gorunumu</Link>
-        </div>
-
-        {/* Map + List Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6" style={{ height: 'calc(100vh - 220px)' }}>
-          {/* Provider List */}
-          <div className="lg:col-span-2 overflow-y-auto space-y-3 pr-2">
-            {loading ? (
-              [...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 border border-border-light">
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2 skeleton" />
-                  <div className="h-3 bg-gray-200 rounded w-1/3 skeleton" />
-                </div>
+          {/* List */}
+          <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+            {isLoading ? (
+              Array(5).fill(0).map((_, i) => (
+                <div key={i} className="skeleton" style={{ height: 80, borderRadius: 12, marginBottom: 10 }} />
               ))
             ) : providers.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-3">🔍</div>
-                <p className="text-text-muted">Sonuc bulunamadi</p>
+              <div style={{ textAlign: 'center', padding: '40px 16px', color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: '2rem', marginBottom: 8 }}>📍</div>
+                <div>Bu bölgede uzman bulunamadı</div>
               </div>
             ) : (
-              providers.map((provider) => (
+              providers.map(provider => (
                 <div
                   key={provider.id}
                   onClick={() => setSelectedProvider(provider)}
-                  className={`bg-white rounded-xl p-4 border cursor-pointer transition-all hover:shadow-md ${
-                    selectedProvider?.id === provider.id ? 'border-accent shadow-md' : 'border-border-light'
-                  }`}
+                  style={{
+                    padding: 12, borderRadius: 12, cursor: 'pointer', marginBottom: 8,
+                    background: selectedProvider?.id === provider.id ? 'rgba(99, 102, 241, 0.12)' : 'var(--color-surface-2)',
+                    border: `1px solid ${selectedProvider?.id === provider.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    transition: 'all 0.2s',
+                    display: 'flex', gap: 12, alignItems: 'center',
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-accent font-bold">
-                        {provider.user?.first_name?.[0]}{provider.user?.last_name?.[0]}
-                      </span>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, color: 'white', fontSize: '1.1rem',
+                  }}>
+                    {provider.business_name?.[0] || '?'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: 2 }}>
+                      {provider.business_name}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm truncate">
-                          {provider.business_name || `${provider.user?.first_name} ${provider.user?.last_name}`}
-                        </h3>
-                        {provider.verification_status !== 'NONE' && (
-                          <Shield className="w-3 h-3 text-accent flex-shrink-0" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Star className="w-3 h-3 text-warning fill-warning" />
-                        <span className="text-xs font-medium">{provider.rating}</span>
-                        <span className="text-xs text-text-muted">{provider.review_count} yorum</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-text-muted">
-                        <MapPin className="w-3 h-3" />
-                        {provider.locations?.[0]?.city || 'Konum yok'}
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Star size={12} fill="#f59e0b" color="#f59e0b" />
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{provider.rating?.toFixed(1)}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>({provider.review_count})</span>
+                      {provider.verification_level !== 'NONE' && (
+                        <Shield size={11} style={{ color: '#10b981' }} />
+                      )}
                     </div>
                   </div>
+                  {provider.hourly_rate && (
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--color-primary-light)', flexShrink: 0 }}>
+                      ₺{provider.hourly_rate}
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
 
-          {/* Map */}
-          <div className="lg:col-span-3">
-            <MapView
-              markers={mapMarkers}
-              center={selectedCity ? [38.9637, 35.2433] : [39.9334, 32.8597]}
-              zoom={selectedCity ? 10 : 6}
-              onMarkerClick={(id) => {
-                const p = providers.find(pr => pr.id === id);
-                if (p) setSelectedProvider(p);
-              }}
-              height="100%"
-            />
-          </div>
+          {/* Selected provider detail */}
+          {selectedProvider && (
+            <div style={{
+              padding: 16,
+              background: 'var(--color-surface-2)',
+              borderTop: '1px solid var(--color-border)',
+              animation: 'slideIn 0.2s ease',
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>{selectedProvider.business_name}</div>
+              {selectedProvider.bio && (
+                <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
+                  {selectedProvider.bio.slice(0, 100)}...
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link
+                  to={`/provider/${selectedProvider.id}`}
+                  className="btn btn-primary btn-sm"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Profili Gör
+                </Link>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setSelectedProvider(null)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Map */}
+        <div style={{ flex: 1 }}>
+          <MapComponent
+            providers={providers}
+            onProviderClick={setSelectedProvider}
+          />
         </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default MapSearchPage;

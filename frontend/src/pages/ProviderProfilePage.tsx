@@ -1,301 +1,393 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Star, Shield, MapPin, Clock, MessageCircle, Calendar, Briefcase } from 'lucide-react';
-import { useProviderProfile } from '../hooks/useQueries';
-import type { ProviderProfile, Review } from '../types';
+import React, { useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import {
+  Star, Shield, MapPin, Clock, TrendingUp, Phone, MessageSquare,
+  Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check,
+} from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useProvider, useProviderReviews, useFavorites, useToggleFavorite } from '../hooks/useQueries';
+import { useAuthStore } from '../stores/authStore';
+import { messagingApi } from '../services';
+import { useNavigate } from 'react-router-dom';
 
-export default function ProviderProfilePage() {
+const VerificationBadge: React.FC<{ level: string }> = ({ level }) => {
+  const map: Record<string, { color: string; label: string; icon: string }> = {
+    NONE: { color: '#64748b', label: 'Doğrulanmamış', icon: '○' },
+    BASIC: { color: '#3b82f6', label: 'Temel', icon: '✓' },
+    ID: { color: '#8b5cf6', label: 'Kimlik', icon: '✓✓' },
+    PROFESSIONAL: { color: '#f59e0b', label: 'Profesyonel', icon: '★' },
+    BUSINESS: { color: '#10b981', label: 'İşletme', icon: '🏢' },
+  };
+  const info = map[level] || map.NONE;
+  return (
+    <span style={{ color: info.color, fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <Shield size={13} /> {info.label} Doğrulama
+    </span>
+  );
+};
+
+const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 16 }) => (
+  <div style={{ display: 'flex', gap: 2 }}>
+    {[1, 2, 3, 4, 5].map(i => (
+      <Star key={i} size={size} fill={i <= Math.round(rating) ? '#f59e0b' : 'transparent'} color={i <= Math.round(rating) ? '#f59e0b' : '#374151'} />
+    ))}
+  </div>
+);
+
+const ProviderProfilePage: React.FC = () => {
   const { id } = useParams();
-  const { data, isLoading: loading } = useProviderProfile(id);
-  const provider = (data?.provider as ProviderProfile) || null;
-  const reviews = (data?.reviews as Review[]) || [];
-  const [activeTab, setActiveTab] = useState('overview');
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<'about' | 'services' | 'reviews' | 'portfolio'>('about');
+  const [contactLoading, setContactLoading] = useState(false);
 
-  if (loading) {
+  const { data: provider, isLoading } = useProvider(id ? Number(id) : undefined);
+  const { data: reviewsData } = useProviderReviews(id ? Number(id) : undefined);
+  const { data: favorites } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+
+  const isFavorited = favorites?.some((f: any) => f.provider_id === Number(id));
+
+  const handleContact = async () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    setContactLoading(true);
+    try {
+      const conv = await messagingApi.createConversation(Number(id));
+      navigate('/chat', { state: { conversationId: conv.id } });
+    } catch {
+      navigate('/chat');
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  const handleRequest = () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    navigate(`/request/create?provider=${id}`);
+  };
+
+  if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl p-8 border border-border-light">
-          <div className="flex items-start gap-6">
-            <div className="w-24 h-24 bg-gray-200 rounded-2xl skeleton" />
-            <div className="flex-1">
-              <div className="h-6 bg-gray-200 rounded w-1/3 mb-3 skeleton" />
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-2 skeleton" />
-              <div className="h-3 bg-gray-200 rounded w-1/5 skeleton" />
+      <Layout>
+        <div className="container" style={{ padding: '40px 24px' }}>
+          <div className="skeleton" style={{ height: 300, borderRadius: 20, marginBottom: 24 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {[200, 150, 180].map((h, i) => <div key={i} className="skeleton" style={{ height: h, borderRadius: 16 }} />)}
             </div>
+            <div className="skeleton" style={{ height: 400, borderRadius: 16 }} />
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
-  if (!provider) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-xl font-semibold">Uzman bulunamadı</h2>
+  if (!provider) return (
+    <Layout>
+      <div style={{ textAlign: 'center', padding: '80px 0' }}>
+        <div style={{ fontSize: '3rem', marginBottom: 16 }}>👤</div>
+        <h2>Uzman bulunamadı</h2>
+        <Link to="/search" className="btn btn-primary" style={{ marginTop: 16 }}>Geri Dön</Link>
       </div>
-    );
-  }
+    </Layout>
+  );
+
+  const reviews = reviewsData?.items || [];
 
   const tabs = [
-    { id: 'overview', label: 'Genel' },
-    { id: 'services', label: 'Hizmetler' },
-    { id: 'reviews', label: 'Yorumlar' },
-    { id: 'about', label: 'Hakkında' },
-  ];
+    { key: 'about', label: 'Hakkında', icon: <Briefcase size={15} /> },
+    { key: 'services', label: 'Hizmetler', icon: <Check size={15} /> },
+    { key: 'reviews', label: `Yorumlar (${provider.review_count})`, icon: <Star size={15} /> },
+    { key: 'portfolio', label: 'Portföy', icon: <Image size={15} /> },
+  ] as const;
 
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Header */}
-      <div className="bg-white border-b border-border-light">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row items-start gap-6">
-            <div className="w-24 h-24 bg-accent/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-              <span className="text-accent font-bold text-3xl">
-                {provider.user?.first_name?.[0]}{provider.user?.last_name?.[0]}
-              </span>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-primary">
-                  {provider.business_name || `${provider.user?.first_name} ${provider.user?.last_name}`}
-                </h1>
-                {provider.verification_status !== 'NONE' && (
-                  <span className="px-2 py-1 bg-accent/10 text-accent text-xs font-medium rounded-lg flex items-center gap-1">
-                    <Shield className="w-3 h-3" /> Doğrulanmış
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 mt-2 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-warning fill-warning" />
-                  <span className="font-semibold">{provider.rating}</span>
-                  <span className="text-text-muted">({provider.review_count} yorum)</span>
-                </div>
-                <div className="flex items-center gap-1 text-text-muted">
-                  <Briefcase className="w-4 h-4" />
-                  {provider.completed_jobs} tamamlanan iş
-                </div>
-                <div className="flex items-center gap-1 text-text-muted">
-                  <Clock className="w-4 h-4" />
-                  Ort. {provider.response_time_minutes} dk yanıt
-                </div>
-              </div>
-              <div className="flex items-center gap-1 mt-2 text-sm text-text-muted">
-                <MapPin className="w-4 h-4" />
-                {provider.locations?.map(l => l.city).filter(Boolean).join(', ') || 'Konum belirtilmemiş'}
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button className="px-6 py-3 bg-accent text-white font-medium rounded-xl hover:bg-accent-dark transition-colors flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" /> Mesaj Gönder
-              </button>
-              <button className="px-6 py-3 border border-accent text-accent font-medium rounded-xl hover:bg-accent/5 transition-colors flex items-center gap-2">
-                <Calendar className="w-4 h-4" /> Randevu Al
-              </button>
-            </div>
-          </div>
+    <Layout>
+      <div className="container" style={{ padding: '32px 24px' }}>
+        {/* Back */}
+        <Link to="/search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-muted)', textDecoration: 'none', marginBottom: 24, fontSize: '0.875rem' }}>
+          <ChevronLeft size={16} /> Arama sonuçlarına dön
+        </Link>
 
-          {/* Tabs */}
-          <div className="flex gap-6 mt-8 border-b border-border-light -mb-px">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-text-muted hover:text-primary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              {provider.bio && (
-                <div className="bg-white rounded-2xl p-6 border border-border-light">
-                  <h3 className="font-semibold text-primary mb-3">Hakkında</h3>
-                  <p className="text-text-muted leading-relaxed">{provider.bio}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr min(320px, 100%)', gap: 28, alignItems: 'start' }}>
+          {/* Left column */}
+          <div>
+            {/* Profile header */}
+            <div className="card" style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {/* Avatar */}
+                <div style={{
+                  width: 90, height: 90, borderRadius: '50%', flexShrink: 0,
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '2.4rem', fontWeight: 700, color: 'white',
+                  boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)',
+                }}>
+                  {provider.avatar_url
+                    ? <img src={provider.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                    : provider.business_name?.[0]}
                 </div>
-              )}
 
-              {provider.services?.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 border border-border-light">
-                  <h3 className="font-semibold text-primary mb-4">Hizmetler</h3>
-                  <div className="space-y-3">
-                    {provider.services.map(s => (
-                      <div key={s.id} className="flex items-center justify-between p-3 bg-bg rounded-xl">
-                        <div>
-                          <span className="font-medium text-sm">{s.service_name}</span>
-                          {s.description && <p className="text-xs text-text-muted mt-1">{s.description}</p>}
-                        </div>
-                        {s.starting_price && (
-                          <span className="text-accent font-semibold text-sm">₺{s.starting_price}</span>
-                        )}
-                      </div>
-                    ))}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
+                    <h1 style={{ fontWeight: 900, fontSize: '1.5rem', margin: 0 }}>{provider.business_name}</h1>
+                    {provider.badge_type && (
+                      <span className="badge badge-primary">
+                        {provider.badge_type === 'diamond' ? '💎 Elmas' :
+                         provider.badge_type === 'gold' ? '🥇 Altın' :
+                         provider.badge_type === 'silver' ? '🥈 Gümüş' : '🥉 Bronz'}
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
 
-              {reviews.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 border border-border-light">
-                  <h3 className="font-semibold text-primary mb-4">Son Yorumlar</h3>
-                  <div className="space-y-4">
-                    {reviews.slice(0, 3).map(review => (
-                      <div key={review.id} className="pb-4 border-b border-border-light last:border-0 last:pb-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 bg-bg rounded-full flex items-center justify-center">
-                            <span className="text-xs font-medium">{review.customer?.first_name?.[0]}</span>
-                          </div>
-                          <div>
-                            <span className="text-sm font-medium">{review.customer?.first_name} {review.customer?.last_name}</span>
-                            <div className="flex items-center gap-1">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-warning fill-warning' : 'text-gray-200'}`} />
-                              ))}
+                  <VerificationBadge level={provider.verification_level} />
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <StarRating rating={provider.rating} />
+                      <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{provider.rating?.toFixed(1)}</span>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>({provider.review_count} yorum)</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <TrendingUp size={13} /> {provider.completed_jobs} iş
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Clock size={13} /> {provider.years_experience} yıl
+                      </span>
+                    </div>
+                  </div>
+
+                  {provider.locations?.length > 0 && (
+                    <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {provider.locations.slice(0, 3).map(loc => (
+                        <span key={loc.id} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <MapPin size={12} /> {loc.city?.name}{loc.district ? `, ${loc.district.name}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--color-border)', marginBottom: 20 }}>
+              {tabs.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '12px 20px', background: 'transparent', border: 'none',
+                    cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem',
+                    color: activeTab === tab.key ? 'var(--color-primary-light)' : 'var(--color-text-muted)',
+                    borderBottom: `2px solid ${activeTab === tab.key ? 'var(--color-primary)' : 'transparent'}`,
+                    transition: 'all 0.2s', marginBottom: -1,
+                  }}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab content */}
+            <div className="animate-fade-in" key={activeTab}>
+              {activeTab === 'about' && (
+                <div className="card">
+                  <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Hakkında</h3>
+                  <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
+                    {provider.bio || 'Bu uzman henüz bir biyografi eklememiş.'}
+                  </p>
+                  {provider.availability?.length > 0 && (
+                    <>
+                      <h4 style={{ fontWeight: 700, marginTop: 20, marginBottom: 12 }}>Müsaitlik</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day, i) => {
+                          const avail = provider.availability.find(a => a.day_of_week === i);
+                          return (
+                            <div key={day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
+                              <span style={{ fontWeight: 600 }}>{day}</span>
+                              <span style={{ color: avail ? 'var(--color-success)' : 'var(--color-text-dim)' }}>
+                                {avail ? `${avail.start_time} - ${avail.end_time}` : 'Müsait Değil'}
+                              </span>
                             </div>
-                          </div>
-                        </div>
-                        {review.comment && <p className="text-sm text-text-muted">{review.comment}</p>}
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
-            </div>
 
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl p-6 border border-border-light">
-                <h3 className="font-semibold text-primary mb-4">İstatistikler</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Tamamlanan iş</span>
-                    <span className="font-medium">{provider.completed_jobs}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Yanıt süresi</span>
-                    <span className="font-medium">~{provider.response_time_minutes} dk</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Deneyim</span>
-                    <span className="font-medium">{provider.experience_years} yıl</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-text-muted">Doğrulama</span>
-                    <span className="font-medium text-accent">{provider.verification_status}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-6 border border-border-light">
-                <h3 className="font-semibold text-primary mb-4">Bölgeler</h3>
-                <div className="space-y-2">
-                  {provider.locations?.map((loc, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-text-muted">
-                      <MapPin className="w-3 h-3" />
-                      {loc.district ? `${loc.district}, ${loc.city}` : loc.city}
+              {activeTab === 'services' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {provider.services?.length === 0 ? (
+                    <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                      Henüz hizmet eklenmemiş
+                    </div>
+                  ) : provider.services?.map(s => (
+                    <div key={s.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{s.service?.name}</div>
+                        {s.description && <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{s.description}</div>}
+                      </div>
+                      {s.starting_price && (
+                        <div style={{ fontWeight: 700, color: 'var(--color-primary-light)', fontSize: '1.1rem', flexShrink: 0 }}>
+                          ₺{s.starting_price}'den başlayan
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Overall rating */}
+                  <div className="card" style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-text)' }}>{provider.rating?.toFixed(1)}</div>
+                      <StarRating rating={provider.rating} size={18} />
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{provider.review_count} yorum</div>
+                    </div>
+                  </div>
+
+                  {reviews.length === 0 ? (
+                    <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 40 }}>
+                      Henüz yorum yapılmamış
+                    </div>
+                  ) : reviews.map((review: any) => (
+                    <div key={review.id} className="card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{
+                            width: 36, height: 36, borderRadius: '50%',
+                            background: 'var(--color-surface-3)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                          }}>
+                            {review.customer?.first_name?.[0]}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                              {review.customer?.first_name} {review.customer?.last_name?.[0]}.
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                              {new Date(review.created_at).toLocaleDateString('tr-TR')}
+                            </div>
+                          </div>
+                        </div>
+                        <StarRating rating={review.rating} />
+                      </div>
+                      {review.comment && (
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: 1.6 }}>{review.comment}</p>
+                      )}
+                      {review.provider_reply && (
+                        <div style={{
+                          marginTop: 12, padding: 12,
+                          background: 'rgba(99, 102, 241, 0.08)',
+                          border: '1px solid rgba(99, 102, 241, 0.2)',
+                          borderRadius: 10,
+                        }}>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-primary-light)', fontWeight: 700, marginBottom: 4 }}>
+                            Uzman yanıtı:
+                          </div>
+                          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{review.provider_reply}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'portfolio' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                  {provider.portfolio?.length === 0 ? (
+                    <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--color-text-muted)', padding: 40 }}>
+                      Portföy öğesi bulunmuyor
+                    </div>
+                  ) : provider.portfolio?.map(item => (
+                    <div key={item.id} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', aspectRatio: '1' }}>
+                      <img src={item.image_url} alt={item.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {activeTab === 'services' && (
-          <div className="bg-white rounded-2xl p-6 border border-border-light">
-            <h3 className="font-semibold text-primary mb-4">Tüm Hizmetler</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {provider.services?.map(s => (
-                <div key={s.id} className="p-4 bg-bg rounded-xl">
-                  <h4 className="font-medium">{s.service_name}</h4>
-                  {s.description && <p className="text-sm text-text-muted mt-1">{s.description}</p>}
-                  <div className="flex items-center gap-4 mt-2 text-sm">
-                    {s.starting_price && <span className="text-accent font-semibold">₺{s.starting_price}</span>}
-                    <span className="text-text-muted">{s.pricing_type}</span>
+          {/* Right sidebar */}
+          <div style={{ position: 'sticky', top: 80 }}>
+            <div className="card" style={{ marginBottom: 16 }}>
+              {/* Pricing */}
+              {provider.hourly_rate && (
+                <div style={{ textAlign: 'center', padding: '16px 0 20px', borderBottom: '1px solid var(--color-border)', marginBottom: 20 }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary-light)' }}>
+                    ₺{provider.hourly_rate}
                   </div>
+                  <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>saat başına</div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  id="hire-btn"
+                  className="btn btn-primary"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={handleRequest}
+                >
+                  <Calendar size={16} /> Hizmet Talebi Oluştur
+                </button>
+                <button
+                  id="message-btn"
+                  className="btn btn-outline"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={handleContact}
+                  disabled={contactLoading}
+                >
+                  <MessageSquare size={16} />
+                  {contactLoading ? 'Yükleniyor...' : 'Mesaj Gönder'}
+                </button>
+                {isAuthenticated && (
+                  <button
+                    id="favorite-btn"
+                    className={`btn btn-ghost`}
+                    style={{ width: '100%', justifyContent: 'center', color: isFavorited ? '#ef4444' : 'var(--color-text-muted)' }}
+                    onClick={() => toggleFavorite.mutate(Number(id))}
+                  >
+                    <Heart size={16} fill={isFavorited ? '#ef4444' : 'transparent'} />
+                    {isFavorited ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Stats card */}
+            <div className="card">
+              <h4 style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>İstatistikler</h4>
+              {[
+                { icon: <Star size={14} />, label: 'Ortalama Puan', value: `${provider.rating?.toFixed(1)}/5.0` },
+                { icon: <TrendingUp size={14} />, label: 'Tamamlanan İş', value: provider.completed_jobs },
+                { icon: <Clock size={14} />, label: 'Deneyim', value: `${provider.years_experience} yıl` },
+                { icon: <Award size={14} />, label: 'Doğrulama', value: provider.verification_level },
+              ].map(item => (
+                <div key={item.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 0', borderBottom: '1px solid var(--color-border)',
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                    {item.icon} {item.label}
+                  </span>
+                  <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{item.value}</span>
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {activeTab === 'reviews' && (
-          <div className="bg-white rounded-2xl p-6 border border-border-light">
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border-light">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary">{provider.rating}</div>
-                <div className="flex items-center gap-1 mt-1">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} className={`w-4 h-4 ${i < Math.round(provider.rating) ? 'text-warning fill-warning' : 'text-gray-200'}`} />
-                  ))}
-                </div>
-                <div className="text-sm text-text-muted mt-1">{provider.review_count} yorum</div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {reviews.length === 0 ? (
-                <p className="text-center text-text-muted py-8">Henüz yorum yapılmamış</p>
-              ) : (
-                reviews.map(review => (
-                  <div key={review.id} className="pb-6 border-b border-border-light last:border-0">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-accent font-semibold text-sm">{review.customer?.first_name?.[0]}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{review.customer?.first_name} {review.customer?.last_name}</span>
-                          <div className="flex items-center gap-0.5">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'text-warning fill-warning' : 'text-gray-200'}`} />
-                            ))}
-                          </div>
-                        </div>
-                        {review.comment && <p className="text-sm text-text-muted mt-2">{review.comment}</p>}
-                        <div className="flex gap-4 mt-2 text-xs text-text-muted">
-                          {review.communication_rating && <span>İletişim: {review.communication_rating}</span>}
-                          {review.quality_rating && <span>Kalite: {review.quality_rating}</span>}
-                          {review.punctuality_rating && <span>Zamanlama: {review.punctuality_rating}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'about' && (
-          <div className="bg-white rounded-2xl p-6 border border-border-light">
-            <h3 className="font-semibold text-primary mb-4">Hakkında</h3>
-            <p className="text-text-muted leading-relaxed">
-              {provider.bio || 'Henüz bilgi eklenmemiş.'}
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div className="p-4 bg-bg rounded-xl">
-                <div className="text-sm text-text-muted">Deneyim</div>
-                <div className="font-semibold">{provider.experience_years} yıl</div>
-              </div>
-              <div className="p-4 bg-bg rounded-xl">
-                <div className="text-sm text-text-muted">Doğrulama Durumu</div>
-                <div className="font-semibold text-accent">{provider.verification_status}</div>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default ProviderProfilePage;

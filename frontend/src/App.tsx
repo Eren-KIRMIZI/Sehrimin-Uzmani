@@ -1,72 +1,93 @@
-import { lazy, Suspense } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import Layout from './components/layout/Layout';
+import { useAuthStore } from './stores/authStore';
+import { authApi } from './services';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const HomePage = lazy(() => import('./pages/HomePage'));
-const SearchPage = lazy(() => import('./pages/SearchPage'));
-const MapSearchPage = lazy(() => import('./pages/MapSearchPage'));
-const ProviderProfilePage = lazy(() => import('./pages/ProviderProfilePage'));
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
-const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
-const ServiceRequestForm = lazy(() => import('./pages/ServiceRequestForm'));
-const ChatPage = lazy(() => import('./pages/ChatPage'));
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
-const PricingPage = lazy(() => import('./pages/PricingPage'));
-const DisputesPage = lazy(() => import('./pages/DisputesPage'));
-const EarningsPage = lazy(() => import('./pages/EarningsPage'));
-const PromotionsPage = lazy(() => import('./pages/PromotionsPage'));
+// Pages
+import HomePage from './pages/HomePage';
+import SearchPage from './pages/SearchPage';
+import MapSearchPage from './pages/MapSearchPage';
+import ProviderProfilePage from './pages/ProviderProfilePage';
+import ServiceRequestForm from './pages/ServiceRequestForm';
+import ChatPage from './pages/ChatPage';
+import PricingPage from './pages/PricingPage';
+import EarningsPage from './pages/EarningsPage';
+import PromotionsPage from './pages/PromotionsPage';
+import DisputesPage from './pages/DisputesPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import AdminPage from './pages/admin/AdminPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
   },
 });
 
-function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-}
+const App: React.FC = () => {
+  const { setUser, setInitializing } = useAuthStore();
 
-function SuspenseWrap({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
-}
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          const user = await authApi.me();
+          setUser(user);
+        }
+      } catch (err) {
+        // Token invalid or expired, interceptor might have failed to refresh
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+      } finally {
+        setInitializing(false);
+      }
+    };
+    initAuth();
+  }, [setUser, setInitializing]);
 
-export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<SuspenseWrap><LoginPage /></SuspenseWrap>} />
-            <Route path="/register" element={<SuspenseWrap><RegisterPage /></SuspenseWrap>} />
-            <Route element={<Layout />}>
-              <Route path="/" element={<SuspenseWrap><HomePage /></SuspenseWrap>} />
-              <Route path="/search" element={<SuspenseWrap><SearchPage /></SuspenseWrap>} />
-              <Route path="/map" element={<SuspenseWrap><MapSearchPage /></SuspenseWrap>} />
-              <Route path="/provider/:id" element={<SuspenseWrap><ProviderProfilePage /></SuspenseWrap>} />
-              <Route path="/pricing" element={<SuspenseWrap><PricingPage /></SuspenseWrap>} />
-              <Route path="/categories" element={<SuspenseWrap><HomePage /></SuspenseWrap>} />
-              <Route path="/category/:slug" element={<SuspenseWrap><HomePage /></SuspenseWrap>} />
-              <Route path="/how-it-works" element={<SuspenseWrap><HomePage /></SuspenseWrap>} />
-              <Route path="/dashboard" element={<ProtectedRoute><SuspenseWrap><DashboardPage /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/request/create" element={<ProtectedRoute><SuspenseWrap><ServiceRequestForm /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><SuspenseWrap><ChatPage /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/chat/:conversationId" element={<ProtectedRoute><SuspenseWrap><ChatPage /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute roles={["ADMIN"]}><SuspenseWrap><AdminDashboard /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/disputes" element={<ProtectedRoute><SuspenseWrap><DisputesPage /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/earnings" element={<ProtectedRoute roles={["PROVIDER"]}><SuspenseWrap><EarningsPage /></SuspenseWrap></ProtectedRoute>} />
-              <Route path="/promotions" element={<ProtectedRoute roles={["PROVIDER"]}><SuspenseWrap><PromotionsPage /></SuspenseWrap></ProtectedRoute>} />
-            </Route>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/map-search" element={<MapSearchPage />} />
+            <Route path="/provider/:id" element={<ProviderProfilePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Protected Routes (All authenticated users) */}
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/request/create" element={<ProtectedRoute><ServiceRequestForm /></ProtectedRoute>} />
+            <Route path="/disputes" element={<ProtectedRoute><DisputesPage /></ProtectedRoute>} />
+            
+            {/* Protected Routes (Providers only) */}
+            <Route path="/pricing" element={<ProtectedRoute requiredRole="PROVIDER"><PricingPage /></ProtectedRoute>} />
+            <Route path="/earnings" element={<ProtectedRoute requiredRole="PROVIDER"><EarningsPage /></ProtectedRoute>} />
+            <Route path="/promotions" element={<ProtectedRoute requiredRole="PROVIDER"><PromotionsPage /></ProtectedRoute>} />
+
+            {/* Protected Routes (Admin only) */}
+            <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminPage /></ProtectedRoute>} />
+
+            {/* Fallback */}
+            <Route path="*" element={<HomePage />} />
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );
-}
+};
+
+export default App;

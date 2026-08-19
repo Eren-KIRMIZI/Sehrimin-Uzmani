@@ -1,128 +1,165 @@
-import { Link } from 'react-router-dom';
+import React from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { FileText, MessageCircle, Star, Heart, Calendar, Settings, ChevronRight, Bell, TrendingUp, CreditCard, AlertTriangle, DollarSign, Megaphone } from 'lucide-react';
-import { useRecentRequests, useUnreadNotificationCount } from '../../hooks/useQueries';
+import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, Bell } from 'lucide-react';
+import Layout from '../../components/layout/Layout';
+import { Link } from 'react-router-dom';
 
-export default function DashboardPage() {
-  const user = useAuthStore((s) => s.user);
-  const { data: recentRequests = [] } = useRecentRequests();
-  const { data: notifications = 0 } = useUnreadNotificationCount();
-
-  const menuItems = [
-    { icon: FileText, label: 'Taleplerim', link: '/dashboard/requests' },
-    { icon: Calendar, label: 'Randevularim', link: '/dashboard/appointments' },
-    { icon: MessageCircle, label: 'Mesajlarim', link: '/chat' },
-    { icon: Heart, label: 'Favorilerim', link: '/dashboard/favorites' },
-    { icon: Star, label: 'Degerlendirmelerim', link: '/dashboard/reviews' },
-    { icon: Bell, label: 'Bildirimler', link: '/dashboard/notifications', count: notifications },
-    { icon: CreditCard, label: 'Abonelikler', link: '/pricing' },
-    { icon: DollarSign, label: 'Kazanc Takibi', link: '/earnings' },
-    { icon: Megaphone, label: 'Tanitim Kampanyalari', link: '/promotions' },
-    { icon: AlertTriangle, label: 'Anlasmazliklar', link: '/disputes' },
-    { icon: Settings, label: 'Profil Ayarlari', link: '/dashboard/settings' },
-  ];
+const DashboardPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const isProvider = user?.role === 'PROVIDER';
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-primary">Hoş geldin, {user?.first_name}!</h1>
-          <p className="text-text-muted mt-1">Hesabını buradan yönetebilirsin.</p>
+    <Layout>
+      <div className="container" style={{ padding: '32px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <div>
+            <h1 style={{ fontWeight: 800, fontSize: '2rem', marginBottom: 4 }}>
+              Merhaba, {user?.first_name} 👋
+            </h1>
+            <p style={{ color: 'var(--color-text-muted)' }}>
+              {isProvider ? 'İşlerinizi ve kazançlarınızı buradan yönetin.' : 
+               isAdmin ? 'Sistem yönetim paneline hoş geldiniz.' : 
+               'Hizmet taleplerinizi ve randevularınızı buradan takip edin.'}
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Link to="/profile" className="btn btn-outline">Profili Düzenle</Link>
+            {isAdmin && <Link to="/admin" className="btn btn-primary">Yönetim Paneli</Link>}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sidebar */}
-          <div className="space-y-3">
-            {menuItems.map((item) => (
-              <Link
-                key={item.label}
-                to={item.link}
-                className="flex items-center gap-3 p-4 bg-white rounded-xl border border-border-light hover:border-accent hover:shadow-sm transition-all group"
-              >
-                <item.icon className="w-5 h-5 text-text-muted group-hover:text-accent transition-colors" />
-                <span className="flex-1 text-sm font-medium">{item.label}</span>
-                {item.count ? (
-                  <span className="px-2 py-0.5 bg-accent/10 text-accent text-xs font-medium rounded-full">{item.count}</span>
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-text-muted" />
-                )}
-              </Link>
-            ))}
+        {/* Quick Stats Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40 }}>
+          {isProvider ? (
+            <>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+                    <Briefcase size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aktif İşler</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>3</div>
+              </div>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <TrendingUp size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aylık Kazanç</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>₺4,250</div>
+              </div>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                    <Star size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Ortalama Puan</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>4.8</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+                    <Briefcase size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aktif Talepler</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>1</div>
+              </div>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <MessageSquare size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Yeni Teklifler</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>2</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Main Content Area */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr min(340px, 100%)', gap: 24, alignItems: 'start' }}>
+          
+          {/* Left Column - Main Activity */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            
+            {/* Recent Requests / Jobs */}
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontWeight: 700 }}>Son {isProvider ? 'İşler' : 'Talepler'}</h3>
+                <Link to={isProvider ? "/jobs" : "/requests"} style={{ fontSize: '0.875rem', color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Tümünü Gör</Link>
+              </div>
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                Henüz gösterilecek kayıt bulunmuyor.
+              </div>
+            </div>
+            
           </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Aktif Talep', value: recentRequests.length, icon: FileText, color: 'text-accent' },
-                { label: 'Randevu', value: 0, icon: Calendar, color: 'text-success' },
-                { label: 'Favori', value: 0, icon: Heart, color: 'text-error' },
-                { label: 'Bildirim', value: notifications, icon: Bell, color: 'text-warning' },
-              ].map(stat => (
-                <div key={stat.label} className="bg-white rounded-xl p-4 border border-border-light">
-                  <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-                  <div className="text-2xl font-bold text-primary">{stat.value}</div>
-                  <div className="text-xs text-text-muted">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Recent Requests */}
-            <div className="bg-white rounded-2xl p-6 border border-border-light">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-primary">Son Taleplerim</h3>
-                <Link to="/dashboard/requests" className="text-accent text-sm font-medium flex items-center gap-1">
-                  Tümünü Gör <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-              {recentRequests.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-text-muted">Henüz talebiniz yok</p>
-                  <Link to="/request/create" className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-dark transition-colors">
-                    Talep Oluştur
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentRequests.map((req: any) => (
-                    <div key={req.id} className="flex items-center gap-4 p-3 bg-bg rounded-xl">
-                      <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-accent" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium truncate">{req.title}</h4>
-                        <p className="text-xs text-text-muted">{new Date(req.created_at).toLocaleDateString('tr-TR')}</p>
-                      </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        req.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                        req.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {req.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
+          
+          {/* Right Column - Side Actions & Notifications */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            
             {/* Quick Actions */}
-            <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-2xl p-6">
-              <h3 className="font-semibold text-primary mb-3">Hızlı İşlemler</h3>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/request/create" className="px-4 py-2 bg-white rounded-xl text-sm font-medium hover:shadow-md transition-shadow flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-accent" /> Yeni Talep Oluştur
-                </Link>
-                <Link to="/search" className="px-4 py-2 bg-white rounded-xl text-sm font-medium hover:shadow-md transition-shadow flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-accent" /> Uzman Keşfet
+            <div className="card">
+              <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Hızlı İşlemler</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {isProvider ? (
+                  <>
+                    <Link to="/earnings" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Kazançlar & Ödemeler <ChevronRight size={16} />
+                    </Link>
+                    <Link to="/promotions" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Reklam & Öne Çıkarma <ChevronRight size={16} />
+                    </Link>
+                    <Link to="/pricing" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Abonelik Planım <ChevronRight size={16} />
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/request/create" className="btn btn-primary" style={{ justifyContent: 'space-between' }}>
+                      Yeni Talep Oluştur <ChevronRight size={16} />
+                    </Link>
+                    <Link to="/search" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Uzman Ara <ChevronRight size={16} />
+                    </Link>
+                  </>
+                )}
+                <Link to="/disputes" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                  Anlaşmazlık Çözümü <ChevronRight size={16} />
                 </Link>
               </div>
             </div>
+            
+            {/* Notifications Panel */}
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Bell size={18} /> Bildirimler
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ padding: 12, borderRadius: 8, background: 'var(--color-surface-2)', fontSize: '0.875rem' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Hoş Geldiniz! 🎉</div>
+                  <div style={{ color: 'var(--color-text-muted)' }}>Şehrimin Uzmanı'na katıldığınız için teşekkürler. Profilinizi tamamlayarak hemen başlayın.</div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default DashboardPage;

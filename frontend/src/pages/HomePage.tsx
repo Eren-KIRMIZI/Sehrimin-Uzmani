@@ -1,310 +1,442 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, ChevronRight, Star, Shield, Zap, ArrowRight } from 'lucide-react';
-import { useCategories, useCities, useProviderSearch } from '../hooks/useQueries';
-import { useLocationStore } from '../stores/locationStore';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useCategories, useRecommendations, useCities } from '../hooks/useQueries';
+import { searchApi } from '../services';
+import { Link } from 'react-router-dom';
 
-const CATEGORY_ICONS: Record<string, string> = {
-  'home': '🏠', 'settings': '🔧', 'heart': '❤️', 'book': '📚',
-  'users': '👶', 'paw': '🐕', 'car': '🚗', 'truck': '📦',
-  'briefcase': '💼', 'building': '🏢', 'calendar': '🎉',
-  'monitor': '💻', 'scissors': '💇',
+// Category icon map
+const categoryIcons: Record<string, string> = {
+  'ev-ve-yasam': '🏠',
+  'teknik-hizmetler': '⚡',
+  'saglik-ve-wellness': '💆',
+  'egitim': '📚',
+  'cocuk-ve-yasli-bakimi': '👶',
+  'evcil-hayvan': '🐾',
+  'arac': '🚗',
+  'tasimacilik': '🚚',
+  'profesyonel-hizmetler': '💼',
+  'gayrimenkul': '🏢',
+  'etkinlik-ve-organizasyon': '🎉',
+  'dijital-hizmetler': '💻',
+  'guzellik': '💅',
 };
 
-export default function HomePage() {
+const SkeletonCard = () => (
+  <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="skeleton" style={{ width: '100%', height: 180, borderRadius: 12 }} />
+    <div className="skeleton" style={{ width: '70%', height: 16 }} />
+    <div className="skeleton" style={{ width: '50%', height: 14 }} />
+  </div>
+);
+
+const ProviderCard: React.FC<{ provider: any }> = ({ provider }) => (
+  <Link to={`/provider/${provider.id}`} style={{ textDecoration: 'none' }}>
+    <div className="card provider-card glass-hover" style={{ cursor: 'pointer' }}>
+      {/* Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+        <div style={{
+          width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.4rem', fontWeight: 700, color: 'white',
+        }}>
+          {provider.avatar_url
+            ? <img src={provider.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} alt="" />
+            : provider.business_name?.[0] || '?'}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 2 }}>
+            {provider.business_name}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+            {provider.verification_level !== 'NONE' && (
+              <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Shield size={12} /> Doğrulanmış
+              </span>
+            )}
+          </div>
+        </div>
+        {provider.badge_type && (
+          <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+            {provider.badge_type === 'diamond' ? '💎' :
+             provider.badge_type === 'gold' ? '🥇' :
+             provider.badge_type === 'silver' ? '🥈' : '🥉'}
+            {provider.badge_type}
+          </span>
+        )}
+      </div>
+
+      {/* Rating */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 1 }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <Star key={i} size={14}
+              fill={i <= Math.round(provider.rating) ? '#f59e0b' : 'transparent'}
+              color={i <= Math.round(provider.rating) ? '#f59e0b' : '#374151'} />
+          ))}
+        </div>
+        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{provider.rating?.toFixed(1)}</span>
+        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>({provider.review_count})</span>
+      </div>
+
+      {/* Services preview */}
+      {provider.services?.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
+          {provider.services.slice(0, 3).map((s: any) => (
+            <span key={s.id} className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+              {s.service?.name || s.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        paddingTop: 12, borderTop: '1px solid var(--color-border)',
+      }}>
+        <div style={{ display: 'flex', gap: 16 }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <TrendingUp size={12} /> {provider.completed_jobs} iş
+          </span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Clock size={12} /> {provider.years_experience} yıl
+          </span>
+        </div>
+        {provider.hourly_rate && (
+          <span style={{ fontWeight: 700, color: 'var(--color-primary-light)' }}>
+            ₺{provider.hourly_rate}<span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-text-muted)' }}>/saat</span>
+          </span>
+        )}
+      </div>
+    </div>
+  </Link>
+);
+
+const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { selectedCity, setSelectedCity } = useLocationStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [detecting, setDetecting] = useState(false);
 
-  const { data: categories = [] } = useCategories();
-  const { data: cities = [] } = useCities();
-  const { data: searchData } = useProviderSearch({ limit: 6, sort: 'rating' });
-  const featuredProviders = searchData?.items || [];
+  const { data: categories, isLoading: catLoading } = useCategories();
+  const { data: recommended, isLoading: recLoading } = useRecommendations();
+  const { data: cities } = useCities();
 
-  const handleSearch = () => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (selectedCity) params.set('city_id', String(selectedCity.id));
-    navigate(`/search?${params.toString()}`);
-  };
-
-  const handleAISearch = (value: string) => {
-    setSearchQuery(value);
-    if (value.length > 10) {
-      setAiSuggestion('İhtiyacınızı analiz ediyoruz...');
-      setTimeout(() => setAiSuggestion('Kategoriniz algılandı. Uzmanları arıyoruz...'), 1000);
-    } else {
-      setAiSuggestion(null);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setDetecting(true);
+    try {
+      const result = await searchApi.detect(query);
+      const params = new URLSearchParams({ q: query });
+      if (result.detected) {
+        if (result.category_slug) params.set('category', result.category_slug);
+        if (result.subcategory_slug) params.set('subcategory', result.subcategory_slug);
+      }
+      navigate(`/search?${params.toString()}`);
+    } catch {
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+    } finally {
+      setDetecting(false);
     }
   };
 
+  const popularCities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Nevşehir'];
+
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
-      <section className="relative bg-gradient-to-b from-primary/5 to-bg overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
-        </div>
+    <Layout>
+      {/* HERO */}
+      <section className="hero-gradient" style={{ padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}>
+        {/* Background orbs */}
+        <div style={{
+          position: 'absolute', top: -100, left: '20%', width: 400, height: 400,
+          borderRadius: '50%', background: 'rgba(99, 102, 241, 0.08)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -100, right: '10%', width: 300, height: 300,
+          borderRadius: '50%', background: 'rgba(245, 158, 11, 0.05)',
+          filter: 'blur(60px)', pointerEvents: 'none',
+        }} />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold text-primary leading-tight tracking-tight">
-              Şehrindeki doğru
-              <br />
-              <span className="text-accent">uzmanı</span> bul.
-            </h1>
-            <p className="mt-6 text-lg text-text-muted max-w-xl mx-auto leading-relaxed">
-              Evinden sağlığına, eğitimden otomotive kadar ihtiyacın olan hizmeti
-              şehrindeki güvenilir uzmanlarla buluşturuyoruz.
-            </p>
-
-            {/* AI Search Box */}
-            <div className="mt-10 max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-xl border border-border-light p-2">
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1 flex items-center gap-3 px-4">
-                    <Search className="w-5 h-5 text-text-muted flex-shrink-0" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => handleAISearch(e.target.value)}
-                      placeholder='Ne ihtiyacın var? Örn. "Kombim çalışmıyor"'
-                      className="w-full py-3 text-sm outline-none bg-transparent"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSearch}
-                    className="px-6 py-3 bg-accent text-white font-medium rounded-xl hover:bg-accent-dark transition-colors flex items-center justify-center gap-2"
-                  >
-                    Uzman Bul <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {aiSuggestion && (
-                  <div className="px-4 pb-3 fade-in">
-                    <div className="flex items-center gap-2 text-sm text-accent">
-                      <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                      {aiSuggestion}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* City Selector */}
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-text-muted">
-                <MapPin className="w-4 h-4" />
-                <select
-                  value={selectedCity?.id || ''}
-                  onChange={(e) => {
-                    const city = cities.find(c => c.id === Number(e.target.value));
-                    setSelectedCity(city ? { id: city.id, name: city.name } : null);
-                  }}
-                  className="bg-transparent outline-none cursor-pointer font-medium text-primary"
-                >
-                  <option value="">Konum seç</option>
-                  {cities.map(city => (
-                    <option key={city.id} value={city.id}>{city.name}</option>
-                  ))}
-                </select>
-                {selectedCity && (
-                  <span className="text-accent font-medium">
-                    {selectedCity.name} aktif
-                  </span>
-                )}
-              </div>
+        <div className="container" style={{ textAlign: 'center', position: 'relative' }}>
+          {/* Badge */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'rgba(99, 102, 241, 0.12)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              borderRadius: 999, padding: '6px 16px',
+              fontSize: '0.82rem', color: 'var(--color-primary-light)',
+              fontWeight: 600,
+            }}>
+              <Zap size={13} fill="currentColor" />
+              AI destekli uzman eşleştirme
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Categories */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-primary mb-2">Bugün neye ihtiyacın var?</h2>
-          <p className="text-text-muted mb-8">Hızlıca kategorini seç ve uzmanlarını bul</p>
+          {/* Title */}
+          <h1 style={{
+            fontSize: 'clamp(2.4rem, 5vw, 4rem)', fontWeight: 900,
+            lineHeight: 1.1, marginBottom: 20, letterSpacing: '-0.02em',
+          }}>
+            Şehrindeki En İyi <br />
+            <span className="gradient-text">Uzmanları</span> Keşfet
+          </h1>
 
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-            {categories.map((cat) => (
-              <Link
-                key={cat.id}
-                to={`/category/${cat.slug}`}
-                className="flex-shrink-0 w-40 p-5 bg-white rounded-2xl border border-border-light hover:border-accent hover:shadow-lg transition-all duration-300 group"
+          <p style={{
+            fontSize: '1.15rem', color: 'var(--color-text-muted)',
+            maxWidth: 560, margin: '0 auto 40px', lineHeight: 1.7,
+          }}>
+            Elektrik, tesisat, temizlik, eğitim ve daha fazlası — ihtiyacın olan uzmanı dakikalar içinde bul, teklif al, işini tamamla.
+          </p>
+
+          {/* Search form */}
+          <form onSubmit={handleSearch} style={{ maxWidth: 600, margin: '0 auto', display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={18} style={{
+                position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+                color: 'var(--color-text-dim)', pointerEvents: 'none',
+              }} />
+              <input
+                id="hero-search"
+                className="input"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Ne arıyorsunuz? (Örn: Kombi bakımı, Elektrikçi...)"
+                style={{ paddingLeft: 50, height: 56, fontSize: '1rem', borderRadius: 16 }}
+              />
+            </div>
+            <button
+              id="hero-search-btn"
+              type="submit"
+              className="btn btn-primary"
+              style={{ height: 56, paddingLeft: 28, paddingRight: 28, borderRadius: 16, fontSize: '1rem', flexShrink: 0 }}
+              disabled={detecting}
+            >
+              {detecting ? <div className="spinner" style={{ width: 20, height: 20 }} /> : 'Ara'}
+            </button>
+          </form>
+
+          {/* Popular searches */}
+          <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--color-text-dim)' }}>Popüler:</span>
+            {['Elektrikçi', 'Tesisatçı', 'Temizlik', 'Kombi Bakımı', 'Nakliyat', 'Psikolog'].map(term => (
+              <button
+                key={term}
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '0.8rem', padding: '4px 12px', borderRadius: 999 }}
+                onClick={() => {
+                  setQuery(term);
+                  navigate(`/search?q=${encodeURIComponent(term)}`);
+                }}
               >
-                <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">
-                  {CATEGORY_ICONS[cat.icon || ''] || '📋'}
+                {term}
+              </button>
+            ))}
+          </div>
+
+          {/* Stats */}
+          <div style={{
+            display: 'flex', gap: 40, justifyContent: 'center', marginTop: 56,
+            flexWrap: 'wrap',
+          }}>
+            {[
+              { value: '10,000+', label: 'Uzman' },
+              { value: '81', label: 'Şehir' },
+              { value: '150+', label: 'Hizmet' },
+              { value: '4.8★', label: 'Ortalama Puan' },
+            ].map(stat => (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: 900, background: 'linear-gradient(135deg, #6366f1, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {stat.value}
                 </div>
-                <h3 className="font-semibold text-sm text-primary">{cat.name}</h3>
-                <div className="mt-2 text-xs text-text-muted">
-                  {cat.subcategories?.length || 0} alt kategori
-                </div>
-              </Link>
+                <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{stat.label}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Providers */}
-      {featuredProviders.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-bold text-primary">En çok tercih edilen uzmanlar</h2>
-                <p className="text-text-muted mt-1">{selectedCity ? `${selectedCity.name}'de` : 'Türkiye genelinde'} en yüksek puanlı uzmanlar</p>
+      {/* HOW IT WORKS */}
+      <section className="section" style={{ background: 'var(--color-surface)' }}>
+        <div className="container">
+          <h2 style={{ textAlign: 'center', fontWeight: 800, fontSize: '2rem', marginBottom: 48 }}>
+            Nasıl Çalışır?
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32 }}>
+            {[
+              { num: '01', icon: '🔍', title: 'Hizmet Seç', desc: 'İhtiyacın olan hizmet kategorisini belirle ya da doğal dilde yaz' },
+              { num: '02', icon: '👥', title: 'Uzman Bul', desc: 'Puanlı ve doğrulanmış uzmanları karşılaştır, yorumları oku' },
+              { num: '03', icon: '💬', title: 'Teklif Al', desc: 'Uzmanlardan teklif al, fiyat ve süreyi karşılaştır' },
+              { num: '04', icon: '✅', title: 'Tamamla', desc: 'Randevu oluştur, hizmeti tamamla, değerlendirme yap' },
+            ].map(step => (
+              <div key={step.num} style={{ textAlign: 'center' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  width: 72, height: 72, borderRadius: 20, fontSize: '1.8rem',
+                  background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+                  marginBottom: 16, position: 'relative',
+                }}>
+                  {step.icon}
+                  <div style={{
+                    position: 'absolute', top: -8, right: -8,
+                    background: 'var(--color-primary)', color: 'white',
+                    borderRadius: 6, padding: '2px 6px', fontSize: '0.7rem', fontWeight: 800,
+                  }}>
+                    {step.num}
+                  </div>
+                </div>
+                <h3 style={{ fontWeight: 700, marginBottom: 8 }}>{step.title}</h3>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: 1.6 }}>{step.desc}</p>
               </div>
-              <Link to="/search" className="text-accent font-medium text-sm flex items-center gap-1 hover:gap-2 transition-all">
-                Tümünü Gör <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredProviders.map((provider) => (
+      {/* CATEGORIES */}
+      <section className="section">
+        <div className="container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
+            <h2 style={{ fontWeight: 800, fontSize: '1.8rem' }}>Hizmet Kategorileri</h2>
+            <Link to="/search" className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              Tümünü Gör <ChevronRight size={14} />
+            </Link>
+          </div>
+
+          {catLoading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+              {Array(8).fill(0).map((_, i) => (
+                <div key={i} className="skeleton" style={{ height: 110, borderRadius: 16 }} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
+              {categories?.slice(0, 13).map(cat => (
                 <Link
-                  key={provider.id}
-                  to={`/provider/${provider.id}`}
-                  className="p-6 bg-bg rounded-2xl border border-border-light hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                  key={cat.id}
+                  to={`/search?category=${cat.slug}`}
+                  style={{ textDecoration: 'none' }}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-accent font-bold text-lg">
-                        {provider.user?.first_name?.[0]}{provider.user?.last_name?.[0]}
-                      </span>
+                  <div className="card glass-hover" style={{
+                    textAlign: 'center', cursor: 'pointer',
+                    padding: 24, display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', gap: 12,
+                  }}>
+                    <div style={{ fontSize: '2.2rem' }}>
+                      {categoryIcons[cat.slug] || cat.icon || '🔧'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-primary truncate">
-                          {provider.business_name || `${provider.user?.first_name} ${provider.user?.last_name}`}
-                        </h3>
-                        {provider.verification_status !== 'NONE' && (
-                          <Shield className="w-4 h-4 text-accent flex-shrink-0" />
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 text-warning fill-warning" />
-                          <span className="text-sm font-medium">{provider.rating}</span>
-                        </div>
-                        <span className="text-text-muted text-sm">· {provider.review_count} yorum</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-2 text-sm text-text-muted">
-                        <MapPin className="w-3 h-3" />
-                        {provider.locations?.[0]?.city || 'Konum belirtilmemiş'}
-                      </div>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text)' }}>
+                      {cat.name}
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
-          </div>
-        </section>
-      )}
-
-      {/* How It Works */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-primary text-center mb-12">Nasıl Çalışır?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              { step: '1', title: 'İhtiyacını Anlat', desc: 'Hizmet kategorisini seç veya ne istediğini yaz.', icon: '💬' },
-              { step: '2', title: 'Uzmanları Keşfet', desc: 'Yakınındaki uzmanları puan ve yorumlara göre karşılaştır.', icon: '🔍' },
-              { step: '3', title: 'Teklif Al', desc: 'Uygun uzmanlardan teklifler al ve karşılaştır.', icon: '📋' },
-              { step: '4', title: 'Hizmeti Tamamla', desc: 'İşini yaptır, değerlendir ve güvenle öde.', icon: '⭐' },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="w-16 h-16 mx-auto bg-accent/10 rounded-2xl flex items-center justify-center text-3xl mb-4">
-                  {item.icon}
-                </div>
-                <div className="text-xs font-bold text-accent mb-2">ADIM {item.step}</div>
-                <h3 className="font-semibold text-primary mb-2">{item.title}</h3>
-                <p className="text-sm text-text-muted">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Urgent Services */}
-      <section className="py-16 bg-primary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Şimdi bir uzmana mı ihtiyacın var?</h2>
-          <p className="text-gray-400 mb-8">Yakınındaki müsait uzmanları saniyeler içinde bul</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {['Çilingir', 'Tesisatçı', 'Elektrikçi', 'Çekici', 'Camcı', 'Oto Tamir'].map((service) => (
-              <Link
-                key={service}
-                to={`/search?q=${service}`}
-                className="px-6 py-3 bg-white/10 text-white rounded-xl hover:bg-accent transition-colors font-medium"
-              >
-                <Zap className="w-4 h-4 inline mr-2" />
-                {service}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Become a Provider */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-3xl p-10 md:p-16 flex flex-col md:flex-row items-center gap-10">
-            <div className="flex-1">
-              <h2 className="text-3xl font-bold text-primary mb-4">
-                Yeteneğini şehrindeki müşterilere dönüştür.
-              </h2>
-              <p className="text-text-muted mb-6 leading-relaxed">
-                Hizmetlerini yayınla, yeni müşteriler bul ve işlerini tek yerden yönet.
+      {/* FEATURED PROVIDERS */}
+      <section className="section" style={{ background: 'var(--color-surface)' }}>
+        <div className="container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 36 }}>
+            <div>
+              <h2 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 4 }}>Öne Çıkan Uzmanlar</h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                En yüksek puanlı ve doğrulanmış uzmanlar
               </p>
-              <div className="flex gap-6 mb-8">
-                {['Profilini oluştur', 'Hizmetlerini yayınla', 'Müşterilerden teklif al'].map((step, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="w-6 h-6 bg-accent text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
-                    <span className="text-primary font-medium">{step}</span>
-                  </div>
-                ))}
-              </div>
-              <Link to="/register?role=PROVIDER" className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-white font-medium rounded-xl hover:bg-accent-dark transition-colors">
-                Uzman olarak başla <ArrowRight className="w-4 h-4" />
+            </div>
+            <Link to="/search?sort=recommended" className="btn btn-outline btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              Tümünü Gör <ChevronRight size={14} />
+            </Link>
+          </div>
+
+          {recLoading ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {Array(4).fill(0).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+              {recommended?.providers?.slice(0, 8).map((provider: any) => (
+                <ProviderCard key={provider.id} provider={provider} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CITIES */}
+      <section className="section">
+        <div className="container">
+          <h2 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 12, textAlign: 'center' }}>
+            Türkiye'nin Her Şehrinde
+          </h2>
+          <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginBottom: 40 }}>
+            81 ilde binlerce doğrulanmış uzman sizi bekliyor
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+            {popularCities.map(city => (
+              <Link
+                key={city}
+                to={`/search?q=${encodeURIComponent(city)}`}
+                style={{ textDecoration: 'none' }}
+              >
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 999, padding: '10px 20px',
+                  color: 'var(--color-text-muted)', fontWeight: 600, fontSize: '0.9rem',
+                  transition: 'all 0.2s', cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-primary)';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--color-primary-light)';
+                  (e.currentTarget as HTMLElement).style.background = 'rgba(99, 102, 241, 0.08)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
+                  (e.currentTarget as HTMLElement).style.background = 'var(--color-surface)';
+                }}>
+                  <MapPin size={14} /> {city}
+                </div>
               </Link>
-            </div>
-            <div className="w-72 h-52 bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 bg-accent/10 rounded-lg mb-3" />
-                <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
-                <div className="h-2 bg-gray-100 rounded w-1/2" />
-              </div>
-              <div className="flex gap-2">
-                <div className="flex-1 h-8 bg-accent/10 rounded-lg" />
-                <div className="flex-1 h-8 bg-gray-100 rounded-lg" />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Cities */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-primary text-center mb-8">Şehirlerde Hizmet Veriyoruz</h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {cities.slice(0, 30).map((city) => (
-              <Link
-                key={city.id}
-                to={`/city/${city.name.toLowerCase()}`}
-                className="px-4 py-2 bg-bg rounded-lg text-sm font-medium text-primary hover:bg-accent hover:text-white transition-colors"
-              >
-                {city.name}
-              </Link>
-            ))}
-            {cities.length > 30 && (
-              <Link to="/cities" className="px-4 py-2 text-accent text-sm font-medium">
-                +{cities.length - 30} şehir daha
-              </Link>
-            )}
+      {/* CTA */}
+      <section style={{
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.05))',
+        borderTop: '1px solid rgba(99, 102, 241, 0.15)',
+        borderBottom: '1px solid rgba(99, 102, 241, 0.15)',
+        padding: '80px 0',
+      }}>
+        <div className="container" style={{ textAlign: 'center' }}>
+          <h2 style={{ fontWeight: 800, fontSize: '2rem', marginBottom: 16 }}>
+            Uzman mısın? Platforma Katıl!
+          </h2>
+          <p style={{ color: 'var(--color-text-muted)', marginBottom: 32, fontSize: '1rem' }}>
+            Şehrindeki müşterilere ulaş, işini büyüt, kazancını artır.
+          </p>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/register" className="btn btn-primary btn-lg">
+              Uzman Olarak Kayıt Ol
+            </Link>
+            <Link to="/pricing" className="btn btn-outline btn-lg">
+              Planları İncele
+            </Link>
           </div>
         </div>
       </section>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default HomePage;

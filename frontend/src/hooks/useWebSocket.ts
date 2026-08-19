@@ -1,90 +1,94 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import type { Message } from '../types';
 
-interface UseWebSocketOptions {
-  url: string;
-  onMessage?: (data: any) => void;
-  onOpen?: () => void;
-  onClose?: () => void;
-  reconnect?: boolean;
-  maxRetries?: number;
+interface WebSocketMessage {
+  type: 'message' | 'mark_read' | 'typing' | 'error';
+  conversation_id?: number;
+  data?: Message;
+  error?: string;
 }
 
-export function useWebSocket({
-  url,
-  onMessage,
-  onOpen,
-  onClose,
-  reconnect = true,
-  maxRetries = 5,
-}: UseWebSocketOptions) {
+interface UseWebSocketOptions {
+  onMessage?: (msg: Message) => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+}
+
+export function useWebSocket(options: UseWebSocketOptions = {}) {
   const wsRef = useRef<WebSocket | null>(null);
   const retryCountRef = useRef(0);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [isConnected, setIsConnected] = useState(false);
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
 
     try {
-      const socket = new WebSocket(url);
+      const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/${token}`);
+      wsRef.current = ws;
 
-      socket.onopen = () => {
+      ws.onopen = () => {
         setIsConnected(true);
         retryCountRef.current = 0;
-        onOpen?.();
+        options.onConnect?.();
       };
 
-      socket.onmessage = (event) => {
+      ws.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          onMessage?.(data);
+          const payload: WebSocketMessage = JSON.parse(event.data);
+          if (payload.type === 'message' && payload.data) {
+            options.onMessage?.(payload.data);
+          }
         } catch {
-          console.error('WebSocket mesaj parse hatasi');
+          // ignore
         }
       };
 
-      socket.onclose = () => {
+      ws.onclose = () => {
         setIsConnected(false);
-        onClose?.();
+        options.onDisconnect?.();
 
-        if (reconnect && retryCountRef.current < maxRetries) {
-          const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
-          retryCountRef.current += 1;
-          timeoutRef.current = setTimeout(connect, delay);
-        }
+        // Exponential backoff, max 30s
+        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
+        retryCountRef.current++;
+        retryTimerRef.current = setTimeout(connect, delay);
       };
 
-      socket.onerror = () => {
-        socket.close();
+      ws.onerror = () => {
+        ws.close();
       };
-
-      wsRef.current = socket;
-    } catch (err) {
-      console.error('WebSocket baglanti hatasi:', err);
+    } catch {
+      // ignore
     }
-  }, [url, onMessage, onOpen, onClose, reconnect, maxRetries]);
+  }, [options]);
 
-  const disconnect = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    retryCountRef.current = maxRetries;
-    wsRef.current?.close();
-    wsRef.current = null;
-    setIsConnected(false);
-  }, [maxRetries]);
-
-  const send = useCallback((data: any) => {
+  const send = useCallback((data: object) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(data));
     }
   }, []);
 
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, [disconnect]);
+  const sendMessage = useCallback((conversation_id: number, content: string, type = 'TEXT') => {
+    send({ type: 'message', conversation_id, content, message_type: type });
+  }, [send]);
 
-  return { isConnected, connect, disconnect, send };
+  const markRead = useCallback((conversation_id: number) => {
+    send({ type: 'mark_read', conversation_id });
+  }, [send]);
+
+  const disconnect = useCallback(() => {
+    clearTimeout(retryTimerRef.current);
+    wsRef.current?.close();
+  }, []);
+
+  useEffect(() => {
+    connect();
+    return () => {
+      clearTimeout(retryTimerRef.current);
+      wsRef.current?.close();
+    };
+  }, []);
+
+  return { isConnected, sendMessage, markRead, disconnect };
 }

@@ -1,468 +1,373 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, Upload, MapPin, Calendar, DollarSign } from 'lucide-react';
-import api from '../services/api';
+import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Check, ChevronLeft, ChevronRight, Upload, MapPin, Calendar, DollarSign, FileText, Eye, Send } from 'lucide-react';
+import Layout from '../components/layout/Layout';
 import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
+import { requestsApi } from '../services';
 
 const STEPS = [
-  { id: 1, title: 'Hizmet Kategorisi', icon: '📋' },
-  { id: 2, title: 'Hizmet Turu', icon: '🔧' },
-  { id: 3, title: 'Ihtiyacinizi Aciklayin', icon: '💬' },
-  { id: 4, title: 'Fotograf / Video', icon: '📸' },
-  { id: 5, title: 'Konum', icon: '📍' },
-  { id: 6, title: 'Tercih Edilen Tarih', icon: '📅' },
-  { id: 7, title: 'Tercih Edilen Saat', icon: '🕐' },
-  { id: 8, title: 'Butce', icon: '💰' },
-  { id: 9, title: 'Ek Not', icon: '📝' },
-  { id: 10, title: 'Onayla', icon: '✅' },
+  { num: 1, title: 'Kategori' },
+  { num: 2, title: 'Hizmet Türü' },
+  { num: 3, title: 'Açıklama' },
+  { num: 4, title: 'Konum' },
+  { num: 5, title: 'Tarih & Saat' },
+  { num: 6, title: 'Bütçe' },
+  { num: 7, title: 'Ek Notlar' },
+  { num: 8, title: 'Aciliyet' },
+  { num: 9, title: 'Önizleme' },
+  { num: 10, title: 'Yayınla' },
 ];
 
-export default function ServiceRequestForm() {
+const ServiceRequestForm: React.FC = () => {
   const navigate = useNavigate();
-
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
-  const { data: categories = [] } = useCategories();
-  const { data: cities = [] } = useCities();
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
-    category_id: null as number | null,
-    category_name: '',
-    subcategory_id: null as number | null,
-    subcategory_name: '',
-    service_id: null as number | null,
-    service_name: '',
+    category_id: undefined as number | undefined,
+    subcategory_id: undefined as number | undefined,
+    service_id: undefined as number | undefined,
     title: '',
     description: '',
-    city_id: null as number | null,
-    city_name: '',
-    district_id: null as number | null,
-    district_name: '',
+    city_id: undefined as number | undefined,
+    district_id: undefined as number | undefined,
     preferred_date: '',
     preferred_time: '',
     budget_min: '',
     budget_max: '',
     notes: '',
-    urgency: 'NORMAL',
+    urgency: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH' | 'EMERGENCY',
   });
 
-  const { data: districts = [] } = useDistricts(form.city_id);
+  const { data: categories } = useCategories();
+  const { data: cities } = useCities();
+  const { data: districts } = useDistricts(form.city_id);
 
-  const update = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+  const selectedCategory = categories?.find(c => c.id === form.category_id);
+  const selectedSubcategory = selectedCategory?.subcategories?.find(s => s.id === form.subcategory_id);
 
-  const selectedCategory = categories.find(c => c.id === form.category_id);
+  const setField = (key: string, value: unknown) => setForm(prev => ({ ...prev, [key]: value }));
 
   const canProceed = () => {
     switch (step) {
       case 1: return !!form.category_id;
-      case 2: return !!form.subcategory_id || !!form.service_id;
-      case 3: return !!form.title.trim();
-      case 4: return true;
-      case 5: return !!form.city_id;
-      case 6: return !!form.preferred_date;
-      case 7: return !!form.preferred_time;
-      case 8: return true;
-      case 9: return true;
-      case 10: return true;
+      case 2: return !!form.subcategory_id;
+      case 3: return form.title.length >= 5 && form.description.length >= 10;
+      case 4: return !!form.city_id;
       default: return true;
     }
   };
 
-  const submit = async () => {
+  const handleSubmit = async () => {
     setLoading(true);
     try {
-      await api.post('/requests', {
-        category_id: form.category_id,
-        subcategory_id: form.subcategory_id,
-        service_id: form.service_id,
-        title: form.title,
-        description: form.description,
-        city_id: form.city_id,
-        district_id: form.district_id,
-        preferred_date: form.preferred_date || undefined,
-        preferred_time: form.preferred_time || undefined,
+      await requestsApi.create({
+        ...form,
         budget_min: form.budget_min ? Number(form.budget_min) : undefined,
         budget_max: form.budget_max ? Number(form.budget_max) : undefined,
-        urgency: form.urgency,
       });
-      navigate('/dashboard');
-    } catch (err) {
-      alert('Talep olusturulamadi');
+      setSuccess(true);
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <Layout>
+        <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(16, 185, 129, 0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 24px',
+          }}>
+            <Check size={36} style={{ color: 'var(--color-success)' }} />
+          </div>
+          <h2 style={{ fontWeight: 800, marginBottom: 12 }}>Talebiniz Yayınlandı!</h2>
+          <p style={{ color: 'var(--color-text-muted)', maxWidth: 400, margin: '0 auto 32px' }}>
+            Uzmanlar talebinizi görecek ve kısa süre içinde teklif gönderecek.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button className="btn btn-primary" onClick={() => navigate('/dashboard')}>Panelime Git</button>
+            <button className="btn btn-outline" onClick={() => navigate('/search')}>Uzman Ara</button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-bg py-8">
-      <div className="max-w-2xl mx-auto px-4">
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-text-muted">Adim {step} / 10</span>
-            <span className="text-sm font-medium text-accent">{Math.round((step / 10) * 100)}%</span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${(step / 10) * 100}%` }} />
-          </div>
+    <Layout>
+      <div className="container" style={{ padding: '40px 24px', maxWidth: 720 }}>
+        <h1 style={{ fontWeight: 800, marginBottom: 8, fontSize: '1.6rem' }}>Hizmet Talebi Oluştur</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: 36 }}>
+          Uzmanlardan teklif almak için talebinizi oluşturun
+        </p>
+
+        {/* Progress steps */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 40, overflowX: 'auto', paddingBottom: 8 }}>
+          {STEPS.map(s => (
+            <div key={s.num} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '0.8rem', border: '2px solid',
+                ...(step === s.num
+                  ? { background: 'var(--color-primary)', color: 'white', borderColor: 'var(--color-primary)' }
+                  : step > s.num
+                  ? { background: 'var(--color-success)', color: 'white', borderColor: 'var(--color-success)' }
+                  : { background: 'transparent', color: 'var(--color-text-dim)', borderColor: 'var(--color-border)' })
+              }}>
+                {step > s.num ? <Check size={14} /> : s.num}
+              </div>
+              {s.num < STEPS.length && (
+                <div style={{ width: 24, height: 2, background: step > s.num ? 'var(--color-success)' : 'var(--color-border)', flexShrink: 0 }} />
+              )}
+            </div>
+          ))}
         </div>
 
-        {/* Step Title */}
-        <div className="mb-6">
-          <div className="text-3xl mb-2">{STEPS[step - 1].icon}</div>
-          <h2 className="text-2xl font-bold text-primary">{STEPS[step - 1].title}</h2>
-        </div>
+        {/* Step content */}
+        <div className="card animate-fade-in" key={step}>
+          <h2 style={{ fontWeight: 700, marginBottom: 20, fontSize: '1.2rem' }}>
+            Adım {step}: {STEPS[step - 1].title}
+          </h2>
 
-        {/* Step Content */}
-        <div className="bg-white rounded-2xl p-6 border border-border-light min-h-[300px]">
           {step === 1 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {categories.map(cat => (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+              {categories?.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => { update('category_id', cat.id); update('category_name', cat.name); }}
-                  className={`p-4 rounded-xl border text-left transition-all ${
-                    form.category_id === cat.id
-                      ? 'border-accent bg-accent/5 ring-2 ring-accent/20'
-                      : 'border-border-light hover:border-accent'
-                  }`}
+                  onClick={() => setField('category_id', cat.id)}
+                  style={{
+                    padding: 16, borderRadius: 12, cursor: 'pointer', border: '2px solid',
+                    borderColor: form.category_id === cat.id ? 'var(--color-primary)' : 'var(--color-border)',
+                    background: form.category_id === cat.id ? 'rgba(99, 102, 241, 0.1)' : 'var(--color-surface-2)',
+                    textAlign: 'center', transition: 'all 0.2s',
+                  }}
                 >
-                  <div className="text-2xl mb-2">{cat.icon === 'home' ? '🏠' : cat.icon === 'settings' ? '🔧' : cat.icon === 'heart' ? '❤️' : '📋'}</div>
-                  <div className="font-medium text-sm">{cat.name}</div>
-                  <div className="text-xs text-text-muted mt-1">{cat.subcategories?.length || 0} alt kategori</div>
+                  <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>
+                    {cat.icon || '🔧'}
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text)' }}>{cat.name}</div>
                 </button>
               ))}
             </div>
           )}
 
           {step === 2 && selectedCategory && (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {selectedCategory.subcategories?.map(sub => (
-                <div key={sub.id}>
-                  <button
-                    onClick={() => { update('subcategory_id', sub.id); update('subcategory_name', sub.name); update('service_id', null); update('service_name', ''); }}
-                    className={`w-full p-3 rounded-xl border text-left transition-all ${
-                      form.subcategory_id === sub.id
-                        ? 'border-accent bg-accent/5'
-                        : 'border-border-light hover:border-accent'
-                    }`}
-                  >
-                    <div className="font-medium text-sm">{sub.name}</div>
-                  </button>
-                  {form.subcategory_id === sub.id && sub.services && (
-                    <div className="ml-4 mt-2 space-y-2">
-                      {sub.services.map(svc => (
-                        <button
-                          key={svc.id}
-                          onClick={() => { update('service_id', svc.id); update('service_name', svc.name); }}
-                          className={`w-full p-2.5 rounded-lg border text-left text-sm transition-all ${
-                            form.service_id === svc.id
-                              ? 'border-accent bg-accent/5 font-medium'
-                              : 'border-border-light hover:border-accent'
-                          }`}
-                        >
-                          {svc.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button
+                  key={sub.id}
+                  onClick={() => setField('subcategory_id', sub.id)}
+                  style={{
+                    padding: 14, borderRadius: 10, cursor: 'pointer', border: '2px solid',
+                    borderColor: form.subcategory_id === sub.id ? 'var(--color-primary)' : 'var(--color-border)',
+                    background: form.subcategory_id === sub.id ? 'rgba(99, 102, 241, 0.1)' : 'var(--color-surface-2)',
+                    textAlign: 'left', fontWeight: 600, color: 'var(--color-text)', fontSize: '0.9rem',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {sub.name}
+                </button>
               ))}
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Baslik</label>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>
+                  Talep Başlığı *
+                </label>
                 <input
-                  type="text"
+                  className="input"
                   value={form.title}
-                  onChange={(e) => update('title', e.target.value)}
-                  placeholder="Ornegin: Banyomda su kacagi var"
-                  className="w-full px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light focus:border-accent"
+                  onChange={e => setField('title', e.target.value)}
+                  placeholder="Örn: Evimin salonunda elektrik tesisatı sorunu"
+                  maxLength={200}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Aciklama</label>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>
+                  Detaylı Açıklama *
+                </label>
                 <textarea
+                  className="input"
                   value={form.description}
-                  onChange={(e) => update('description', e.target.value)}
-                  placeholder="Ihtiyacinizi detayli aciklayin..."
-                  rows={4}
-                  className="w-full px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light focus:border-accent resize-none"
+                  onChange={e => setField('description', e.target.value)}
+                  placeholder="İhtiyacınızı detaylı olarak açıklayın..."
+                  rows={5}
+                  style={{ resize: 'vertical', fontFamily: 'inherit' }}
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1.5">Oncelik</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[
-                    { value: 'LOW', label: 'Dusuk', color: 'bg-gray-100' },
-                    { value: 'NORMAL', label: 'Normal', color: 'bg-blue-50 text-blue-700' },
-                    { value: 'HIGH', label: 'Yuksek', color: 'bg-orange-50 text-orange-700' },
-                    { value: 'URGENT', label: 'Acil', color: 'bg-red-50 text-red-700' },
-                  ].map(u => (
-                    <button
-                      key={u.value}
-                      onClick={() => update('urgency', u.value)}
-                      className={`p-2 rounded-xl text-sm font-medium transition-all ${
-                        form.urgency === u.value ? `${u.color} ring-2 ring-accent/20` : 'bg-bg hover:bg-gray-100'
-                      }`}
-                    >
-                      {u.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           )}
 
           {step === 4 && (
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-8 h-8 text-text-muted" />
-              </div>
-              <p className="text-sm text-text-muted mb-4">Ihtiyacinizi gosteren fotograflari veya videolari yukleyin (istege bagli)</p>
-              <button className="px-6 py-2.5 bg-bg rounded-xl text-sm font-medium border border-border-light hover:border-accent transition-colors">
-                Dosya Sec
-              </button>
-              <p className="text-xs text-text-muted mt-3">JPG, PNG, MP4 - Maks. 10MB</p>
-            </div>
-          )}
-
-          {step === 5 && (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label className="text-sm font-medium block mb-1.5">Sehir</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                  <select
-                    value={form.city_id || ''}
-                    onChange={(e) => {
-                      const city = cities.find(c => c.id === Number(e.target.value));
-                      update('city_id', city?.id || null);
-                      update('city_name', city?.name || '');
-                      update('district_id', null);
-                      update('district_name', '');
-                    }}
-                    className="w-full pl-10 pr-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-                  >
-                    <option value="">Sehir secin</option>
-                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Şehir *</label>
+                <select className="input" value={form.city_id || ''} onChange={e => setField('city_id', e.target.value ? Number(e.target.value) : undefined)}>
+                  <option value="">Şehir seçin</option>
+                  {cities?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
-              {form.city_id && districts.length > 0 && (
+              {form.city_id && (
                 <div>
-                  <label className="text-sm font-medium block mb-1.5">Ilce</label>
-                  <select
-                    value={form.district_id || ''}
-                    onChange={(e) => {
-                      const dist = districts.find(d => d.id === Number(e.target.value));
-                      update('district_id', dist?.id || null);
-                      update('district_name', dist?.name || '');
-                    }}
-                    className="w-full px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-                  >
-                    <option value="">Ilce secin (opsiyonel)</option>
-                    {districts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>İlçe</label>
+                  <select className="input" value={form.district_id || ''} onChange={e => setField('district_id', e.target.value ? Number(e.target.value) : undefined)}>
+                    <option value="">İlçe seçin (opsiyonel)</option>
+                    {districts?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
               )}
             </div>
           )}
 
-          {step === 6 && (
-            <div className="space-y-4">
-              <label className="text-sm font-medium block mb-1.5">Hangi tarihte hizmet istiyorsunuz?</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                <input
-                  type="date"
-                  value={form.preferred_date}
-                  onChange={(e) => update('preferred_date', e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full pl-10 pr-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-                />
+          {step === 5 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Tercih Edilen Tarih</label>
+                <input type="date" className="input" value={form.preferred_date} onChange={e => setField('preferred_date', e.target.value)} min={new Date().toISOString().split('T')[0]} />
               </div>
-              <div className="flex gap-2">
-                {['Bugun', 'Yarin', 'Bu Hafta'].map(label => (
-                  <button
-                    key={label}
-                    onClick={() => {
-                      const d = new Date();
-                      if (label === 'Yarin') d.setDate(d.getDate() + 1);
-                      if (label === 'Bu Hafta') d.setDate(d.getDate() + 3);
-                      update('preferred_date', d.toISOString().split('T')[0]);
-                    }}
-                    className="px-4 py-2 bg-bg rounded-lg text-sm font-medium border border-border-light hover:border-accent transition-colors"
-                  >
-                    {label}
-                  </button>
-                ))}
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Tercih Edilen Saat</label>
+                <input type="time" className="input" value={form.preferred_time} onChange={e => setField('preferred_time', e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {step === 6 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Bütçenizi belirtin (opsiyonel). Uzmanlar bu bilgiye göre teklif verecek.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Min. Bütçe (₺)</label>
+                  <input type="number" className="input" value={form.budget_min} onChange={e => setField('budget_min', e.target.value)} placeholder="0" min="0" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Maks. Bütçe (₺)</label>
+                  <input type="number" className="input" value={form.budget_max} onChange={e => setField('budget_max', e.target.value)} placeholder="0" min="0" />
+                </div>
               </div>
             </div>
           )}
 
           {step === 7 && (
-            <div className="space-y-4">
-              <label className="text-sm font-medium block mb-1.5">Hangi saatlerde musaitsiniz?</label>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  '08:00 - 10:00', '10:00 - 12:00', '12:00 - 14:00', '14:00 - 16:00',
-                  '16:00 - 18:00', '18:00 - 20:00', 'Esnek / Fark etmez'
-                ].map(time => (
-                  <button
-                    key={time}
-                    onClick={() => update('preferred_time', time)}
-                    className={`p-3 rounded-xl border text-sm transition-all ${
-                      form.preferred_time === time
-                        ? 'border-accent bg-accent/5 font-medium'
-                        : 'border-border-light hover:border-accent'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {step === 8 && (
-            <div className="space-y-4">
-              <label className="text-sm font-medium block mb-1.5">Butcenizi belirtin (istege bagli)</label>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-text-muted block mb-1">Minimum (TL)</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                    <input
-                      type="number"
-                      value={form.budget_min}
-                      onChange={(e) => update('budget_min', e.target.value)}
-                      placeholder="0"
-                      className="w-full pl-10 pr-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-text-muted block mb-1">Maksimum (TL)</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                    <input
-                      type="number"
-                      value={form.budget_max}
-                      onChange={(e) => update('budget_max', e.target.value)}
-                      placeholder="0"
-                      className="w-full pl-10 pr-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-                    />
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-text-muted">Butce belirtmemeniz de sorun degildir. Uzmanlar zaten tekliflerini iletecektir.</p>
-            </div>
-          )}
-
-          {step === 9 && (
-            <div className="space-y-4">
-              <label className="text-sm font-medium block mb-1.5">Eklemek istediginiz notlar</label>
+            <div>
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Ek Notlar</label>
               <textarea
+                className="input"
                 value={form.notes}
-                onChange={(e) => update('notes', e.target.value)}
-                placeholder="Ornegin: Kapida zil calmayin, kedi var dikkat edin, vb."
+                onChange={e => setField('notes', e.target.value)}
+                placeholder="Uzmanın bilmesi gereken ek bilgiler..."
                 rows={4}
-                className="w-full px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light focus:border-accent resize-none"
+                style={{ resize: 'vertical', fontFamily: 'inherit' }}
               />
             </div>
           )}
 
+          {step === 8 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { val: 'LOW', label: 'Düşük', desc: 'Acele değil, uygun zamanda yapılabilir', color: '#10b981' },
+                { val: 'MEDIUM', label: 'Orta', desc: 'Birkaç gün içinde yapılmalı', color: '#3b82f6' },
+                { val: 'HIGH', label: 'Yüksek', desc: 'En kısa sürede yapılmalı', color: '#f59e0b' },
+                { val: 'EMERGENCY', label: 'Acil', desc: 'Hemen yapılması gerekiyor!', color: '#ef4444' },
+              ].map(opt => (
+                <button
+                  key={opt.val}
+                  onClick={() => setField('urgency', opt.val)}
+                  style={{
+                    padding: 14, borderRadius: 10, cursor: 'pointer', border: '2px solid',
+                    borderColor: form.urgency === opt.val ? opt.color : 'var(--color-border)',
+                    background: form.urgency === opt.val ? `${opt.color}18` : 'var(--color-surface-2)',
+                    textAlign: 'left', transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: opt.color }}>{opt.label}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step === 9 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h3 style={{ fontWeight: 700, marginBottom: 4 }}>Talep Özeti</h3>
+              {[
+                { label: 'Kategori', value: selectedCategory?.name },
+                { label: 'Alt Kategori', value: selectedSubcategory?.name },
+                { label: 'Başlık', value: form.title },
+                { label: 'Şehir', value: cities?.find(c => c.id === form.city_id)?.name },
+                { label: 'Tarih', value: form.preferred_date },
+                { label: 'Bütçe', value: form.budget_min || form.budget_max ? `₺${form.budget_min || '?'} - ₺${form.budget_max || '?'}` : 'Belirtilmemiş' },
+                { label: 'Aciliyet', value: form.urgency },
+              ].map(item => item.value && (
+                <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--color-border)', fontSize: '0.875rem' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{item.label}</span>
+                  <span style={{ fontWeight: 600 }}>{item.value}</span>
+                </div>
+              ))}
+              {form.description && (
+                <div style={{ padding: 14, background: 'var(--color-surface-2)', borderRadius: 10 }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 6 }}>Açıklama</div>
+                  <div style={{ fontSize: '0.875rem' }}>{form.description}</div>
+                </div>
+              )}
+            </div>
+          )}
+
           {step === 10 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-primary mb-4">Talep Ozeti</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted">Kategori</span>
-                  <span className="text-sm font-medium">{form.category_name}</span>
-                </div>
-                {form.subcategory_name && (
-                  <div className="flex justify-between p-3 bg-bg rounded-xl">
-                    <span className="text-sm text-text-muted">Alt Kategori</span>
-                    <span className="text-sm font-medium">{form.subcategory_name}</span>
-                  </div>
-                )}
-                {form.service_name && (
-                  <div className="flex justify-between p-3 bg-bg rounded-xl">
-                    <span className="text-sm text-text-muted">Hizmet</span>
-                    <span className="text-sm font-medium">{form.service_name}</span>
-                  </div>
-                )}
-                <div className="p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted block mb-1">Baslik</span>
-                  <span className="text-sm font-medium">{form.title}</span>
-                </div>
-                {form.description && (
-                  <div className="p-3 bg-bg rounded-xl">
-                    <span className="text-sm text-text-muted block mb-1">Aciklama</span>
-                    <span className="text-sm">{form.description}</span>
-                  </div>
-                )}
-                <div className="flex justify-between p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted">Konum</span>
-                  <span className="text-sm font-medium">{form.city_name}{form.district_name ? `, ${form.district_name}` : ''}</span>
-                </div>
-                <div className="flex justify-between p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted">Tarih</span>
-                  <span className="text-sm font-medium">{form.preferred_date || 'Belirtilmedi'}</span>
-                </div>
-                <div className="flex justify-between p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted">Saat</span>
-                  <span className="text-sm font-medium">{form.preferred_time || 'Belirtilmedi'}</span>
-                </div>
-                {(form.budget_min || form.budget_max) && (
-                  <div className="flex justify-between p-3 bg-bg rounded-xl">
-                    <span className="text-sm text-text-muted">Butce</span>
-                    <span className="text-sm font-medium">
-                      {form.budget_min ? `₺${form.budget_min}` : '—'} - {form.budget_max ? `₺${form.budget_max}` : '—'}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between p-3 bg-bg rounded-xl">
-                  <span className="text-sm text-text-muted">Oncelik</span>
-                  <span className="text-sm font-medium">{form.urgency}</span>
-                </div>
-              </div>
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{ fontSize: '3rem', marginBottom: 16 }}>🚀</div>
+              <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Talebinizi Yayınlamaya Hazır mısınız?</h3>
+              <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
+                Talebiniz yayınlandığında, alandaki uzmanlar teklif göndermeye başlayacak. Teklifleri karşılaştırarak en uygununu seçebilirsiniz.
+              </p>
+              <button
+                id="submit-request-btn"
+                className="btn btn-primary btn-lg"
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                {loading ? <div className="spinner" style={{ width: 20, height: 20 }} /> : <><Send size={16} /> Talebi Yayınla</>}
+              </button>
             </div>
           )}
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-6">
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
           <button
+            className="btn btn-ghost"
             onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium border border-border-light hover:border-accent transition-colors"
+            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <ChevronLeft className="w-4 h-4" /> Geri
+            <ChevronLeft size={16} /> Geri
           </button>
-
-          {step < 10 ? (
+          {step < 10 && (
             <button
+              className="btn btn-primary"
               onClick={() => setStep(s => s + 1)}
               disabled={!canProceed()}
-              className="flex items-center gap-2 px-5 py-3 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-colors disabled:opacity-50"
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              Ileri <ChevronRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={submit}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-3 bg-success text-white rounded-xl text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
-            >
-              <Check className="w-4 h-4" /> {loading ? 'Gonderiliyor...' : 'Talebi Yayinla'}
+              İleri <ChevronRight size={16} />
             </button>
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default ServiceRequestForm;

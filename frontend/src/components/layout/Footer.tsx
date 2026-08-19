@@ -1,62 +1,106 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { MapPin, Phone, Mail } from 'lucide-react';
 
-export default function Footer() {
+const Footer: React.FC = () => {
+  const year = new Date().getFullYear();
+
+  const links = {
+    platform: [
+      { to: '/search', label: 'Uzman Ara' },
+      { to: '/map', label: 'Haritada Ara' },
+      { to: '/pricing', label: 'Abonelik Planları' },
+      { to: '/request/create', label: 'Hizmet Talebi Oluştur' },
+    ],
+    company: [
+      { to: '/', label: 'Hakkımızda' },
+      { to: '/', label: 'Blog' },
+      { to: '/', label: 'Kariyer' },
+      { to: '/', label: 'İletişim' },
+    ],
+    legal: [
+      { to: '/', label: 'Gizlilik Politikası' },
+      { to: '/', label: 'Kullanım Koşulları' },
+      { to: '/', label: 'KVKK Aydınlatma' },
+      { to: '/', label: 'Çerez Politikası' },
+    ],
+  };
+
   return (
-    <footer className="bg-primary text-white mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+    <footer style={{
+      background: 'var(--color-surface)',
+      borderTop: '1px solid var(--color-border)',
+      marginTop: 'auto',
+    }}>
+      <div className="container" style={{ padding: '60px 24px 40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40 }}>
+          {/* Brand */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Şehrinin Uzmani</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Şehrindeki doğru uzmanı bul. İhtiyacını anlat, bölgedeki güvenilir uzmanlardan teklif al.
+            <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', marginBottom: 16 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <MapPin size={18} color="white" />
+              </div>
+              <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>
+                <span className="gradient-text">Şehrimin</span> Uzmanı
+              </span>
+            </Link>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: 1.6, maxWidth: 260 }}>
+              Yaşadığınız şehirde ihtiyacınız olan uzmanı dakikalar içinde bulun.
             </p>
+            {/* Social */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Bizi takip edin!</span>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold mb-4">Kategoriler</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/category/ev-yasam" className="hover:text-accent transition-colors">Ev & Yaşam</Link></li>
-              <li><Link to="/category/teknik-hizmetler" className="hover:text-accent transition-colors">Teknik Hizmetler</Link></li>
-              <li><Link to="/category/saglik-wellness" className="hover:text-accent transition-colors">Sağlık & Wellness</Link></li>
-              <li><Link to="/category/egitim" className="hover:text-accent transition-colors">Eğitim</Link></li>
-              <li><Link to="/category/arac" className="hover:text-accent transition-colors">Araç</Link></li>
-              <li><Link to="/category/dijital-hizmetler" className="hover:text-accent transition-colors">Dijital Hizmetler</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4">Popüler Şehirler</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/city/istanbul" className="hover:text-accent transition-colors">İstanbul</Link></li>
-              <li><Link to="/city/ankara" className="hover:text-accent transition-colors">Ankara</Link></li>
-              <li><Link to="/city/izmir" className="hover:text-accent transition-colors">İzmir</Link></li>
-              <li><Link to="/city/antalya" className="hover:text-accent transition-colors">Antalya</Link></li>
-              <li><Link to="/city/nevsehir" className="hover:text-accent transition-colors">Nevşehir</Link></li>
-              <li><Link to="/city/kayseri" className="hover:text-accent transition-colors">Kayseri</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold mb-4">Platform</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="/register" className="hover:text-accent transition-colors">Uzman Ol</Link></li>
-              <li><Link to="/pricing" className="hover:text-accent transition-colors">Uzman Planlari</Link></li>
-              <li><Link to="/how-it-works" className="hover:text-accent transition-colors">Nasil Calisir?</Link></li>
-              <li><Link to="/about" className="hover:text-accent transition-colors">Hakkimizda</Link></li>
-              <li><Link to="/contact" className="hover:text-accent transition-colors">Iletisim</Link></li>
-              <li><Link to="/terms" className="hover:text-accent transition-colors">Kullanim Sartlari</Link></li>
-              <li><Link to="/privacy" className="hover:text-accent transition-colors">Gizlilik Politikasi</Link></li>
-            </ul>
-          </div>
+          {/* Links */}
+          {([
+            { title: 'Platform', items: links.platform },
+            { title: 'Şirket', items: links.company },
+            { title: 'Yasal', items: links.legal },
+          ] as const).map((section) => (
+            <div key={section.title}>
+              <h4 style={{ color: 'var(--color-text)', fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>
+                {section.title}
+              </h4>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {section.items.map((item) => (
+                  <li key={item.label}>
+                    <Link to={item.to} style={{
+                      color: 'var(--color-text-muted)', textDecoration: 'none', fontSize: '0.875rem',
+                      transition: 'color 0.2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-primary-light)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">© 2026 Şehrinin Uzmani. Tüm hakları saklıdır.</p>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">81 ilde hizmet veriyoruz</span>
-          </div>
+        <div style={{
+          marginTop: 48, paddingTop: 24,
+          borderTop: '1px solid var(--color-border)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: 12,
+        }}>
+          <p style={{ color: 'var(--color-text-dim)', fontSize: '0.8rem' }}>
+            © {year} Şehrimin Uzmanı. Tüm hakları saklıdır.
+          </p>
+          <p style={{ color: 'var(--color-text-dim)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 4 }}>
+            Türkiye'de sevgi ile yapıldı
+          </p>
         </div>
       </div>
     </footer>
   );
-}
+};
+
+export default Footer;

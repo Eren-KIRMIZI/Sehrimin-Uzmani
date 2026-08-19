@@ -1,290 +1,185 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-import { useMyPromotions, useCategories, usePromotionCreateMutation, usePromotionActionMutation } from '../hooks/useQueries';
+import React, { useState } from 'react';
+import { Megaphone, Plus, Pause, Play, XSquare, MousePointer, Eye, Activity } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useMyPromotions, useCategories } from '../hooks/useQueries';
+import { promotionsApi } from '../services';
 
-export default function PromotionsPage() {
-  const { data: promotions = [], isLoading: loading } = useMyPromotions();
-  const { data: categories = [] } = useCategories();
-  const createMutation = usePromotionCreateMutation();
-  const pauseMutation = usePromotionActionMutation('pause');
-  const resumeMutation = usePromotionActionMutation('resume');
-  const cancelMutation = usePromotionActionMutation('cancel');
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    category_id: '',
-    budget: '',
-    daily_budget: '',
-    bid_amount: '1.0',
-    duration_days: '7',
-    is_featured: false,
-    badge_text: '',
-  });
+const PromotionsPage: React.FC = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ category_id: '', budget: '', daily_budget: '', bid_amount: '' });
 
-  const handleCreate = () => {
-    if (!form.category_id || !form.budget) {
-      toast.error('Zorunlu alanlari doldurun');
-      return;
+  const { data: promotions, refetch } = useMyPromotions();
+  const { data: categories } = useCategories();
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await promotionsApi.create({
+        category_id: Number(form.category_id) || undefined,
+        budget: Number(form.budget),
+        daily_budget: form.daily_budget ? Number(form.daily_budget) : undefined,
+        bid_amount: Number(form.bid_amount),
+      });
+      setShowModal(false);
+      refetch();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Hata oluştu');
+    } finally {
+      setLoading(false);
     }
-    createMutation.mutate(
-      {
-        category_id: parseInt(form.category_id),
-        budget: parseFloat(form.budget),
-        daily_budget: form.daily_budget ? parseFloat(form.daily_budget) : undefined,
-        bid_amount: parseFloat(form.bid_amount),
-        duration_days: parseInt(form.duration_days),
-        is_featured: form.is_featured,
-        badge_text: form.badge_text || undefined,
-      },
-      {
-        onSuccess: () => {
-          toast.success('Tanitim baslatildi!');
-          setShowForm(false);
-          setForm({ category_id: '', budget: '', daily_budget: '', bid_amount: '1.0', duration_days: '7', is_featured: false, badge_text: '' });
-        },
-      }
-    );
   };
 
-  const handlePause = (id: number) => {
-    pauseMutation.mutate(id, {
-      onSuccess: () => toast.success('Duraklatildi'),
-      onError: () => toast.error('Hata'),
-    });
+  const handleAction = async (id: number, action: 'pause' | 'resume' | 'cancel') => {
+    try {
+      await promotionsApi[action](id);
+      refetch();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Hata oluştu');
+    }
   };
-
-  const handleResume = (id: number) => {
-    resumeMutation.mutate(id, {
-      onSuccess: () => toast.success('Devam ettirildi'),
-      onError: () => toast.error('Hata'),
-    });
-  };
-
-  const handleCancel = (id: number) => {
-    if (!confirm('Tanitimi iptal etmek istediginize emin misiniz?')) return;
-    cancelMutation.mutate(id, {
-      onSuccess: () => toast.success('Iptal edildi'),
-      onError: () => toast.error('Hata'),
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
+    <Layout>
+      <div className="container" style={{ padding: '32px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Tanitim Kampanyalari</h1>
-            <p className="text-gray-500 mt-1">Gorunurlugunuzu artirarak daha fazla musteri kazanin</p>
+            <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 4 }}>Tanıtım Kampanyaları</h1>
+            <p style={{ color: 'var(--color-text-muted)' }}>Profilinizi öne çıkarın, daha fazla müşteriye ulaşın.</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all"
-          >
-            + Yeni Kampanya
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <Plus size={16} /> Yeni Kampanya
           </button>
         </div>
 
-        {showForm && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Yeni Tanitim Kampanyasi</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <select
-                  value={form.category_id}
-                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Kategori Secin</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Butce (TL)</label>
-                <input
-                  type="number"
-                  value={form.budget}
-                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                  placeholder="1000"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gunluk Butce (TL, opsiyonel)</label>
-                <input
-                  type="number"
-                  value={form.daily_budget}
-                  onChange={(e) => setForm({ ...form, daily_budget: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                  placeholder="Otomatik hesaplanir"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teklif Tutarı (TL)</label>
-                <input
-                  type="number"
-                  value={form.bid_amount}
-                  onChange={(e) => setForm({ ...form, bid_amount: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                  step="0.5"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sure (gun)</label>
-                <select
-                  value={form.duration_days}
-                  onChange={(e) => setForm({ ...form, duration_days: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="3">3 Gun</option>
-                  <option value="7">1 Hafta</option>
-                  <option value="14">2 Hafta</option>
-                  <option value="30">1 Ay</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.is_featured}
-                    onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
-                    className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">One Cikarilmis Uzman</span>
-                </label>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Rozet Yazisi (opsiyonel)</label>
-                <input
-                  type="text"
-                  value={form.badge_text}
-                  onChange={(e) => setForm({ ...form, badge_text: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                  placeholder="Premium Uzman, En Iyi Fiyat, vb."
-                />
-              </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+          {promotions?.length === 0 ? (
+            <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--color-text-muted)' }}>
+              <Megaphone size={48} style={{ opacity: 0.5, margin: '0 auto 16px' }} />
+              <h3>Aktif Kampanyanız Yok</h3>
+              <p>Hemen yeni bir kampanya oluşturarak şehrinizdeki müşterilerin sizi üst sıralarda görmesini sağlayın.</p>
             </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={handleCreate} className="px-6 py-2.5 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700">
-                Kampanya Baslat
-              </button>
-              <button onClick={() => setShowForm(false)} className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
-                Iptal
-              </button>
-            </div>
-          </div>
-        )}
+          ) : (
+            promotions?.map(promo => {
+              const spentPercent = (promo.budget_spent / promo.budget) * 100;
+              const catName = categories?.find(c => c.id === promo.category_id)?.name || 'Tüm Kategoriler';
+              
+              return (
+                <div key={promo.id} className="card" style={{ position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div>
+                      <div className={`badge ${promo.status === 'ACTIVE' ? 'badge-success' : promo.status === 'PAUSED' ? 'badge-warning' : 'badge-error'}`}>
+                        {promo.status === 'ACTIVE' ? 'Aktif' : promo.status === 'PAUSED' ? 'Duraklatıldı' : promo.status === 'CANCELLED' ? 'İptal' : 'Süresi Doldu'}
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: '1.1rem', marginTop: 8 }}>{catName}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Teklif (Tık)</div>
+                      <div style={{ fontWeight: 800, color: 'var(--color-primary-light)' }}>₺{promo.bid_amount}</div>
+                    </div>
+                  </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: 'Aktif Kampanya', value: promotions.filter((p) => p.status === 'active').length, color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Toplam Goruntulenme', value: promotions.reduce((s, p) => s + p.impressions, 0).toLocaleString('tr-TR'), color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Toplam Tiklama', value: promotions.reduce((s, p) => s + p.clicks, 0).toLocaleString('tr-TR'), color: 'text-purple-600', bg: 'bg-purple-50' },
-          ].map((item, i) => (
-            <div key={i} className={`${item.bg} rounded-2xl p-5`}>
-              <p className="text-sm text-gray-600 mb-1">{item.label}</p>
-              <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-            </div>
-          ))}
-        </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                    <div style={{ background: 'var(--color-surface-2)', padding: 12, borderRadius: 12 }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}><Eye size={12} /> Görüntülenme</div>
+                      <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>{promo.impressions.toLocaleString()}</div>
+                    </div>
+                    <div style={{ background: 'var(--color-surface-2)', padding: 12, borderRadius: 12 }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}><MousePointer size={12} /> Tıklanma</div>
+                      <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>{promo.clicks.toLocaleString()}</div>
+                    </div>
+                  </div>
 
-        <div className="space-y-4">
-          {promotions.map((p) => (
-            <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">{p.category_name}</h3>
-                    <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                      p.status === 'active' ? 'bg-green-100 text-green-800' :
-                      p.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {p.status === 'active' ? 'Aktif' : p.status === 'paused' ? 'Duraklatildi' : 'Iptal'}
-                    </span>
-                    {p.is_featured && (
-                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
-                        ONE CIKARILMIS
-                      </span>
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--color-text-muted)' }}>Bütçe Kullanımı: ₺{promo.budget_spent} / ₺{promo.budget}</span>
+                      <span style={{ fontWeight: 600 }}>{spentPercent.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: 6, background: 'var(--color-surface-2)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ 
+                        height: '100%', 
+                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-light))', 
+                        width: `${Math.min(spentPercent, 100)}%` 
+                      }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
+                    {promo.status === 'ACTIVE' && (
+                      <button className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center', color: '#f59e0b', borderColor: '#f59e0b' }} onClick={() => handleAction(promo.id, 'pause')}>
+                        <Pause size={14} /> Duraklat
+                      </button>
                     )}
-                    {p.badge_text && (
-                      <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
-                        {p.badge_text}
-                      </span>
+                    {promo.status === 'PAUSED' && (
+                      <button className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center', color: '#10b981', borderColor: '#10b981' }} onClick={() => handleAction(promo.id, 'resume')}>
+                        <Play size={14} /> Devam Et
+                      </button>
+                    )}
+                    {(promo.status === 'ACTIVE' || promo.status === 'PAUSED') && (
+                      <button className="btn btn-outline btn-sm" style={{ flex: 1, justifyContent: 'center', color: '#ef4444', borderColor: '#ef4444' }} onClick={() => handleAction(promo.id, 'cancel')}>
+                        <XSquare size={14} /> İptal Et
+                      </button>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-                    <div>
-                      <p className="text-xs text-gray-500">Butce</p>
-                      <p className="text-sm font-semibold text-gray-900">{p.budget.toLocaleString('tr-TR')} TL</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Harcanan</p>
-                      <p className="text-sm font-semibold text-red-600">{p.spent.toLocaleString('tr-TR')} TL</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Goruntulenme</p>
-                      <p className="text-sm font-semibold text-blue-600">{p.impressions.toLocaleString('tr-TR')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Tiklama</p>
-                      <p className="text-sm font-semibold text-purple-600">{p.clicks.toLocaleString('tr-TR')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">CTR</p>
-                      <p className="text-sm font-semibold text-green-600">{p.ctr.toFixed(1)}%</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div
-                        className="bg-purple-500 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min((p.spent / p.budget) * 100, 100)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Kalan: {(p.budget - p.spent).toLocaleString('tr-TR')} TL
-                    </p>
-                  </div>
                 </div>
-
-                <div className="flex gap-2 ml-4">
-                  {p.status === 'active' ? (
-                    <button onClick={() => handlePause(p.id)} className="px-3 py-1.5 text-xs border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
-                      Duraklat
-                    </button>
-                  ) : p.status === 'paused' ? (
-                    <button onClick={() => handleResume(p.id)} className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
-                      Devam
-                    </button>
-                  ) : null}
-                  {p.status !== 'cancelled' && (
-                    <button onClick={() => handleCancel(p.id)} className="px-3 py-1.5 text-xs border border-red-300 text-red-600 rounded-lg hover:bg-red-50">
-                      Iptal
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          {promotions.length === 0 && (
-            <div className="bg-white rounded-2xl p-12 text-center text-gray-500 border border-gray-200">
-              Henuz tanitim kampanyaniz yok. Baslamak icin yeni bir kampanya olusturun.
-            </div>
+              );
+            })
           )}
         </div>
       </div>
-    </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Yeni Kampanya Oluştur</h3>
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)} style={{ padding: 4 }}>✕</button>
+            </div>
+            
+            <form onSubmit={handleCreate} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Hedef Kategori</label>
+                <select className="input" value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})}>
+                  <option value="">Tüm Kategoriler</option>
+                  {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>Tüm kategoriler veya spesifik bir kategori seçin.</div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Toplam Bütçe (₺)</label>
+                  <input type="number" className="input" required min={100} value={form.budget} onChange={e => setForm({...form, budget: e.target.value})} placeholder="Örn: 1000" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Günlük Limit (₺)</label>
+                  <input type="number" className="input" min={10} value={form.daily_budget} onChange={e => setForm({...form, daily_budget: e.target.value})} placeholder="Opsiyonel" />
+                </div>
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Tıklama Başına Teklif (₺)</label>
+                <input type="number" className="input" required min={1} step={0.5} value={form.bid_amount} onChange={e => setForm({...form, bid_amount: e.target.value})} placeholder="Örn: 2.5" />
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  Teklifiniz ne kadar yüksek olursa, sıralamada o kadar üstte çıkarsınız (priority_boost = 1 + bid * 0.1).
+                </div>
+              </div>
+              
+              <div style={{ background: 'rgba(99, 102, 241, 0.08)', padding: 12, borderRadius: 8, fontSize: '0.85rem', color: 'var(--color-primary-light)', display: 'flex', gap: 8 }}>
+                <Activity size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+                Kampanya başlatıldığında bütçeniz kadar tutar kullanılabilir bakiyenizden bloke edilecektir. Kampanya bitiminde harcanmayan kısım iade edilir.
+              </div>
+              
+              <button type="submit" className="btn btn-primary" style={{ marginTop: 8, padding: 14, justifyContent: 'center' }} disabled={loading}>
+                {loading ? 'Oluşturuluyor...' : 'Kampanyayı Başlat'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </Layout>
   );
-}
+};
+
+export default PromotionsPage;

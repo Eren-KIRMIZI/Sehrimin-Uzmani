@@ -41,6 +41,9 @@ def startup():
     setup_logging()
     logger.info("Uygulama baslatiliyor...")
     from app.modules.auth.models import RevokedToken
+    from app.modules.subscriptions.models import ProviderSubscription
+    from app.modules.users.models import User
+    from app.modules.providers.models import ProviderProfile
     Base.metadata.create_all(bind=engine)
     from app.core.database import SessionLocal
     from app.seed import run_all_seeds

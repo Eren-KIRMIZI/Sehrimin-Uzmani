@@ -481,10 +481,11 @@ def seed_categories(db: Session):
             db.flush()
 
             for i, service_name in enumerate(sub_data["services"]):
+                base_slug = service_name.lower().replace(" ", "-").replace("ç", "c").replace("ş", "s").replace("ğ", "g").replace("ı", "i").replace("ö", "o").replace("ü", "u")
                 service = Service(
                     subcategory_id=subcategory.id,
                     name=service_name,
-                    slug=service_name.lower().replace(" ", "-").replace("ç", "c").replace("ş", "s").replace("ğ", "g").replace("ı", "i").replace("ö", "o").replace("ü", "u"),
+                    slug=f"{sub_data['slug']}-{base_slug}",
                     sort_order=i,
                 )
                 db.add(service)
@@ -672,8 +673,37 @@ def seed_commission_rates(db: Session):
     db.commit()
 
 
+DEMO_USERS = [
+    {"email": "demo@kullanici.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Kullanici", "role": "USER"},
+    {"email": "demo@uzman.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Uzman", "role": "PROVIDER"},
+    {"email": "demo@admin.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Admin", "role": "ADMIN"},
+]
+
+
+def seed_demo_users(db: Session):
+    from app.modules.users.models import User
+    from app.core.security import hash_password
+
+    for user_data in DEMO_USERS:
+        existing = db.query(User).filter(User.email == user_data["email"]).first()
+        if existing:
+            continue
+        user = User(
+            email=user_data["email"],
+            password_hash=hash_password(user_data["password"]),
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            role=user_data["role"],
+            is_active=True,
+        )
+        db.add(user)
+
+    db.commit()
+
+
 def run_all_seeds(db: Session):
     seed_cities(db)
     seed_categories(db)
     seed_subscription_plans(db)
     seed_commission_rates(db)
+    seed_demo_users(db)

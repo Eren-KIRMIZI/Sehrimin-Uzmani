@@ -32,7 +32,7 @@ Yerel hizmet pazaryeri platformu. Insanlarin yasadiklari sehrde ihtiyac duydugu 
                     +-------------------+
                               |
                     +---------v---------+
-                    |    MSSQL Server   |
+                     |    PostgreSQL     |
                     +-------------------+
 ```
 
@@ -54,6 +54,7 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 | Kategori | 13 ana, 40+ alt, 150+ hizmet |
 | Kaynak Dosya | ~110 |
 | Toplam Satir Kod | ~12.500+ |
+| Test Sayisi | 65 (pytest) |
 
 ---
 
@@ -66,7 +67,8 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 | Framework | FastAPI 0.115 |
 | Dil | Python 3.11 |
 | ORM | SQLAlchemy 2.0 |
-| Veritabani | Microsoft SQL Server |
+| Veritabani | PostgreSQL 18 |
+| DB Driver | psycopg2-binary |
 | Cache / Queue | Redis Memurai |
 | Authentication | JWT (access + refresh token) |
 | Password Hashing | bcrypt via passlib |
@@ -85,7 +87,7 @@ Moduler monolith mimarisi ile baslandi. Her domain modulu kendi klasorunde organ
 | Build | Vite 8 |
 | Styling | Tailwind CSS v4 |
 | State | Zustand |
-| Server State | TanStack Query |
+| Server State | TanStack Query (paylasilan hook'lar, otomatik cache) |
 | HTTP Client | Axios |
 | Routing | React Router v7 |
 | Harita | Leaflet + React-Leaflet |
@@ -119,6 +121,8 @@ sehriminUzmani/
 |   |   |   +-- rate_limiter.py         In-memory IP bazli rate limiting
 |   |   |   +-- logging.py              Python logging yapilandirmasi
 |   |   |   +-- jobs.py                 APScheduler background gorevleri
+|   |   |   +-- encryption.py           AES-256-GCM veri sifreleme (IBAN, vb.)
+|   |   |   +-- cache.py                TTL bazli referans veri onbellekleyici
 |   |   |
 |   |   +-- api/
 |   |   |   +-- router.py               Tum API routerlarini birlestiren merkezi router
@@ -153,7 +157,7 @@ sehriminUzmani/
 |   |       +-- admin/                  Admin paneli (8 endpoint)
 |   |       +-- integrations/           Harita, odeme, eposta entegrasyonlari
 |   |
-|   +-- tests/                          Test dosyalari (auth, security)
+|   +-- tests/                          Test dosyalari (13 modul, 65 test)
 |   +-- requirements.txt                Python bagimliliklari
 |   +-- .env                            Ortam degiskenleri (git disinda)
 |
@@ -166,12 +170,14 @@ sehriminUzmani/
     |   +-- types/                      TypeScript arayuz tanimlari (25+ interface)
     |   +-- services/                   API istemcisi (Axios + JWT interceptor)
     |   +-- stores/                     Zustand durum depolari (auth, location)
+    |   +-- hooks/                      Ozel React hook'lari (useWebSocket, useQueries)
     |   +-- i18n/                       Coklu dil destegi (tr.ts, en.ts)
     |   |
     |   +-- components/
     |   |   +-- layout/                 Navbar, Footer, Layout
     |   |   +-- auth/                   ProtectedRoute bileseni
-    |   |   +-- map/                    Leaflet harita bileseni
+    |   |   +-- map/                    Leaflet harita bileseni (marker clustering)
+    |   |   +-- ErrorBoundary.tsx       Hata yakalama bileseni
     |   |
     |   +-- pages/
     |       +-- HomePage.tsx            Ana sayfa (Hero, Kategoriler, Onerilenler)
@@ -786,6 +792,7 @@ Sistem: Anlasmazlik acma -> Karsi taraf ile mesajlasma -> Kanit ekleme -> Admin 
 - Icerik filtresi: WhatsApp, telefon numarasi, e-posta, Telegram gibi platform disi iletisim bilgileri engellenir
 - Mesaj uzunluk siniri: 2000 karakter
 - mark_read islemi sadece participant tarafindan yapilabilir
+- Otomatik yeniden baglanti (exponential backoff, max 30s)
 
 ---
 
@@ -795,6 +802,7 @@ Sistem: Anlasmazlik acma -> Karsi taraf ile mesajlasma -> Kanit ekleme -> Admin 
 - Harita + liste yan yana gorunum
 - Yakinlik bazli arama (lat, lng, radius)
 - Custom marker ve popup
+- Marker clustering (leaflet.markercluster)
 
 ---
 
@@ -819,6 +827,7 @@ Sistem: Anlasmazlik acma -> Karsi taraf ile mesajlasma -> Kanit ekleme -> Admin 
 - CORS yapilandirmasi
 - SECRET_KEY ortam degiskeninden okunur, yoksa otomatik uretilir (uyari ile)
 - Aktif olmayan kullanicilar token ile erisemez
+- Hassas veri sifreleme (AES-256-GCM, IBAN/banka bilgileri)
 
 ### Uygulama Seviyesi
 - Audit loglama
@@ -880,10 +889,20 @@ Uygulama ilk kez baslatildiginda otomatik olarak yuklenen veriler:
 
 ### On Hazirliklar
 
-1. Microsoft SQL Server yuklu ve calisiyor olmali
+1. PostgreSQL yuklu ve calisiyor olmali (port 5432)
 2. Redis Memurai yuklu ve calisiyor olmali (port 6379)
 3. Python 3.11+ yuklu olmali
 4. Node.js 18+ yuklu olmali
+
+### Hizli Baslatma (Tikla)
+
+Proje kokunden tek komutla hem backend hem frontend baslatilabilir:
+
+```bash
+npm run dev
+```
+
+Bu komut `concurrently` ile backend (port 8000) ve frontend (port 5173) ayni anda baslatir.
 
 ### Backend
 
@@ -894,7 +913,7 @@ cd backend
 pip install -r requirements.txt
 
 # .env dosyasini duzenle
-# DATABASE_URL satirinda SQL Server sifrenizi guncelleyin
+# DATABASE_URL satirinda PostgreSQL sifrenizi guncelleyin
 # SECRET_KEY ortam degiskenine bir deger atayin (yoksa otomatik uretilir)
 
 # Uygulamayi baslat
@@ -926,6 +945,34 @@ npm run dev
 Uygulama: http://localhost:5173
 
 Frontend, /api yolu altindaki tum istekleri backend (port 8000) uzerine proxy olarak iletir.
+
+### Testler
+
+```bash
+cd backend
+python -m pytest tests/ -v
+```
+
+13 test modulu, 65 test. Testler SQLite uzerinde calisir, PostgreSQL gerekmez.
+
+---
+
+## Performans Index'leri
+
+Veritabaninda 98 index mevcut. Onemli olusturulan index'ler:
+
+| Tablo | Index | Amaci |
+|-------|-------|-------|
+| provider_profiles | ix_provider_profiles_rating | Uzman siralamasi |
+| provider_profiles | ix_provider_profiles_verified | Dogrulanmis uzman filtresi |
+| service_requests | ix_service_requests_status_created | Talep filtreleme + siralama |
+| appointments | ix_appointments_status_start | Randevu takvimi |
+| quotes | ix_quotes_request_status | Teklif durumu sorgusu |
+| reviews | ix_reviews_provider_created | Uzman yorum gecmisi |
+| messages | ix_messages_conv_created | Mesaj siralamasi |
+| notifications | ix_notifications_user_read | Okunmamis bildirim sayisi |
+| transactions | ix_transactions_provider | Kazanc gecmisi |
+| favorites | ix_favorites_user_provider | Tekrar kontrolu |
 
 ---
 

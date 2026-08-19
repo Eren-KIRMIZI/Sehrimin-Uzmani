@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    DATABASE_URL: str = "mssql+pyodbc://sa:YourPassword123@localhost/sehriminUzmani?driver=ODBC+Driver+17+for+SQL+Server"
+    DATABASE_URL: str = "postgresql+psycopg2://sehrim_admin:sehrim2026!@localhost:5432/sehriminuzmani"
 
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379

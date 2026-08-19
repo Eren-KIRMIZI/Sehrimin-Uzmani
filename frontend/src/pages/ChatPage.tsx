@@ -1,236 +1,256 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, Image, Paperclip } from 'lucide-react';
-import api from '../services/api';
-import { useAuthStore } from '../stores/authStore';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Send, Image as ImageIcon, Paperclip, Check, CheckCheck, Loader2, MessageSquare } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useConversations, useMessages } from '../hooks/useQueries';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useAuthStore } from '../stores/authStore';
+import type { Message } from '../types';
 
-interface Message {
-  id: number;
-  sender_id: number;
-  content: string;
-  message_type: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-interface Conversation {
-  id: number;
-  other_user: { id: number; first_name: string; last_name: string; avatar?: string } | null;
-  last_message: { content: string; created_at: string; sender_id: number } | null;
-  unread_count: number;
-}
-
-export default function ChatPage() {
-  const { conversationId } = useParams();
-  const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
+const ChatPage: React.FC = () => {
+  const location = useLocation();
+  const { user } = useAuthStore();
+  
+  const [activeConvId, setActiveConvId] = useState<number | null>(
+    location.state?.conversationId || null
+  );
+  const [inputValue, setInputValue] = useState('');
+  
+  const { data: convData, isLoading: convLoading } = useConversations();
+  const { data: msgData, isLoading: msgLoading, refetch } = useMessages(activeConvId || undefined);
+  
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const getWsUrl = useCallback(() => {
-    const tokens = JSON.parse(localStorage.getItem('tokens') || 'null');
-    if (!tokens?.access_token) return '';
-    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${window.location.host}/ws/${tokens.access_token}`;
-  }, []);
-
-  const handleWsMessage = useCallback((data: any) => {
-    if (data.action === 'new_message' && data.message) {
-      setMessages(prev => [...prev, data.message]);
-      loadConversations();
+  // WebSocket
+  const { isConnected, sendMessage, markRead } = useWebSocket({
+    onMessage: (msg) => {
+      if (msg.conversation_id === activeConvId) {
+        setLocalMessages(prev => [...prev, msg]);
+        markRead(activeConvId);
+      }
     }
-  }, []);
-
-  const { isConnected, connect: wsConnect, disconnect: wsDisconnect, send: wsSend } = useWebSocket({
-    url: getWsUrl(),
-    onMessage: handleWsMessage,
-    reconnect: true,
-    maxRetries: 8,
   });
 
+  // Load messages from query
   useEffect(() => {
-    loadConversations();
-  }, []);
-
-  useEffect(() => {
-    if (conversationId) {
-      loadMessages(Number(conversationId));
-      wsConnect();
+    if (msgData?.items) {
+      setLocalMessages(msgData.items.slice().reverse()); // backend gives newest first usually, depending on pagination
+      if (activeConvId) {
+        markRead(activeConvId);
+      }
     }
-    return () => { wsDisconnect(); };
-  }, [conversationId]);
+  }, [msgData, activeConvId, markRead]);
 
+  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [localMessages]);
 
-  const loadConversations = async () => {
-    try {
-      const res = await api.get('/messaging/conversations');
-      setConversations(res.data);
-    } catch (e: any) {
-      console.error('Konusmalar yuklenemedi:', e);
-    }
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim() || !activeConvId) return;
+    
+    sendMessage(activeConvId, inputValue, 'TEXT');
+    setInputValue('');
   };
 
-  const loadMessages = async (convId: number) => {
-    try {
-      const res = await api.get(`/messaging/conversations/${convId}/messages`);
-      setMessages(res.data);
-    } catch (e: any) {
-      console.error('Mesajlar yuklenemedi:', e);
-    }
-  };
-
-  const sendMessage = () => {
-    if (!newMessage.trim() || !conversationId || !isConnected) return;
-
-    wsSend({
-      action: 'send_message',
-      conversation_id: Number(conversationId),
-      content: newMessage,
-      message_type: 'TEXT',
-    });
-
-    setNewMessage('');
-  };
-
-  const activeConversation = conversations.find(c => c.id === Number(conversationId));
+  const conversations = convData?.items || [];
+  const activeConv = conversations.find(c => c.id === activeConvId);
 
   return (
-    <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white rounded-2xl border border-border-light overflow-hidden" style={{ height: 'calc(100vh - 160px)' }}>
-          <div className="flex h-full">
-            {/* Conversation List */}
-            <div className={`${conversationId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 border-r border-border-light`}>
-              <div className="p-4 border-b border-border-light">
-                <h2 className="font-semibold text-primary text-lg">Mesajlar</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {conversations.length === 0 ? (
-                  <div className="text-center py-12 text-text-muted text-sm">Henuz mesajiniz yok</div>
-                ) : (
-                  conversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      onClick={() => navigate(`/chat/${conv.id}`)}
-                      className={`p-4 cursor-pointer border-b border-border-light hover:bg-bg transition-colors ${
-                        conversationId === String(conv.id) ? 'bg-accent/5 border-l-2 border-l-accent' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-accent font-semibold text-sm">
-                            {conv.other_user?.first_name?.[0] || '?'}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium truncate">
-                              {conv.other_user?.first_name} {conv.other_user?.last_name}
-                            </span>
-                            {conv.unread_count > 0 && (
-                              <span className="w-5 h-5 bg-accent text-white text-xs rounded-full flex items-center justify-center">
-                                {conv.unread_count}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-text-muted truncate mt-0.5">
-                            {conv.last_message?.content || 'Mesaj yok'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+    <Layout noFooter>
+      <div style={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+        
+        {/* Sidebar */}
+        <div style={{
+          width: 320, flexShrink: 0,
+          background: 'var(--color-surface)',
+          borderRight: '1px solid var(--color-border)',
+          display: 'flex', flexDirection: 'column'
+        }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid var(--color-border)' }}>
+            <h2 style={{ fontWeight: 700, fontSize: '1.25rem', margin: 0 }}>Mesajlar</h2>
+            <div style={{ fontSize: '0.8rem', color: isConnected ? 'var(--color-success)' : 'var(--color-warning)', marginTop: 4 }}>
+              {isConnected ? 'Bağlı' : 'Bağlanıyor...'}
             </div>
-
-            {/* Chat Area */}
-            {conversationId ? (
-              <div className="flex-1 flex flex-col">
-                {/* Chat Header */}
-                <div className="p-4 border-b border-border-light flex items-center gap-3">
-                  <button onClick={() => navigate('/chat')} className="md:hidden p-1">
-                    <ArrowLeft className="w-5 h-5" />
-                  </button>
-                  <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                    <span className="text-accent font-semibold text-sm">
-                      {activeConversation?.other_user?.first_name?.[0] || '?'}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">
-                      {activeConversation?.other_user?.first_name} {activeConversation?.other_user?.last_name}
-                    </h3>
-                    <p className="text-xs text-text-muted">Cevrimici</p>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {messages.map(msg => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-xs md:max-w-md px-4 py-2.5 rounded-2xl text-sm ${
-                        msg.sender_id === user?.id
-                          ? 'bg-accent text-white rounded-br-md'
-                          : 'bg-bg text-primary rounded-bl-md'
-                      }`}>
-                        <p>{msg.content}</p>
-                        <p className={`text-[10px] mt-1 ${msg.sender_id === user?.id ? 'text-white/60' : 'text-text-muted'}`}>
-                          {new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+          </div>
+          
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {convLoading ? (
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-text-muted)' }}>Yükleniyor...</div>
+            ) : conversations.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-text-muted)' }}>Mesajınız bulunmuyor.</div>
+            ) : (
+              conversations.map(conv => {
+                const isCustomer = user?.role === 'USER';
+                const otherParty = isCustomer ? conv.provider : conv.customer;
+                const otherName = isCustomer ? conv.provider?.business_name : `${conv.customer?.first_name} ${conv.customer?.last_name?.[0]}.`;
+                
+                return (
+                  <div 
+                    key={conv.id}
+                    onClick={() => setActiveConvId(conv.id)}
+                    style={{
+                      padding: '16px 20px',
+                      borderBottom: '1px solid var(--color-border)',
+                      cursor: 'pointer',
+                      background: activeConvId === conv.id ? 'var(--color-surface-2)' : 'transparent',
+                      display: 'flex', gap: 12, alignItems: 'center'
+                    }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                      background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, color: 'white'
+                    }}>
+                      {otherName?.[0] || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {otherName}
+                        </div>
+                        {conv.last_message && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                            {new Date(conv.last_message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ 
+                        fontSize: '0.85rem', 
+                        color: conv.unread_count ? 'var(--color-text)' : 'var(--color-text-muted)',
+                        fontWeight: conv.unread_count ? 700 : 400,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                      }}>
+                        {conv.last_message?.content || 'Henüz mesaj yok'}
                       </div>
                     </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message Input */}
-                <div className="p-4 border-t border-border-light">
-                  <div className="flex items-center gap-3">
-                    <button className="p-2 text-text-muted hover:text-accent transition-colors">
-                      <Paperclip className="w-5 h-5" />
-                    </button>
-                    <button className="p-2 text-text-muted hover:text-accent transition-colors">
-                      <Image className="w-5 h-5" />
-                    </button>
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Mesajinizi yazin..."
-                      className="flex-1 px-4 py-2.5 bg-bg rounded-xl text-sm outline-none focus:ring-2 focus:ring-accent/20"
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim()}
-                      className="p-2.5 bg-accent text-white rounded-xl hover:bg-accent-dark transition-colors disabled:opacity-50"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
+                    {!!conv.unread_count && conv.unread_count > 0 && (
+                      <div style={{
+                        background: 'var(--color-primary)', color: 'white',
+                        borderRadius: '50%', width: 20, height: 20,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.75rem', fontWeight: 700
+                      }}>
+                        {conv.unread_count}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 hidden md:flex items-center justify-center text-text-muted">
-                <div className="text-center">
-                  <div className="text-5xl mb-4">💬</div>
-                  <p>Bir konusma secin</p>
-                </div>
-              </div>
+                );
+              })
             )}
           </div>
         </div>
+
+        {/* Chat Area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-bg)' }}>
+          {activeConvId && activeConv ? (
+            <>
+              {/* Header */}
+              <div style={{
+                padding: '16px 24px',
+                background: 'var(--color-surface)',
+                borderBottom: '1px solid var(--color-border)',
+                display: 'flex', alignItems: 'center', gap: 12
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, color: 'white'
+                }}>
+                   {(user?.role === 'USER' ? activeConv.provider?.business_name : activeConv.customer?.first_name)?.[0] || '?'}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                    {user?.role === 'USER' ? activeConv.provider?.business_name : `${activeConv.customer?.first_name} ${activeConv.customer?.last_name}`}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                    {user?.role === 'USER' ? 'Uzman' : 'Müşteri'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages list */}
+              <div style={{ flex: 1, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {msgLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+                  </div>
+                ) : localMessages.length === 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                    İlk mesajı göndererek iletişime geçin.
+                  </div>
+                ) : (
+                  localMessages.map(msg => {
+                    const isMe = msg.sender_id === user?.id;
+                    return (
+                      <div key={msg.id} style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isMe ? 'flex-end' : 'flex-start'
+                      }}>
+                        <div className={isMe ? 'chat-bubble-sent' : 'chat-bubble-received'}>
+                          {msg.content}
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.7rem', 
+                          color: 'var(--color-text-muted)', 
+                          marginTop: 4,
+                          display: 'flex', alignItems: 'center', gap: 4
+                        }}>
+                          {new Date(msg.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                          {isMe && (
+                            msg.is_read ? <CheckCheck size={12} color="#34d399" /> : <Check size={12} />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div style={{ padding: '16px 24px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}>
+                <form onSubmit={handleSend} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }}>
+                    <Paperclip size={20} />
+                  </button>
+                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }}>
+                    <ImageIcon size={20} />
+                  </button>
+                  <input
+                    className="input"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Mesaj yazın..."
+                    style={{ borderRadius: 999, height: 48 }}
+                  />
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary" 
+                    style={{ borderRadius: '50%', width: 48, height: 48, padding: 0 }}
+                    disabled={!inputValue.trim() || !isConnected}
+                  >
+                    <Send size={18} style={{ marginLeft: 2 }} />
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+              <MessageSquare size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
+              <h3>Sohbete Başlayın</h3>
+              <p>Mesajlaşmak için sol taraftan bir kişi seçin.</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default ChatPage;

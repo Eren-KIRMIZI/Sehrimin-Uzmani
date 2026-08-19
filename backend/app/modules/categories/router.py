@@ -42,6 +42,12 @@ def list_categories(db: Session = Depends(get_db)):
                     "name": sc.name,
                     "slug": sc.slug,
                     "icon": sc.icon,
+                    "services": [
+                        {"id": s.id, "name": s.name, "slug": s.slug}
+                        for s in db.query(Service).filter(
+                            Service.subcategory_id == sc.id, Service.is_active == True
+                        ).order_by(Service.sort_order).all()
+                    ],
                 }
                 for sc in subcats
             ],

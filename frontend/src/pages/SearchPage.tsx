@@ -1,233 +1,330 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, MapPin, Star, Shield, Filter, Grid, List } from 'lucide-react';
-import { useCategories, useCities, useProviderSearch } from '../hooks/useQueries';
-import { useLocationStore } from '../stores/locationStore';
+import {
+  Search, Filter, Grid, List, Star, Shield, MapPin,
+  SlidersHorizontal, ChevronDown, X, TrendingUp, Clock,
+} from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
+import { searchApi } from '../services';
+import { useQuery } from '@tanstack/react-query';
+import type { SearchFilters, ProviderProfile } from '../types';
 
-export default function SearchPage() {
+const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { selectedCity, setSelectedCity } = useLocationStore();
-  const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [filters, setFilters] = useState({
-    category: searchParams.get('category') || '',
-    minRating: searchParams.get('min_rating') || '',
-    verified: searchParams.get('verified') || '',
-    sort: searchParams.get('sort') || 'recommended',
-  });
+  const [page, setPage] = useState(1);
 
-  const { data: categories = [] } = useCategories();
-  const { data: cities = [] } = useCities();
-
-  const searchQueryParams = useMemo(() => ({
-    q: query || undefined,
-    city_id: selectedCity?.id,
-    category: filters.category || undefined,
-    min_rating: filters.minRating || undefined,
-    verified: filters.verified || undefined,
-    sort: filters.sort,
+  const [filters, setFilters] = useState<SearchFilters>({
+    q: searchParams.get('q') || undefined,
+    category: searchParams.get('category') || undefined,
+    subcategory: searchParams.get('subcategory') || undefined,
+    city_id: searchParams.get('city_id') ? Number(searchParams.get('city_id')) : undefined,
+    min_rating: searchParams.get('min_rating') ? Number(searchParams.get('min_rating')) : undefined,
+    verified: searchParams.get('verified') === 'true' || undefined,
+    sort: (searchParams.get('sort') as SearchFilters['sort']) || 'recommended',
     page,
     limit: 12,
-  }), [query, selectedCity?.id, filters.category, filters.minRating, filters.verified, filters.sort, page]);
+  });
 
-  const { data: searchData, isLoading: loading } = useProviderSearch(searchQueryParams);
-  const providers = searchData?.items || [];
-  const total = searchData?.total || 0;
+  const [localQ, setLocalQ] = useState(filters.q || '');
+  const [selectedCityId, setSelectedCityId] = useState<number | undefined>(filters.city_id);
 
-  const handleSearch = () => {
+  const { data: categories } = useCategories();
+  const { data: cities } = useCities();
+  const { data: districts } = useDistricts(selectedCityId);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['search', filters, page],
+    queryFn: () => searchApi.searchProviders({ ...filters, page }),
+  });
+
+  const applyFilters = useCallback((newFilters: Partial<SearchFilters>) => {
+    const updated = { ...filters, ...newFilters };
+    setFilters(updated);
     setPage(1);
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (selectedCity) params.set('city_id', String(selectedCity.id));
-    if (filters.category) params.set('category', filters.category);
-    setSearchParams(params);
+  }, [filters]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    applyFilters({ q: localQ || undefined });
   };
 
+  const ProviderListItem: React.FC<{ provider: ProviderProfile }> = ({ provider }) => (
+    <Link to={`/provider/${provider.id}`} style={{ textDecoration: 'none' }}>
+      <div className="card glass-hover" style={{
+        display: 'flex', gap: 20, cursor: 'pointer',
+        flexDirection: viewMode === 'grid' ? 'column' : 'row',
+        alignItems: viewMode === 'grid' ? 'stretch' : 'center',
+      }}>
+        {/* Avatar */}
+        <div style={{
+          width: viewMode === 'grid' ? 64 : 56, height: viewMode === 'grid' ? 64 : 56,
+          borderRadius: '50%', flexShrink: 0,
+          background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.4rem', fontWeight: 700, color: 'white',
+        }}>
+          {provider.business_name?.[0] || '?'}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>{provider.business_name}</div>
+              {provider.verification_level !== 'NONE' && (
+                <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
+                  <Shield size={12} /> Doğrulanmış
+                </span>
+              )}
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} size={13} fill={i <= Math.round(provider.rating) ? '#f59e0b' : 'transparent'} color={i <= Math.round(provider.rating) ? '#f59e0b' : '#374151'} />
+                ))}
+                <span style={{ fontWeight: 700 }}>{provider.rating?.toFixed(1)}</span>
+                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>({provider.review_count})</span>
+              </div>
+              {provider.hourly_rate && (
+                <div style={{ fontWeight: 700, color: 'var(--color-primary-light)' }}>
+                  ₺{provider.hourly_rate}/saat
+                </div>
+              )}
+            </div>
+          </div>
+
+          {provider.bio && (
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 8, lineHeight: 1.5 }}>
+              {provider.bio.length > 120 ? provider.bio.slice(0, 120) + '...' : provider.bio}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <TrendingUp size={12} /> {provider.completed_jobs} tamamlanan iş
+            </span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Clock size={12} /> {provider.years_experience} yıl deneyim
+            </span>
+            {provider.locations?.[0] && (
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <MapPin size={12} /> {provider.locations[0].city?.name}
+              </span>
+            )}
+          </div>
+
+          {provider.services?.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
+              {provider.services.slice(0, 4).map(s => (
+                <span key={s.id} className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                  {s.service?.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+
+  const SkeletonItem = () => (
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="skeleton" style={{ width: 56, height: 56, borderRadius: '50%', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div className="skeleton" style={{ width: '60%', height: 16, marginBottom: 8 }} />
+          <div className="skeleton" style={{ width: '40%', height: 12 }} />
+        </div>
+      </div>
+      <div className="skeleton" style={{ width: '100%', height: 12 }} />
+      <div className="skeleton" style={{ width: '80%', height: 12 }} />
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-bg">
-      {/* Search Bar */}
-      <div className="bg-white border-b border-border-light sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex gap-3">
-            <div className="flex-1 flex items-center gap-3 bg-bg rounded-xl px-4">
-              <Search className="w-5 h-5 text-text-muted" />
+    <Layout>
+      <div style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: '24px 0' }}>
+        <div className="container">
+          {/* Search bar */}
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
               <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Uzman ara..."
-                className="w-full py-3 text-sm outline-none bg-transparent"
+                id="search-input"
+                className="input"
+                value={localQ}
+                onChange={e => setLocalQ(e.target.value)}
+                placeholder="Hizmet veya uzman ara..."
+                style={{ paddingLeft: 46, height: 48 }}
               />
             </div>
-            <select
-              value={selectedCity?.id || ''}
-              onChange={(e) => {
-                const city = cities.find(c => c.id === Number(e.target.value));
-                setSelectedCity(city ? { id: city.id, name: city.name } : null);
-              }}
-              className="px-4 py-3 bg-bg rounded-xl text-sm outline-none border border-border-light"
-            >
-              <option value="">Tüm Şehirler</option>
-              {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button onClick={handleSearch} className="px-6 py-3 bg-accent text-white rounded-xl font-medium hover:bg-accent-dark transition-colors">
+            <button type="submit" className="btn btn-primary" style={{ height: 48, paddingLeft: 24, paddingRight: 24 }}>
               Ara
             </button>
-          </div>
+            <button
+              type="button"
+              className={`btn ${showFilters ? 'btn-primary' : 'btn-outline'}`}
+              style={{ height: 48 }}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <SlidersHorizontal size={16} /> Filtreler
+            </button>
+          </form>
+
+          {/* Filter row */}
+          {showFilters && (
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', animation: 'fadeIn 0.2s ease' }}>
+              {/* Category */}
+              <select
+                className="input"
+                style={{ width: 180, height: 40 }}
+                value={filters.category || ''}
+                onChange={e => applyFilters({ category: e.target.value || undefined })}
+              >
+                <option value="">Tüm Kategoriler</option>
+                {categories?.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+              </select>
+
+              {/* City */}
+              <select
+                className="input"
+                style={{ width: 160, height: 40 }}
+                value={filters.city_id || ''}
+                onChange={e => {
+                  const id = e.target.value ? Number(e.target.value) : undefined;
+                  setSelectedCityId(id);
+                  applyFilters({ city_id: id, district_id: undefined });
+                }}
+              >
+                <option value="">Tüm Şehirler</option>
+                {cities?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+
+              {/* District */}
+              {selectedCityId && (
+                <select
+                  className="input"
+                  style={{ width: 160, height: 40 }}
+                  value={filters.district_id || ''}
+                  onChange={e => applyFilters({ district_id: e.target.value ? Number(e.target.value) : undefined })}
+                >
+                  <option value="">Tüm İlçeler</option>
+                  {districts?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              )}
+
+              {/* Min rating */}
+              <select
+                className="input"
+                style={{ width: 150, height: 40 }}
+                value={filters.min_rating || ''}
+                onChange={e => applyFilters({ min_rating: e.target.value ? Number(e.target.value) : undefined })}
+              >
+                <option value="">Min. Puan</option>
+                {[3, 3.5, 4, 4.5].map(r => <option key={r} value={r}>{r}+ ⭐</option>)}
+              </select>
+
+              {/* Verified */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                <input
+                  type="checkbox"
+                  checked={!!filters.verified}
+                  onChange={e => applyFilters({ verified: e.target.checked || undefined })}
+                  style={{ accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+                />
+                Sadece Doğrulanmış
+              </label>
+
+              {/* Sort */}
+              <select
+                className="input"
+                style={{ width: 180, height: 40 }}
+                value={filters.sort || 'recommended'}
+                onChange={e => applyFilters({ sort: e.target.value as SearchFilters['sort'] })}
+              >
+                <option value="recommended">Önerilen</option>
+                <option value="rating">En Yüksek Puan</option>
+                <option value="reviews">En Çok Yorum</option>
+                <option value="newest">En Yeni</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold text-primary">
-              {total} uzman bulundu
-            </h1>
-            {selectedCity && (
-              <p className="text-sm text-text-muted flex items-center gap-1 mt-1">
-                <MapPin className="w-3 h-3" /> {selectedCity.name}
-              </p>
-            )}
+      <div className="container" style={{ padding: '32px 24px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+            {isLoading ? 'Yükleniyor...' : `${data?.total || 0} uzman bulundu`}
+            {filters.q && <span> — "<strong style={{ color: 'var(--color-text)' }}>{filters.q}</strong>"</span>}
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-border-light text-sm hover:border-accent transition-colors">
-              <Filter className="w-4 h-4" /> Filtrele
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              id="view-grid-btn"
+              className={`btn btn-sm ${viewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setViewMode('grid')}
+              style={{ padding: 8 }}
+            >
+              <Grid size={16} />
             </button>
-            <div className="flex bg-white rounded-xl border border-border-light overflow-hidden">
-              <button onClick={() => setView('grid')} className={`p-2 ${view === 'grid' ? 'bg-accent text-white' : ''}`}><Grid className="w-4 h-4" /></button>
-              <button onClick={() => setView('list')} className={`p-2 ${view === 'list' ? 'bg-accent text-white' : ''}`}><List className="w-4 h-4" /></button>
-            </div>
+            <button
+              id="view-list-btn"
+              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setViewMode('list')}
+              style={{ padding: 8 }}
+            >
+              <List size={16} />
+            </button>
           </div>
         </div>
 
-        {/* Filters */}
-        {showFilters && (
-          <div className="bg-white rounded-2xl p-6 mb-6 border border-border-light fade-in">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-xs font-medium text-text-muted mb-2 block">Kategori</label>
-                <select value={filters.category} onChange={(e) => setFilters(f => ({ ...f, category: e.target.value }))} className="w-full p-2.5 bg-bg rounded-xl text-sm outline-none">
-                  <option value="">Tümü</option>
-                  {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-muted mb-2 block">Minimum Puan</label>
-                <select value={filters.minRating} onChange={(e) => setFilters(f => ({ ...f, minRating: e.target.value }))} className="w-full p-2.5 bg-bg rounded-xl text-sm outline-none">
-                  <option value="">Tümü</option>
-                  <option value="4">4+ ⭐</option>
-                  <option value="4.5">4.5+ ⭐</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-muted mb-2 block">Sıralama</label>
-                <select value={filters.sort} onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value }))} className="w-full p-2.5 bg-bg rounded-xl text-sm outline-none">
-                  <option value="recommended">Önerilen</option>
-                  <option value="rating">En Yüksek Puan</option>
-                  <option value="reviews">En Çok Yorum</option>
-                  <option value="newest">En Yeni</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-text-muted mb-2 block">Doğrulama</label>
-                <select value={filters.verified} onChange={(e) => setFilters(f => ({ ...f, verified: e.target.value }))} className="w-full p-2.5 bg-bg rounded-xl text-sm outline-none">
-                  <option value="">Tümü</option>
-                  <option value="true">Doğrulanmış</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Results */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-border-light">
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 bg-gray-200 rounded-xl skeleton" />
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2 skeleton" />
-                    <div className="h-3 bg-gray-200 rounded w-1/3 mb-3 skeleton" />
-                    <div className="h-2 bg-gray-200 rounded w-1/4 skeleton" />
-                  </div>
-                </div>
-              </div>
-            ))}
+        {isLoading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr', gap: 16 }}>
+            {Array(6).fill(0).map((_, i) => <SkeletonItem key={i} />)}
           </div>
-        ) : providers.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-semibold text-primary mb-2">Sonuç bulunamadı</h3>
-            <p className="text-text-muted">Filtrelerinizi değiştirmeyi deneyin</p>
+        ) : data?.providers?.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 16 }}>🔍</div>
+            <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Sonuç Bulunamadı</h3>
+            <p style={{ color: 'var(--color-text-muted)' }}>Farklı anahtar kelimeler veya filtreler deneyin</p>
           </div>
         ) : (
-          <div className={view === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-            {providers.map((provider) => (
-              <Link
-                key={provider.id}
-                to={`/provider/${provider.id}`}
-                className={`bg-white rounded-2xl border border-border-light hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ${
-                  view === 'grid' ? 'p-6' : 'p-4 flex items-center gap-6'
-                }`}
-              >
-                <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-accent font-bold text-lg">
-                    {provider.user?.first_name?.[0]}{provider.user?.last_name?.[0]}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-primary truncate">
-                      {provider.business_name || `${provider.user?.first_name} ${provider.user?.last_name}`}
-                    </h3>
-                    {provider.verification_status !== 'NONE' && (
-                      <Shield className="w-4 h-4 text-accent flex-shrink-0" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Star className="w-4 h-4 text-warning fill-warning" />
-                    <span className="text-sm font-medium">{provider.rating}</span>
-                    <span className="text-text-muted text-sm">· {provider.review_count} yorum</span>
-                    <span className="text-text-muted text-sm">· {provider.completed_jobs} iş</span>
-                  </div>
-                  <div className="flex items-center gap-1 mt-2 text-sm text-text-muted">
-                    <MapPin className="w-3 h-3" />
-                    {provider.locations?.[0]?.city || 'Konum belirtilmemiş'}
-                  </div>
-                  {provider.services?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {provider.services.slice(0, 3).map((s, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-bg rounded text-xs text-text-muted">{s.service_name}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr', gap: 16 }}>
+            {data?.providers?.map(provider => (
+              <ProviderListItem key={provider.id} provider={provider} />
             ))}
           </div>
         )}
 
         {/* Pagination */}
-        {total > 12 && (
-          <div className="flex justify-center gap-2 mt-8">
-            {Array.from({ length: Math.min(Math.ceil(total / 12), 5) }, (_, i) => i + 1).map(p => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${
-                  p === page ? 'bg-accent text-white' : 'bg-white border border-border-light hover:border-accent'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+        {data && data.total > 12 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 40 }}>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              ← Önceki
+            </button>
+            <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: 'var(--color-text-muted)', padding: '0 12px' }}>
+              Sayfa {page} / {Math.ceil(data.total / 12)}
+            </span>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={!data.has_next}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Sonraki →
+            </button>
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default SearchPage;

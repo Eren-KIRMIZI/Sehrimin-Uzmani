@@ -1,15 +1,22 @@
-import { Outlet } from 'react-router-dom';
+import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
-export default function Layout() {
+interface LayoutProps {
+  children: React.ReactNode;
+  noFooter?: boolean;
+}
+
+const Layout: React.FC<LayoutProps> = ({ children, noFooter = false }) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <main className="flex-1">
-        <Outlet />
+      <main style={{ flex: 1 }}>
+        {children}
       </main>
-      <Footer />
+      {!noFooter && <Footer />}
     </div>
   );
-}
+};
+
+export default Layout;

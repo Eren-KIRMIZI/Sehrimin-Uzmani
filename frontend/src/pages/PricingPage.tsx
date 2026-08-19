@@ -1,167 +1,159 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Check, Star, Zap, Shield, Crown } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useSubscriptionPlans, useMySubscription } from '../hooks/useQueries';
+import { subscriptionsApi } from '../services';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { useSubscriptionPlans, useSubscribeMutation } from '../hooks/useQueries';
-import type { SubscriptionPlanData } from '../hooks/useQueries';
+import { useAuthStore } from '../stores/authStore';
 
-const BADGE_COLORS: Record<string, string> = {
-  free: 'border-gray-200 bg-gray-50 text-gray-800',
-  bronze: 'border-orange-300 bg-orange-50 text-orange-800',
-  silver: 'border-gray-300 bg-gray-50 text-gray-800',
-  gold: 'border-yellow-400 bg-yellow-50 text-yellow-800',
-  diamond: 'border-purple-300 bg-purple-50 text-purple-800',
+const ICONS: Record<string, React.ReactNode> = {
+  starter: <Star size={24} />,
+  bronze: <Shield size={24} color="#cd7c32" />,
+  silver: <Shield size={24} color="#cbd5e1" />,
+  gold: <Crown size={24} color="#fbbf24" />,
+  diamond: <Zap size={24} color="#67e8f9" />
 };
 
-export default function PricingPage() {
+const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { data: plans = [] as SubscriptionPlanData[], isLoading: loading } = useSubscriptionPlans();
-  const subscribeMutation = useSubscribeMutation();
-  const [interval, setInterval] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const { isAuthenticated } = useAuthStore();
+  const [interval, setInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
+  const [loading, setLoading] = useState<number | null>(null);
 
-  const handleSubscribe = (planId: number) => {
-    subscribeMutation.mutate(
-      { planId, interval },
-      {
-        onSuccess: () => {
-          toast.success('Abonelik baslatildi!');
-          navigate('/dashboard');
-        },
-      }
-    );
-  };
+  const { data: plans, isLoading } = useSubscriptionPlans();
+  const { data: mySub } = useMySubscription();
 
-  const getPrice = (plan: SubscriptionPlanData) => {
-    switch (interval) {
-      case 'monthly': return plan.price_monthly;
-      case 'quarterly': return plan.price_quarterly || plan.price_monthly * 3;
-      case 'yearly': return plan.price_yearly || plan.price_monthly * 12;
+  const handleSubscribe = async (planId: number) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    setLoading(planId);
+    try {
+      await subscriptionsApi.subscribe(planId, interval);
+      alert('Abonelik başarılı! (Simülasyon)');
+      window.location.reload();
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Hata oluştu');
+    } finally {
+      setLoading(null);
     }
   };
-
-  const getMonthlyEquiv = (plan: SubscriptionPlanData) => {
-    const total = getPrice(plan);
-    switch (interval) {
-      case 'monthly': return total;
-      case 'quarterly': return total / 3;
-      case 'yearly': return total / 12;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Uzmanlar Icin Planlar</h1>
-          <p className="text-xl text-gray-600 mb-8">Musteri kitlenizi genisletmek icin size en uygun plani secin</p>
-
-          <div className="inline-flex items-center bg-white rounded-xl p-1 shadow-sm border border-gray-200">
-            {(['monthly', 'quarterly', 'yearly'] as const).map((opt) => (
+    <Layout>
+      <div style={{ padding: '80px 0', background: 'var(--color-bg)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h1 style={{ fontWeight: 900, fontSize: '2.5rem', marginBottom: 16 }}>
+              İşinizi <span className="gradient-text">Büyütmenin</span> Tam Zamanı
+            </h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', maxWidth: 600, margin: '0 auto 32px' }}>
+              Size en uygun planı seçin, daha fazla müşteriye ulaşın, komisyon oranlarınızı düşürün.
+            </p>
+            
+            {/* Interval Toggle */}
+            <div style={{ 
+              display: 'inline-flex', background: 'var(--color-surface)', 
+              padding: 6, borderRadius: 999, border: '1px solid var(--color-border)' 
+            }}>
               <button
-                key={opt}
-                onClick={() => setInterval(opt)}
-                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  interval === opt
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                className={`btn ${interval === 'MONTHLY' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ borderRadius: 999 }}
+                onClick={() => setInterval('MONTHLY')}
               >
-                {opt === 'monthly' ? 'Aylik' : opt === 'quarterly' ? '3 Aylik' : 'Yillik'}
-                {opt === 'yearly' && <span className="ml-1 text-xs text-green-600">%20 Tasarruf</span>}
+                Aylık Ödeme
               </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => {
-            const price = getPrice(plan);
-            const monthly = getMonthlyEquiv(plan);
-            const badgeColor = BADGE_COLORS[plan.badge_type || 'free'] || BADGE_COLORS.free;
-
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-white rounded-2xl border-2 p-6 flex flex-col transition-all hover:shadow-xl hover:-translate-y-1 ${
-                  plan.slug === 'gold' ? 'border-yellow-400 shadow-lg scale-105' : badgeColor.split(' ')[0]
-                }`}
+              <button
+                className={`btn ${interval === 'YEARLY' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ borderRadius: 999 }}
+                onClick={() => setInterval('YEARLY')}
               >
-                {plan.slug === 'gold' && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
-                    EN POPULER
-                  </div>
-                )}
+                Yıllık Ödeme <span style={{ color: interval === 'YEARLY' ? '#fff' : '#10b981', fontSize: '0.75rem', marginLeft: 4 }}>%20 İndirim</span>
+              </button>
+            </div>
+          </div>
 
-                <div className="text-center mb-6">
-                  <div className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3 ${badgeColor}`}>
-                    {plan.badge_type?.toUpperCase() || 'FREE'}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
-                  <p className="text-sm text-gray-500 line-clamp-2">{plan.description}</p>
-                </div>
-
-                <div className="text-center mb-6">
-                  <div className="text-4xl font-bold text-gray-900">
-                    {monthly.toFixed(0)} <span className="text-lg font-normal text-gray-500">TL/ay</span>
-                  </div>
-                  {interval !== 'monthly' && (
-                    <p className="text-sm text-gray-500 mt-1">Toplam {price.toFixed(0)} TL</p>
-                  )}
-                  {plan.commission_discount > 0 && (
-                    <p className="text-sm text-green-600 font-medium mt-2">
-                      %{(plan.commission_discount * 100).toFixed(0)} Komisyon Indirimi
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex-1 space-y-3 mb-6">
-                  {plan.features.map((f, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <svg
-                        className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                          f.included ? 'text-green-500' : 'text-gray-300'
-                        }`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        {f.included ? (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        ) : (
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        )}
-                      </svg>
-                      <span className={`text-sm ${f.included ? 'text-gray-700' : 'text-gray-400'}`}>
-                        {f.name}
-                        {f.value && <span className="text-gray-500"> ({f.value})</span>}
-                      </span>
+          {isLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
+              {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ width: 340, height: 500, borderRadius: 24 }} />)}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap', alignItems: 'stretch' }}>
+              {plans?.map(plan => {
+                const isPopular = plan.slug === 'gold';
+                const isCurrent = mySub?.plan.id === plan.id;
+                const price = interval === 'YEARLY' ? Math.floor(plan.price_monthly * 12 * 0.8) : plan.price_monthly;
+                
+                return (
+                  <div key={plan.id} className={`card ${isPopular ? 'plan-popular' : ''}`} style={{ 
+                    width: '100%', maxWidth: 340, padding: 32, 
+                    display: 'flex', flexDirection: 'column',
+                    position: 'relative', overflow: 'hidden'
+                  }}>
+                    {isPopular && (
+                      <div style={{ 
+                        position: 'absolute', top: 20, right: -30, background: 'var(--color-primary)', 
+                        color: 'white', padding: '4px 40px', transform: 'rotate(45deg)', 
+                        fontSize: '0.75rem', fontWeight: 700 
+                      }}>
+                        POPÜLER
+                      </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                      {ICONS[plan.slug] || <Star />}
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{plan.name}</h3>
                     </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={subscribeMutation.isPending}
-                  className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${
-                    plan.slug === 'gold'
-                      ? 'bg-yellow-400 hover:bg-yellow-500 text-yellow-900'
-                      : 'bg-primary-600 hover:bg-primary-700 text-white'
-                  } disabled:opacity-50`}
-                >
-                  {subscribeMutation.isPending ? 'Isleniyor...' : 'Hemen Basla'}
-                </button>
-              </div>
-            );
-          })}
+                    
+                    <div style={{ marginBottom: 24 }}>
+                      <span style={{ fontSize: '2.5rem', fontWeight: 900 }}>₺{price}</span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>/{interval === 'YEARLY' ? 'yıl' : 'ay'}</span>
+                    </div>
+                    
+                    <div style={{ 
+                      background: 'var(--color-surface-2)', padding: '12px 16px', 
+                      borderRadius: 12, marginBottom: 24, fontSize: '0.875rem' 
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Komisyon İndirimi</span>
+                        <span style={{ fontWeight: 700, color: 'var(--color-success)' }}>%{plan.commission_discount}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Öne Çıkarılma Limiti</span>
+                        <span style={{ fontWeight: 700 }}>{plan.featured_limit}</span>
+                      </div>
+                    </div>
+                    
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+                      {plan.features?.map(feature => (
+                        <li key={feature.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: '0.875rem' }}>
+                          <Check size={16} color={feature.is_included ? 'var(--color-primary)' : 'var(--color-border)'} style={{ flexShrink: 0, marginTop: 2 }} />
+                          <span style={{ color: feature.is_included ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                            {feature.feature_name}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <button 
+                      className={`btn ${isCurrent ? 'btn-outline' : isPopular ? 'btn-primary' : 'btn-outline'}`}
+                      style={{ width: '100%', padding: '14px 0', fontSize: '1rem' }}
+                      disabled={isCurrent || loading === plan.id}
+                      onClick={() => handleSubscribe(plan.id)}
+                    >
+                      {loading === plan.id ? 'İşleniyor...' : isCurrent ? 'Mevcut Planınız' : 'Planı Seç'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </Layout>
   );
-}
+};
+
+export default PricingPage;

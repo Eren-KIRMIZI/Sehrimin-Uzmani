@@ -1,104 +1,292 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import {
+  Search, Bell, MessageSquare, User, Menu, X,
+  MapPin, ChevronDown, LogOut, LayoutDashboard,
+  TrendingUp, Megaphone, AlertTriangle, Settings,
+  Shield, Star,
+} from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import type { AuthState } from '../../stores/authStore';
-import { Menu, X, ChevronDown, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { useUnreadNotifications, useUnreadMessages, useCategories } from '../../hooks/useQueries';
+import { authApi } from '../../services';
+import { searchApi } from '../../services';
 
-export default function Navbar() {
-  const user = useAuthStore((s: AuthState) => s.user);
-  const isAuthenticated = useAuthStore((s: AuthState) => s.isAuthenticated);
-  const logout = useAuthStore((s: AuthState) => s.logout);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [detecting, setDetecting] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    setProfileOpen(false);
-    navigate('/');
+  const { data: unreadNotifs } = useUnreadNotifications();
+  const { data: unreadMsgs } = useUnreadMessages();
+  const { data: categories } = useCategories();
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setDetecting(true);
+    try {
+      const result = await searchApi.detect(searchQuery);
+      const params = new URLSearchParams({ q: searchQuery });
+      if (result.detected) {
+        if (result.category_slug) params.set('category', result.category_slug);
+        if (result.subcategory_slug) params.set('subcategory', result.subcategory_slug);
+      }
+      navigate(`/search?${params.toString()}`);
+    } catch {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    } finally {
+      setDetecting(false);
+    }
   };
 
+  const handleLogout = async () => {
+    try { await authApi.logout(); } catch { /* ignore */ }
+    logout();
+    navigate('/');
+    setUserMenuOpen(false);
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-border-light">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">ŞU</span>
-            </div>
-            <span className="text-xl font-bold text-primary hidden sm:block">Şehrinin Uzmani</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-            <Link to="/search" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Uzmanlar</Link>
-            <Link to="/categories" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Kategoriler</Link>
-            <Link to="/how-it-works" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Nasil Calisir?</Link>
-            <Link to="/pricing" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Uzman Planlari</Link>
+    <nav style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 40,
+      background: 'rgba(10, 10, 15, 0.85)',
+      backdropFilter: 'blur(20px)',
+      borderBottom: '1px solid rgba(99, 102, 241, 0.1)',
+    }}>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', height: 64, gap: 16 }}>
+        {/* Logo */}
+        <Link to="/" style={{
+          display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)',
+          }}>
+            <MapPin size={18} color="white" />
           </div>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>
+            <span className="gradient-text">Şehrimin</span> Uzmanı
+          </span>
+        </Link>
 
-          <div className="flex items-center gap-3">
-            {isAuthenticated ? (
-              <div className="relative">
+        {/* Search bar (desktop) */}
+        <form onSubmit={handleSearch} style={{
+          flex: 1, display: 'flex', maxWidth: 480,
+        }}>
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Search
+              size={16}
+              style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }}
+            />
+            <input
+              className="input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ne arıyorsunuz? (Örn: Kombi bakımı)"
+              style={{ paddingLeft: 40, paddingRight: detecting ? 44 : 12, height: 40 }}
+            />
+            {detecting && (
+              <div className="spinner" style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                width: 16, height: 16,
+              }} />
+            )}
+          </div>
+        </form>
+
+        {/* Desktop nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Link
+            to="/search"
+            className="btn btn-ghost btn-sm"
+            style={{ color: isActive('/search') ? 'var(--color-primary-light)' : undefined }}
+          >
+            Uzman Ara
+          </Link>
+          <Link
+            to="/map"
+            className="btn btn-ghost btn-sm"
+            style={{ color: isActive('/map') ? 'var(--color-primary-light)' : undefined }}
+          >
+            Harita
+          </Link>
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          {isAuthenticated ? (
+            <>
+              {/* Messages */}
+              <Link to="/chat" style={{ position: 'relative', display: 'flex', padding: 8, color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+                <MessageSquare size={20} />
+                {unreadMsgs && unreadMsgs.count > 0 && (
+                  <span style={{
+                    position: 'absolute', top: 4, right: 4,
+                    background: 'var(--color-primary)', color: 'white',
+                    borderRadius: '50%', width: 16, height: 16,
+                    fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                  }}>
+                    {unreadMsgs.count > 9 ? '9+' : unreadMsgs.count}
+                  </span>
+                )}
+              </Link>
+
+              {/* Notifications */}
+              <Link to="/dashboard" style={{ position: 'relative', display: 'flex', padding: 8, color: 'var(--color-text-muted)', textDecoration: 'none' }}>
+                <Bell size={20} />
+                {unreadNotifs && unreadNotifs.count > 0 && (
+                  <span style={{
+                    position: 'absolute', top: 4, right: 4,
+                    background: 'var(--color-error)', color: 'white',
+                    borderRadius: '50%', width: 16, height: 16,
+                    fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                  }}>
+                    {unreadNotifs.count > 9 ? '9+' : unreadNotifs.count}
+                  </span>
+                )}
+              </Link>
+
+              {/* User menu */}
+              <div ref={userMenuRef} style={{ position: 'relative' }}>
                 <button
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-bg transition-colors"
+                  id="user-menu-btn"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'var(--color-surface-2)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 40, padding: '6px 12px 6px 6px',
+                    cursor: 'pointer', color: 'var(--color-text)',
+                  }}
                 >
-                  <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-                    <span className="text-accent font-semibold text-sm">
-                      {user?.first_name?.[0]}{user?.last_name?.[0]}
-                    </span>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {user?.avatar_url
+                      ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} alt="" />
+                      : <User size={14} color="white" />
+                    }
                   </div>
-                  <span className="text-sm font-medium hidden sm:block">{user?.first_name}</span>
-                  <ChevronDown className="w-4 h-4 text-text-muted" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                    {user?.first_name || 'Profil'}
+                  </span>
+                  <ChevronDown size={14} style={{ color: 'var(--color-text-muted)' }} />
                 </button>
 
-                {profileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-border-light py-2 fade-in">
-                    <div className="px-4 py-2 border-b border-border-light">
-                      <p className="text-sm font-semibold">{user?.first_name} {user?.last_name}</p>
-                      <p className="text-xs text-text-muted">{user?.email}</p>
+                {userMenuOpen && (
+                  <div style={{
+                    position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    minWidth: 220, zIndex: 50,
+                    boxShadow: 'var(--shadow-elevated)',
+                    overflow: 'hidden',
+                    animation: 'fadeIn 0.15s ease',
+                  }}>
+                    {/* User info */}
+                    <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--color-border)' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{user?.first_name} {user?.last_name}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 2 }}>{user?.email}</div>
+                      <div style={{ marginTop: 6 }}>
+                        <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                          {user?.role === 'ADMIN' ? '⚡ Admin' : user?.role === 'PROVIDER' ? '🔧 Uzman' : '👤 Müşteri'}
+                        </span>
+                      </div>
                     </div>
-                    <Link to="/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-bg transition-colors">
-                      <LayoutDashboard className="w-4 h-4" /> Panel
-                    </Link>
-                    {user?.role === 'PROVIDER' && (
-                      <Link to="/provider/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-bg transition-colors">
-                        <Settings className="w-4 h-4" /> Uzman Paneli
+
+                    {/* Menu items */}
+                    {[
+                      { to: '/dashboard', icon: <LayoutDashboard size={15} />, label: 'Panelim' },
+                      ...(user?.role === 'PROVIDER' ? [
+                        { to: '/earnings', icon: <TrendingUp size={15} />, label: 'Kazançlarım' },
+                        { to: '/promotions', icon: <Megaphone size={15} />, label: 'Tanıtımlarım' },
+                        { to: '/pricing', icon: <Star size={15} />, label: 'Abonelik Planları' },
+                      ] : []),
+                      { to: '/disputes', icon: <AlertTriangle size={15} />, label: 'Anlaşmazlıklar' },
+                      ...(user?.role === 'ADMIN' ? [
+                        { to: '/admin', icon: <Shield size={15} />, label: 'Admin Panel' },
+                      ] : []),
+                    ].map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setUserMenuOpen(false)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '10px 16px', color: 'var(--color-text-muted)',
+                          textDecoration: 'none', fontSize: '0.875rem',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'var(--color-surface-2)';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--color-text)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'transparent';
+                          (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)';
+                        }}
+                      >
+                        {item.icon} {item.label}
                       </Link>
-                    )}
-                    {user?.role === 'ADMIN' && (
-                      <Link to="/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-bg transition-colors">
-                        <Settings className="w-4 h-4" /> Admin
-                      </Link>
-                    )}
-                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-red-50 transition-colors w-full">
-                      <LogOut className="w-4 h-4" /> Çıkış Yap
-                    </button>
+                    ))}
+
+                    <div style={{ borderTop: '1px solid var(--color-border)', padding: 8 }}>
+                      <button
+                        id="logout-btn"
+                        onClick={handleLogout}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '8px 10px', color: 'var(--color-error)',
+                          background: 'transparent', border: 'none', cursor: 'pointer',
+                          fontSize: '0.875rem', borderRadius: 8, textAlign: 'left',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <LogOut size={15} /> Çıkış Yap
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <>
-                <Link to="/login" className="text-sm font-medium text-text-muted hover:text-accent transition-colors">Giriş Yap</Link>
-                <Link to="/register" className="px-4 py-2 bg-accent text-white text-sm font-medium rounded-xl hover:bg-accent-dark transition-colors">Uzman Ol</Link>
-              </>
-            )}
-
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2">
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="btn btn-ghost btn-sm">Giriş Yap</Link>
+              <Link to="/register" className="btn btn-primary btn-sm">Kayıt Ol</Link>
+            </>
+          )}
         </div>
-
-        {mobileOpen && (
-          <div className="md:hidden py-4 border-t border-border-light fade-in">
-            <Link to="/search" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Uzmanlar</Link>
-            <Link to="/categories" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Kategoriler</Link>
-            <Link to="/how-it-works" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Nasil Calisir?</Link>
-            <Link to="/pricing" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">Uzman Planlari</Link>
-          </div>
-        )}
       </div>
     </nav>
   );
-}
+};
+
+export default Navbar;

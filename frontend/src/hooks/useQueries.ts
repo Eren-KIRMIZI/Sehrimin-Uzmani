@@ -1,356 +1,160 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../services/api';
-import type { Category, City, District, ProviderProfile } from '../types';
+import {
+  authApi, providersApi, categoriesApi, locationsApi,
+  searchApi, requestsApi, reviewsApi, favoritesApi,
+  notificationsApi, messagingApi, commissionsApi,
+  subscriptionsApi, promotionsApi, disputesApi, adminApi,
+} from '../services';
+import type { SearchFilters } from '../types';
 
-export function useCategories() {
-  return useQuery<Category[]>({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await api.get('/categories');
-      return res.data;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-}
+// AUTH
+export const useCurrentUser = () =>
+  useQuery({ queryKey: ['me'], queryFn: authApi.me, retry: false });
 
-export function useCities() {
-  return useQuery<City[]>({
-    queryKey: ['cities'],
-    queryFn: async () => {
-      const res = await api.get('/locations/cities');
-      return res.data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-}
+// CATEGORIES
+export const useCategories = () =>
+  useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll, staleTime: 1000 * 60 * 10 });
 
-export function useDistricts(cityId: number | null) {
-  return useQuery<District[]>({
+export const useCategoryBySlug = (slug: string) =>
+  useQuery({ queryKey: ['category', slug], queryFn: () => categoriesApi.getBySlug(slug), enabled: !!slug });
+
+// LOCATIONS
+export const useCities = () =>
+  useQuery({ queryKey: ['cities'], queryFn: locationsApi.getCities, staleTime: 1000 * 60 * 30 });
+
+export const useDistricts = (cityId?: number) =>
+  useQuery({
     queryKey: ['districts', cityId],
-    queryFn: async () => {
-      const res = await api.get(`/locations/cities/${cityId}/districts`);
-      return res.data;
-    },
+    queryFn: () => locationsApi.getDistricts(cityId!),
     enabled: !!cityId,
-    staleTime: 10 * 60 * 1000,
   });
-}
 
-interface SearchParams {
-  q?: string;
-  city_id?: number;
-  category?: string;
-  min_rating?: string;
-  verified?: string;
-  sort?: string;
-  page?: number;
-  limit?: number;
-}
-
-interface SearchResult {
-  items: ProviderProfile[];
-  total: number;
-}
-
-export function useProviderSearch(params: SearchParams) {
-  return useQuery<SearchResult>({
-    queryKey: ['providerSearch', params],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      if (params.q) searchParams.set('q', params.q);
-      if (params.city_id) searchParams.set('city_id', String(params.city_id));
-      if (params.category) searchParams.set('category', params.category);
-      if (params.min_rating) searchParams.set('min_rating', params.min_rating);
-      if (params.verified) searchParams.set('verified', 'true');
-      if (params.sort) searchParams.set('sort', params.sort);
-      if (params.page) searchParams.set('page', String(params.page));
-      searchParams.set('limit', String(params.limit || 12));
-
-      const res = await api.get(`/search/providers?${searchParams.toString()}`);
-      return { items: res.data.items || [], total: res.data.total || 0 };
-    },
+// SEARCH
+export const useSearchProviders = (filters: SearchFilters) =>
+  useQuery({
+    queryKey: ['search', filters],
+    queryFn: () => searchApi.searchProviders(filters),
+    enabled: true,
   });
-}
 
-export interface PromotionData {
-  id: number;
-  category_id: number;
-  category_name: string;
-  budget: number;
-  spent: number;
-  daily_budget: number;
-  bid_amount: number;
-  status: string;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  priority_boost: number;
-  is_featured: boolean;
-  badge_text: string | null;
-  start_date: string;
-  end_date: string;
-  ctr: number;
-}
-
-export interface SubscriptionPlanData {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  price_monthly: number;
-  price_quarterly: number | null;
-  price_yearly: number | null;
-  commission_discount: number;
-  featured_listings: number;
-  priority_support: boolean;
-  advanced_analytics: boolean;
-  highlighted_profile: boolean;
-  badge_type: string | null;
-  max_portfolio_images: number;
-  max_services: number;
-  features: Array<{ name: string; value: string | null; included: boolean }>;
-}
-
-export interface EarningsData {
-  total_earned: number;
-  total_commission_paid: number;
-  pending_amount: number;
-  paid_amount: number;
-  transaction_count: number;
-}
-
-export interface TransactionData {
-  id: number;
-  amount: number;
-  commission_rate: number;
-  commission_amount: number;
-  provider_earning: number;
-  status: string;
-  description: string;
-  created_at: string;
-}
-
-export interface PayoutData {
-  id: number;
-  amount: number;
-  bank_name: string;
-  status: string;
-  created_at: string;
-}
-
-export interface DisputeData {
-  id: number;
-  reason: string;
-  description: string;
-  status: string;
-  priority: string;
-  reporter_name: string;
-  reported_name: string;
-  amount_involved: number | null;
-  created_at: string;
-}
-
-export function useMyPromotions() {
-  return useQuery<PromotionData[]>({
-    queryKey: ['myPromotions'],
-    queryFn: async () => {
-      const res = await api.get('/promotions/my');
-      return res.data;
-    },
-  });
-}
-
-export function useSubscriptionPlans() {
-  return useQuery<SubscriptionPlanData[]>({
-    queryKey: ['subscriptionPlans'],
-    queryFn: async () => {
-      const res = await api.get('/subscriptions/plans');
-      return res.data;
-    },
-  });
-}
-
-export function useEarnings() {
-  return useQuery({
-    queryKey: ['earnings'],
-    queryFn: async () => {
-      const [earnRes, txRes, payoutRes] = await Promise.all([
-        api.get('/commissions/earnings'),
-        api.get('/commissions/transactions'),
-        api.get('/commissions/payout/my'),
-      ]);
-      return {
-        earnings: earnRes.data as EarningsData,
-        transactions: (txRes.data.items || []) as TransactionData[],
-        payouts: (payoutRes.data || []) as PayoutData[],
-      };
-    },
-  });
-}
-
-export function useDisputes() {
-  return useQuery<DisputeData[]>({
-    queryKey: ['disputes'],
-    queryFn: async () => {
-      const res = await api.get('/disputes');
-      return res.data.items || [];
-    },
-  });
-}
-
-export function useDisputeDetail(id: number | null) {
-  return useQuery({
-    queryKey: ['dispute', id],
-    queryFn: async () => {
-      const res = await api.get(`/disputes/${id}`);
-      return res.data;
-    },
+// PROVIDER
+export const useProvider = (id?: number) =>
+  useQuery({
+    queryKey: ['provider', id],
+    queryFn: () => providersApi.getById(id!),
     enabled: !!id,
   });
-}
 
-export function useProviderProfile(id: string | undefined) {
-  return useQuery({
-    queryKey: ['providerProfile', id],
-    queryFn: async () => {
-      const [profileRes, reviewsRes] = await Promise.all([
-        api.get(`/providers/${id}`),
-        api.get(`/reviews/provider/${id}`),
-      ]);
-      return { provider: profileRes.data, reviews: reviewsRes.data };
-    },
-    enabled: !!id,
+export const useMyProviderProfile = () =>
+  useQuery({ queryKey: ['myProvider'], queryFn: providersApi.getMe, retry: false });
+
+// REVIEWS
+export const useProviderReviews = (providerId?: number, page = 1) =>
+  useQuery({
+    queryKey: ['reviews', providerId, page],
+    queryFn: () => reviewsApi.getForProvider(providerId!, { page }),
+    enabled: !!providerId,
   });
-}
 
-export function useRecentRequests() {
-  return useQuery({
-    queryKey: ['recentRequests'],
-    queryFn: async () => {
-      const res = await api.get('/requests?limit=5');
-      return res.data.items || [];
-    },
-  });
-}
+// REQUESTS
+export const useMyRequests = (page = 1) =>
+  useQuery({ queryKey: ['requests', page], queryFn: () => requestsApi.getAll({ page, limit: 10 }) });
 
-export function useUnreadNotificationCount() {
-  return useQuery({
-    queryKey: ['unreadNotificationCount'],
-    queryFn: async () => {
-      const res = await api.get('/notifications/unread-count');
-      return res.data.count as number;
-    },
+// NOTIFICATIONS
+export const useNotifications = () =>
+  useQuery({ queryKey: ['notifications'], queryFn: notificationsApi.getAll });
+
+export const useUnreadNotifications = () =>
+  useQuery({
+    queryKey: ['notificationsUnread'],
+    queryFn: notificationsApi.getUnreadCount,
     refetchInterval: 30000,
   });
-}
 
-export function useAdminDashboard() {
-  return useQuery({
-    queryKey: ['adminDashboard'],
-    queryFn: async () => {
-      const res = await api.get('/admin/dashboard');
-      return res.data;
-    },
+// CONVERSATIONS
+export const useConversations = (page = 1) =>
+  useQuery({
+    queryKey: ['conversations', page],
+    queryFn: () => messagingApi.getConversations({ page }),
   });
-}
 
-export function useAdminUsers() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return useQuery<any[]>({
-    queryKey: ['adminUsers'],
-    queryFn: async () => {
-      const res = await api.get('/admin/users?limit=50');
-      return res.data.items || [];
-    },
+export const useMessages = (conversationId?: number, page = 1) =>
+  useQuery({
+    queryKey: ['messages', conversationId, page],
+    queryFn: () => messagingApi.getMessages(conversationId!, { page }),
+    enabled: !!conversationId,
   });
-}
 
-export function useAdminProviders() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return useQuery<any[]>({
-    queryKey: ['adminProviders'],
-    queryFn: async () => {
-      const res = await api.get('/admin/providers?limit=50');
-      return res.data.items || [];
-    },
+export const useUnreadMessages = () =>
+  useQuery({
+    queryKey: ['messagesUnread'],
+    queryFn: messagingApi.getUnreadCount,
+    refetchInterval: 30000,
   });
-}
 
-export function useAdminRequests() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return useQuery<any[]>({
-    queryKey: ['adminRequests'],
-    queryFn: async () => {
-      const res = await api.get('/admin/requests?limit=50');
-      return res.data.items || [];
-    },
+// EARNINGS
+export const useEarnings = () =>
+  useQuery({ queryKey: ['earnings'], queryFn: commissionsApi.getEarnings });
+
+export const useTransactions = (page = 1) =>
+  useQuery({
+    queryKey: ['transactions', page],
+    queryFn: () => commissionsApi.getTransactions({ page }),
   });
-}
 
-export function usePayoutMutation() {
+// SUBSCRIPTIONS
+export const useSubscriptionPlans = () =>
+  useQuery({ queryKey: ['plans'], queryFn: subscriptionsApi.getPlans, staleTime: 1000 * 60 * 5 });
+
+export const useMySubscription = () =>
+  useQuery({ queryKey: ['mySubscription'], queryFn: subscriptionsApi.getMy, retry: false });
+
+// PROMOTIONS
+export const useMyPromotions = () =>
+  useQuery({ queryKey: ['myPromotions'], queryFn: promotionsApi.getMy });
+
+// DISPUTES
+export const useMyDisputes = (page = 1) =>
+  useQuery({
+    queryKey: ['disputes', page],
+    queryFn: () => disputesApi.getMy({ page }),
+  });
+
+export const useDispute = (id?: number) =>
+  useQuery({
+    queryKey: ['dispute', id],
+    queryFn: () => disputesApi.getById(id!),
+    enabled: !!id,
+  });
+
+// ADMIN
+export const useAdminDashboard = () =>
+  useQuery({ queryKey: ['adminDashboard'], queryFn: adminApi.getDashboard });
+
+// FAVORITES
+export const useFavorites = () =>
+  useQuery({ queryKey: ['favorites'], queryFn: favoritesApi.getAll });
+
+// RECOMMENDATIONS
+export const useRecommendations = () =>
+  useQuery({ queryKey: ['recommendations'], queryFn: () => searchApi.searchProviders({ sort: 'recommended', limit: 8 }) });
+
+// MUTATIONS
+export const useToggleFavorite = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { amount: number; bank_name?: string; iban?: string; account_holder?: string }) => {
-      return api.post('/commissions/payout/request', null, { params });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['earnings'] }),
+    mutationFn: favoritesApi.toggle,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['favorites'] }),
   });
-}
+};
 
-export function usePromotionCreateMutation() {
+export const useMarkAllRead = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (params: Record<string, unknown>) => {
-      return api.post('/promotions', null, { params });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['myPromotions'] }),
-  });
-}
-
-export function usePromotionActionMutation(action: 'pause' | 'resume' | 'cancel') {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return api.post(`/promotions/${id}/${action}`);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['myPromotions'] }),
-  });
-}
-
-export function useDisputeCreateMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { reported_id: number; reason: string; description: string; amount_involved?: number }) => {
-      return api.post('/disputes', null, { params });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['disputes'] }),
-  });
-}
-
-export function useDisputeMessageMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, message }: { id: number; message: string }) => {
-      return api.post(`/disputes/${id}/messages`, null, { params: { message } });
-    },
-    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ['dispute', vars.id] }),
-  });
-}
-
-export function useDisputeCloseMutation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return api.post(`/disputes/${id}/close`);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['disputes'] }),
-  });
-}
-
-export function useSubscribeMutation() {
-  return useMutation({
-    mutationFn: async ({ planId, interval }: { planId: number; interval: string }) => {
-      return api.post('/subscriptions/subscribe', null, { params: { plan_id: planId, interval } });
+    mutationFn: notificationsApi.markAllRead,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+      qc.invalidateQueries({ queryKey: ['notificationsUnread'] });
     },
   });
-}
+};

@@ -1,305 +1,233 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import { AlertTriangle, MessageSquare, Plus, Lock } from 'lucide-react';
+import Layout from '../components/layout/Layout';
+import { useMyDisputes, useDispute } from '../hooks/useQueries';
+import { disputesApi } from '../services';
 import { useAuthStore } from '../stores/authStore';
-import { useDisputes, useDisputeDetail, useDisputeCreateMutation, useDisputeMessageMutation, useDisputeCloseMutation } from '../hooks/useQueries';
-import type { DisputeData } from '../hooks/useQueries';
 
-interface DisputeDetail extends DisputeData {
-  resolution: string | null;
-  messages: Array<{
-    id: number;
-    sender_name: string;
-    message: string;
-    is_admin: boolean;
-    attachment_url: string | null;
-    created_at: string;
-  }>;
-  evidence: Array<{
-    id: number;
-    file_url: string;
-    description: string | null;
-    uploader_name: string;
-    created_at: string;
-  }>;
-}
+const DisputesPage: React.FC = () => {
+  const { user } = useAuthStore();
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState({ reported_id: '', reason: '', description: '' });
+  const [message, setMessage] = useState('');
 
-const REASONS = [
-  { value: 'service_not_received', label: 'Hizmet Alinamadi' },
-  { value: 'quality_issue', label: 'Kalite Sorunu' },
-  { value: 'price_disagreement', label: 'Fiyat Anlasmazligi' },
-  { value: 'no_show', label: 'Gelmemesi' },
-  { value: 'partial_payment', label: 'Kismi Odeme' },
-  { value: 'fraud', label: 'Dolandiricilik' },
-  { value: 'other', label: 'Diger' },
-];
+  const { data: disputes, refetch } = useMyDisputes(1);
+  const { data: activeDispute, refetch: refetchActive } = useDispute(activeId || undefined);
 
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  open: { label: 'Acik', color: 'bg-red-100 text-red-800' },
-  under_review: { label: 'Inceleniyor', color: 'bg-yellow-100 text-yellow-800' },
-  resolved: { label: 'Cozuldu', color: 'bg-green-100 text-green-800' },
-  closed: { label: 'Kapatildi', color: 'bg-gray-100 text-gray-600' },
-  escalated: { label: 'Yukari Tasindi', color: 'bg-purple-100 text-purple-800' },
-};
-
-export default function DisputesPage() {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
-  const [formData, setFormData] = useState({
-    reported_id: '', reason: 'service_not_received', description: '', amount_involved: '',
-  });
-  const user = useAuthStore((s) => s.user);
-
-  const { data: disputes = [], isLoading: loading } = useDisputes();
-  const { data: selected } = useDisputeDetail(selectedId) as { data: DisputeDetail | undefined };
-  const createMutation = useDisputeCreateMutation();
-  const messageMutation = useDisputeMessageMutation();
-  const closeMutation = useDisputeCloseMutation();
-
-  const handleCreate = () => {
-    if (!formData.reported_id || !formData.description) {
-      toast.error('Zorunlu alanlari doldurun');
-      return;
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await disputesApi.create({
+        reported_id: Number(form.reported_id),
+        reason: form.reason,
+        description: form.description
+      });
+      setShowCreate(false);
+      setForm({ reported_id: '', reason: '', description: '' });
+      refetch();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Hata oluştu');
     }
-    createMutation.mutate({
-      reported_id: parseInt(formData.reported_id),
-      reason: formData.reason,
-      description: formData.description,
-      amount_involved: formData.amount_involved ? parseFloat(formData.amount_involved) : undefined,
-    }, {
-      onSuccess: () => {
-        toast.success('Anlasmazlik acildi');
-        setShowForm(false);
-        setFormData({ reported_id: '', reason: 'service_not_received', description: '', amount_involved: '' });
-      },
-      onError: (err: any) => toast.error(err.response?.data?.detail || 'Hata olustu'),
-    });
   };
 
-  const handleSendMessage = () => {
-    if (!selected || !newMessage.trim()) return;
-    messageMutation.mutate({ id: selected.id, message: newMessage }, {
-      onSuccess: () => { setNewMessage(''); toast.success('Mesaj gonderildi'); },
-      onError: () => toast.error('Mesaj gonderilemedi'),
-    });
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!message.trim() || !activeId) return;
+    try {
+      await disputesApi.addMessage(activeId, message);
+      setMessage('');
+      refetchActive();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Mesaj gönderilemedi');
+    }
   };
 
-  const handleClose = (id: number) => {
-    closeMutation.mutate(id, {
-      onSuccess: () => { toast.success('Anlasmazlik kapatildi'); setSelectedId(null); },
-      onError: () => toast.error('Kapatilamadi'),
-    });
+  const handleClose = async () => {
+    if (!activeId || !confirm('Bu anlaşmazlığı kapatmak istediğinize emin misiniz?')) return;
+    try {
+      await disputesApi.close(activeId);
+      refetchActive();
+      refetch();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Kapatılamadı');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between mb-8">
+    <Layout>
+      <div className="container" style={{ padding: '32px 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Anlasmazliklarim</h1>
-            <p className="text-gray-500 mt-1">Yasadiginiz sorunlari buradan yonetebilirsiniz</p>
+            <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 4 }}>Anlaşmazlık Yönetimi</h1>
+            <p style={{ color: 'var(--color-text-muted)' }}>Sorun yaşadığınız hizmetler için destek talebi açın.</p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-all"
-          >
-            + Yeni Anlasmazlik Ac
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+            <Plus size={16} /> Yeni Anlaşmazlık
           </button>
         </div>
 
-        {showForm && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Yeni Anlasmazlik</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Karsi Taraf (Kullanici ID)</label>
-                <input
-                  type="number"
-                  value={formData.reported_id}
-                  onChange={(e) => setFormData({ ...formData, reported_id: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Kullanici ID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Neden</label>
-                <select
-                  value={formData.reason}
-                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                >
-                  {REASONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tutarsiz Tutar (opsiyonel)</label>
-                <input
-                  type="number"
-                  value={formData.amount_involved}
-                  onChange={(e) => setFormData({ ...formData, amount_involved: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                  placeholder="TL"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Aciklama</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 h-24 resize-none"
-                  placeholder="Sorunu detayli aciklayin..."
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button onClick={handleCreate} className="px-6 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700">
-                Gonder
-              </button>
-              <button onClick={() => setShowForm(false)} className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
-                Iptal
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-3">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                </div>
-              ))
-            ) : disputes.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center text-gray-500">
-                Henuz anlasmazlik bulunmuyor
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          {/* List */}
+          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {disputes?.items.length === 0 ? (
+              <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                Kayıtlı anlaşmazlığınız bulunmuyor.
               </div>
             ) : (
-              disputes.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => setSelectedId(d.id)}
-                  className={`w-full text-left bg-white rounded-xl p-4 border-2 transition-all hover:shadow-md ${
-                    selected?.id === d.id ? 'border-primary-500 shadow-md' : 'border-transparent'
-                  }`}
+              disputes?.items.map(disp => (
+                <div 
+                  key={disp.id} 
+                  className="card"
+                  onClick={() => setActiveId(disp.id)}
+                  style={{ 
+                    cursor: 'pointer',
+                    borderColor: activeId === disp.id ? 'var(--color-primary)' : 'var(--color-border)',
+                    background: activeId === disp.id ? 'var(--color-surface-2)' : 'var(--color-surface)'
+                  }}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_MAP[d.status]?.color || 'bg-gray-100'}`}>
-                      {STATUS_MAP[d.status]?.label || d.status}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {new Date(d.created_at).toLocaleDateString('tr-TR')}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontWeight: 700 }}>#{disp.id}</span>
+                    <span className={`badge ${disp.status === 'OPEN' ? 'badge-error' : disp.status === 'IN_REVIEW' ? 'badge-warning' : 'badge-success'}`}>
+                      {disp.status}
                     </span>
                   </div>
-                  <p className="text-sm font-medium text-gray-900 mt-2 truncate">
-                    {REASONS.find((r) => r.value === d.reason)?.label || d.reason}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {d.reported_name} karsisinda
-                  </p>
-                </button>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: 4 }}>{disp.reason}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                    Şikayet edilen: {disp.reported?.first_name} {disp.reported?.last_name}
+                  </div>
+                </div>
               ))
             )}
           </div>
 
-          <div className="lg:col-span-2">
-            {selected ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
+          {/* Detail */}
+          <div className="card" style={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column', minHeight: 600 }}>
+            {activeId && activeDispute ? (
+              <>
+                {/* Header */}
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {REASONS.find((r) => r.value === selected.reason)?.label || selected.reason}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {selected.reported_name} karsisinda • {new Date(selected.created_at).toLocaleDateString('tr-TR')}
-                    </p>
+                    <h3 style={{ margin: 0, fontWeight: 700 }}>#{activeDispute.id} - {activeDispute.reason}</h3>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      Açılış: {new Date(activeDispute.created_at).toLocaleString('tr-TR')}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <span className={`text-xs font-semibold px-3 py-1 rounded-full ${STATUS_MAP[selected.status]?.color}`}>
-                      {STATUS_MAP[selected.status]?.label}
-                    </span>
-                    {selected.status === 'open' && (
-                      <button
-                        onClick={() => handleClose(selected.id)}
-                        className="text-xs px-3 py-1 border border-gray-300 rounded-full text-gray-600 hover:bg-gray-50"
-                      >
-                        Kapat
-                      </button>
-                    )}
-                  </div>
+                  {activeDispute.status !== 'RESOLVED' && activeDispute.status !== 'CLOSED' && (
+                    <button className="btn btn-outline btn-sm" onClick={handleClose}>
+                      <Lock size={14} /> Kapat
+                    </button>
+                  )}
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                  <p className="text-sm text-gray-700">{selected.description}</p>
-                  {selected.amount_involved && (
-                    <p className="text-sm text-gray-500 mt-2">Tutar: {selected.amount_involved.toLocaleString('tr-TR')} TL</p>
-                  )}
-                  {selected.resolution && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <p className="text-sm font-medium text-green-700">Cozum: {selected.resolution}</p>
+                {/* Messages */}
+                <div style={{ flex: 1, padding: 24, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Original complaint */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                      {activeDispute.reporter?.first_name} (Şikayetçi)
+                    </div>
+                    <div className="chat-bubble-received">
+                      {activeDispute.description}
+                    </div>
+                  </div>
+
+                  {/* Replies */}
+                  {activeDispute.messages?.map((msg: any) => {
+                    const isMe = msg.sender_id === user?.id;
+                    const isAdmin = msg.is_admin;
+                    return (
+                      <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                        <div style={{ fontSize: '0.75rem', color: isAdmin ? 'var(--color-primary-light)' : 'var(--color-text-muted)', marginBottom: 4 }}>
+                          {isAdmin ? 'Admin' : msg.sender?.first_name}
+                        </div>
+                        <div className={isAdmin ? 'chat-bubble-sent' : isMe ? 'chat-bubble-sent' : 'chat-bubble-received'} 
+                             style={isAdmin ? { background: 'linear-gradient(135deg, #10b981, #059669)' } : {}}>
+                          {msg.message}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {activeDispute.resolution && (
+                    <div style={{ 
+                      margin: '20px 0', padding: 16, borderRadius: 12, textAlign: 'center',
+                      background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)'
+                    }}>
+                      <div style={{ fontWeight: 700, color: '#10b981', marginBottom: 8 }}>Çözüm / Karar</div>
+                      <p style={{ margin: 0, fontSize: '0.9rem' }}>{activeDispute.resolution}</p>
                     </div>
                   )}
                 </div>
 
-                {selected.messages.length > 0 && (
-                  <div className="space-y-3 mb-6 max-h-80 overflow-y-auto">
-                    {selected.messages.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`p-3 rounded-xl max-w-[80%] ${
-                          m.sender_name === `${user?.first_name} ${user?.last_name}`
-                            ? 'bg-primary-100 ml-auto'
-                            : m.is_admin
-                            ? 'bg-yellow-50 border border-yellow-200'
-                            : 'bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-semibold text-gray-900">{m.sender_name}</span>
-                          {m.is_admin && (
-                            <span className="text-[10px] bg-yellow-200 text-yellow-800 px-1.5 rounded">ADMIN</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700">{m.message}</p>
-                        <span className="text-[10px] text-gray-400 mt-1 block">
-                          {new Date(m.created_at).toLocaleString('tr-TR')}
-                        </span>
-                      </div>
-                    ))}
+                {/* Input */}
+                {(activeDispute.status === 'OPEN' || activeDispute.status === 'IN_REVIEW') && (
+                  <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
+                    <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: 12 }}>
+                      <input 
+                        className="input" 
+                        value={message} 
+                        onChange={e => setMessage(e.target.value)}
+                        placeholder="Mesaj yazın..." 
+                        style={{ height: 44 }}
+                      />
+                      <button type="submit" className="btn btn-primary" style={{ height: 44, padding: '0 24px' }} disabled={!message.trim()}>
+                        Gönder
+                      </button>
+                    </form>
                   </div>
                 )}
-
-                {selected.status !== 'closed' && selected.status !== 'resolved' && (
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500"
-                      placeholder="Mesajinizi yazin..."
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      className="px-6 py-2.5 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700"
-                    >
-                      Gonder
-                    </button>
-                  </div>
-                )}
-              </div>
+              </>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center text-gray-500">
-                Bir anlasmazlik secin
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--color-text-muted)' }}>
+                <AlertTriangle size={48} style={{ opacity: 0.5, marginBottom: 16 }} />
+                <h3>Anlaşmazlık Seçin</h3>
+                <p>Detayları görüntülemek için sol taraftan bir anlaşmazlık seçin.</p>
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+
+      {showCreate && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Yeni Anlaşmazlık Oluştur</h3>
+              <button className="btn btn-ghost" onClick={() => setShowCreate(false)} style={{ padding: 4 }}>✕</button>
+            </div>
+            
+            <form onSubmit={handleCreate} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Şikayet Edilen Kişi ID *</label>
+                <input className="input" type="number" required value={form.reported_id} onChange={e => setForm({...form, reported_id: e.target.value})} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Neden *</label>
+                <select className="input" required value={form.reason} onChange={e => setForm({...form, reason: e.target.value})}>
+                  <option value="">Seçiniz</option>
+                  <option value="Hizmet Alınamadı">Hizmet Alınamadı</option>
+                  <option value="Kalite Sorunu">Kalite Sorunu</option>
+                  <option value="Fiyat Anlaşmazlığı">Fiyat Anlaşmazlığı</option>
+                  <option value="Gelmemesi">Randevuya Gelmedi</option>
+                  <option value="Kısmi Ödeme">Eksik/Fazla Ödeme</option>
+                  <option value="Dolandırıcılık">Şüpheli İşlem / Suistimal</option>
+                  <option value="Diğer">Diğer</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Detaylı Açıklama *</label>
+                <textarea className="input" required rows={4} style={{ resize: 'vertical' }} value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ marginTop: 8, padding: 14, justifyContent: 'center' }}>
+                Gönder ve İnceleme Başlat
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </Layout>
   );
-}
+};
+
+export default DisputesPage;
