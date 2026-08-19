@@ -1,13 +1,54 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, Bell } from 'lucide-react';
+import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { Link } from 'react-router-dom';
+import { analyticsApi, adminApi } from '../../services';
+import type { ProviderAnalytics, AdminDashboard } from '../../types';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar
+} from 'recharts';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
   const isProvider = user?.role === 'PROVIDER';
   const isAdmin = user?.role === 'ADMIN';
+
+  const [analytics, setAnalytics] = useState<ProviderAnalytics | null>(null);
+  const [adminStats, setAdminStats] = useState<AdminDashboard | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        if (isProvider) {
+          const data = await analyticsApi.getMyAnalytics();
+          setAnalytics(data);
+        } else if (isAdmin) {
+          const data = await adminApi.getDashboard();
+          setAdminStats(data);
+        }
+      } catch (error) {
+        console.error('Veri çekme hatası:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (user) fetchData();
+  }, [user, isProvider, isAdmin]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container py-12 flex justify-center items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -30,40 +71,114 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* AI Insights for Providers */}
+        {isProvider && analytics?.ai_insights && analytics.ai_insights.length > 0 && (
+          <div className="mb-8 space-y-3">
+            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+              <span className="text-xl">✨</span> AI Performans Asistanı
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analytics.ai_insights.map((insight, idx) => (
+                <div 
+                  key={idx} 
+                  className={`p-4 rounded-xl border flex items-start gap-3
+                    ${insight.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : ''}
+                    ${insight.type === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-800' : ''}
+                    ${insight.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : ''}
+                  `}
+                >
+                  <div className="text-2xl mt-0.5">{insight.icon}</div>
+                  <div className="text-sm font-medium">{insight.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Stats Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 40 }}>
           {isProvider ? (
             <>
-              <div className="card">
+              <div className="card hover:shadow-lg transition-shadow">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
                     <Briefcase size={20} />
                   </div>
-                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aktif İşler</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Kazanılan İşler</span>
                 </div>
-                <div style={{ fontSize: '2rem', fontWeight: 800 }}>3</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics?.jobs_won || 0}</div>
+                <p className="text-xs text-gray-500 mt-2">Son 30 günde</p>
               </div>
-              <div className="card">
+              <div className="card hover:shadow-lg transition-shadow">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
                     <TrendingUp size={20} />
                   </div>
-                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aylık Kazanç</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Dönüşüm Oranı</span>
                 </div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>₺4,250</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981' }}>
+                  %{analytics?.conversion_rate || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {analytics?.quotes_sent || 0} teklifte
+                </p>
               </div>
-              <div className="card">
+              <div className="card hover:shadow-lg transition-shadow">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
                     <Star size={20} />
                   </div>
                   <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Ortalama Puan</span>
                 </div>
-                <div style={{ fontSize: '2rem', fontWeight: 800 }}>4.8</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{analytics?.avg_rating || 0}</div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Toplam {analytics?.total_review_count || 0} yorum
+                </p>
+              </div>
+              <div className="card hover:shadow-lg transition-shadow">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                    <CheckCircle size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Bekleyen Teklifler</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6' }}>{analytics?.quotes_pending || 0}</div>
+                <p className="text-xs text-gray-500 mt-2">Yanıt bekliyor</p>
+              </div>
+            </>
+          ) : isAdmin ? (
+            <>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                    <User size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Toplam Kullanıcı</span>
+                </div>
+                <div className="text-3xl font-bold">{adminStats?.total_users || 0}</div>
+              </div>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                    <Briefcase size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Kayıtlı Uzman</span>
+                </div>
+                <div className="text-3xl font-bold">{adminStats?.total_providers || 0}</div>
+              </div>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <Clock size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Aktif Talepler</span>
+                </div>
+                <div className="text-3xl font-bold">{adminStats?.total_requests || 0}</div>
               </div>
             </>
           ) : (
             <>
+              {/* Customer Stats placeholder */}
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
@@ -86,7 +201,58 @@ const DashboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Main Content Area */}
+        {/* Charts & Main Content Area */}
+        {isProvider && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="card p-6">
+              <h3 className="font-bold text-lg mb-6 text-gray-800">Teklif Performansı (Son 7 Gün)</h3>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analytics?.daily_breakdown || []}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="day_name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="quotes" 
+                      name="Verilen Teklif"
+                      stroke="#6366f1" 
+                      strokeWidth={3}
+                      dot={{r: 4, strokeWidth: 2}} 
+                      activeDot={{r: 6, strokeWidth: 0}}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h3 className="font-bold text-lg mb-6 text-gray-800">Yorum Trendi (Son 7 Gün)</h3>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics?.daily_breakdown || []}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis dataKey="day_name" axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#6b7280', fontSize: 12}} />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                    />
+                    <Bar 
+                      dataKey="reviews" 
+                      name="Yeni Yorum"
+                      fill="#10b981" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr min(340px, 100%)', gap: 24, alignItems: 'start' }}>
           
           {/* Left Column - Main Activity */}
@@ -95,8 +261,8 @@ const DashboardPage: React.FC = () => {
             {/* Recent Requests / Jobs */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontWeight: 700 }}>Son {isProvider ? 'İşler' : 'Talepler'}</h3>
-                <Link to={isProvider ? "/jobs" : "/requests"} style={{ fontSize: '0.875rem', color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Tümünü Gör</Link>
+                <h3 style={{ margin: 0, fontWeight: 700 }}>Son {isProvider ? 'İşler' : isAdmin ? 'Aktiviteler' : 'Talepler'}</h3>
+                <Link to={isProvider ? "/jobs" : isAdmin ? "/admin/audit" : "/requests"} style={{ fontSize: '0.875rem', color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Tümünü Gör</Link>
               </div>
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                 Henüz gösterilecek kayıt bulunmuyor.
@@ -105,7 +271,7 @@ const DashboardPage: React.FC = () => {
             
           </div>
           
-          {/* Right Column - Side Actions & Notifications */}
+          {/* Right Column - Side Actions */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             
             {/* Quick Actions */}
@@ -124,6 +290,18 @@ const DashboardPage: React.FC = () => {
                       Abonelik Planım <ChevronRight size={16} />
                     </Link>
                   </>
+                ) : isAdmin ? (
+                  <>
+                    <Link to="/admin/users" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Kullanıcı Yönetimi <ChevronRight size={16} />
+                    </Link>
+                    <Link to="/admin/providers" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Uzman Onayları <ChevronRight size={16} />
+                    </Link>
+                    <Link to="/admin/disputes" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Anlaşmazlık Çözümü <ChevronRight size={16} />
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link to="/request/create" className="btn btn-primary" style={{ justifyContent: 'space-between' }}>
@@ -134,27 +312,8 @@ const DashboardPage: React.FC = () => {
                     </Link>
                   </>
                 )}
-                <Link to="/disputes" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
-                  Anlaşmazlık Çözümü <ChevronRight size={16} />
-                </Link>
               </div>
             </div>
-            
-            {/* Notifications Panel */}
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Bell size={18} /> Bildirimler
-                </h3>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ padding: 12, borderRadius: 8, background: 'var(--color-surface-2)', fontSize: '0.875rem' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Hoş Geldiniz! 🎉</div>
-                  <div style={{ color: 'var(--color-text-muted)' }}>Şehrimin Uzmanı'na katıldığınız için teşekkürler. Profilinizi tamamlayarak hemen başlayın.</div>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>

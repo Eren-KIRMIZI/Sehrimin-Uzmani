@@ -26,10 +26,11 @@ node_modules/
 .pnp
 .pnp.js
 
-# Frontend build
+# Frontend build ve cache
 frontend/dist/
 frontend/build/
 frontend/.vite/
+frontend/.vite-temp/
 
 # IDE
 .vscode/
@@ -54,9 +55,11 @@ htmlcov/
 .pytest_cache/
 .tox/
 
-# SQLite (eger kullanilirsa)
+# SQLite — test ve gelistirme veritabanlari
 *.db
 *.sqlite3
+backend/test.db
+backend/tests/test.db
 
 # Uploads
 uploads/
@@ -65,3 +68,27 @@ uploads/
 .DS_Store
 Desktop.ini
 ehthumbs.db
+
+# Antigravity / AI arac ciktilar
+.agents/
+.gemini/
+
+# Oxlint cache
+.oxlint_cache
+
+# Coverage raporlari
+coverage/
+coverage.xml
+junit.xml
+
+# Pyright / mypy cache
+.pyright/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.bak
+*.orig

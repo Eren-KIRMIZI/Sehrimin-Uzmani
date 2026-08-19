@@ -18,6 +18,7 @@ from app.modules.commissions.router import router as commissions_router
 from app.modules.disputes.router import router as disputes_router
 from app.modules.subscriptions.router import router as subscriptions_router
 from app.modules.promotions.router import router as promotions_router
+from app.ai.router import router as ai_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -40,3 +41,4 @@ api_router.include_router(commissions_router)
 api_router.include_router(disputes_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(promotions_router)
+api_router.include_router(ai_router)

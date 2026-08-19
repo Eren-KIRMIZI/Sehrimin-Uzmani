@@ -207,3 +207,75 @@ def set_availability(
     db.add(avail)
     db.commit()
     return {"message": "Müsaitlik eklendi"}
+
+
+# ===== REPUTATION SCORE =====
+
+@router.get("/{provider_id}/reputation")
+def get_reputation_score(
+    provider_id: int,
+    db: Session = Depends(get_db),
+):
+    """Provider'ın reputation skorunu hesaplayarak döndürür."""
+    from app.modules.providers.reputation import calculate_reputation_score
+    provider = db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    if not provider:
+        raise NotFoundException("Uzman")
+    return calculate_reputation_score(provider, db)
+
+
+@router.get("/me/reputation")
+def get_my_reputation_score(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Oturum açmış provider'ın kendi reputation skorunu döndürür."""
+    from app.modules.providers.reputation import calculate_reputation_score
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return calculate_reputation_score(profile, db)
+
+
+# ===== ANALYTICS =====
+
+@router.get("/me/analytics")
+def get_my_analytics(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Provider'ın son 30 günlük analytics verilerini döndürür."""
+    from app.modules.providers.analytics import get_provider_analytics
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_provider_analytics(profile.id, current_user.id, db)
+
+
+# ===== BADGES =====
+
+@router.get("/{provider_id}/badges")
+def get_provider_badges(
+    provider_id: int,
+    db: Session = Depends(get_db),
+):
+    """Provider'ın kazandığı rozetleri döndürür."""
+    from app.modules.providers.badges import calculate_badges
+    provider = db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    if not provider:
+        raise NotFoundException("Uzman")
+    return {"badges": calculate_badges(provider, db)}
+
+
+@router.get("/me/badges")
+def get_my_badges(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Oturum açmış provider'ın rozetlerini döndürür."""
+    from app.modules.providers.badges import calculate_badges
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return {"badges": calculate_badges(profile, db)}
+

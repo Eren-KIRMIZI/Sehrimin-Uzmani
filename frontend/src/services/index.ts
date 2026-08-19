@@ -9,6 +9,7 @@ import type {
   EarningsSummary, Transaction, PayoutRequest,
   SubscriptionPlan, Promotion, Dispute, DisputeMessage,
   AdminDashboard, PaginatedResponse, DetectResult,
+  AIAnalysis, AIMatchExplanation, ReputationScore, Badge, ProviderAnalytics
 } from '../types';
 
 // ===== AUTH =====
@@ -265,4 +266,31 @@ export const adminApi = {
   getRequests: (params?: object) => api.get('/admin/requests', { params }).then(r => r.data),
   getReviews: (params?: object) => api.get('/admin/reviews', { params }).then(r => r.data),
   getAuditLogs: (params?: object) => api.get('/admin/audit-logs', { params }).then(r => r.data),
+  getPayouts: (params?: object) => api.get('/admin/payouts', { params }).then(r => r.data),
+  getDisputes: (params?: object) => api.get('/admin/disputes', { params }).then(r => r.data),
+  getFraudRisk: (userId: number) => api.get(`/admin/users/${userId}/fraud-risk`).then(r => r.data),
 };
+
+// ===== AI =====
+export const aiApi = {
+  analyzeRequest: (text: string) => api.post<AIAnalysis>('/ai/analyze-request', { text }).then(r => r.data),
+  explainMatch: (data: any) => api.post<AIMatchExplanation>('/ai/match-explanation', data).then(r => r.data),
+};
+
+// ===== REPUTATION =====
+export const reputationApi = {
+  getProviderReputation: (id: number) => api.get<ReputationScore>(`/providers/${id}/reputation`).then(r => r.data),
+  getMyReputation: () => api.get<ReputationScore>('/providers/me/reputation').then(r => r.data),
+};
+
+// ===== BADGES =====
+export const badgesApi = {
+  getProviderBadges: (id: number) => api.get<{ badges: Badge[] }>(`/providers/${id}/badges`).then(r => r.data),
+  getMyBadges: () => api.get<{ badges: Badge[] }>('/providers/me/badges').then(r => r.data),
+};
+
+// ===== ANALYTICS =====
+export const analyticsApi = {
+  getMyAnalytics: () => api.get<ProviderAnalytics>('/providers/me/analytics').then(r => r.data),
+};
+

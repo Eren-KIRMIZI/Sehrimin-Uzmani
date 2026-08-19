@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Star, Shield, MapPin, Clock, TrendingUp, Phone, MessageSquare,
-  Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check,
+  Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check, Info, AlertTriangle
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { useProvider, useProviderReviews, useFavorites, useToggleFavorite } from '../hooks/useQueries';
+import { useProvider, useProviderReviews, useFavorites, useToggleFavorite, useReputation, useBadges } from '../hooks/useQueries';
 import { useAuthStore } from '../stores/authStore';
 import { messagingApi } from '../services';
 import { useNavigate } from 'react-router-dom';
@@ -41,18 +41,23 @@ const ProviderProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'about' | 'services' | 'reviews' | 'portfolio'>('about');
   const [contactLoading, setContactLoading] = useState(false);
 
-  const { data: provider, isLoading } = useProvider(id ? Number(id) : undefined);
-  const { data: reviewsData } = useProviderReviews(id ? Number(id) : undefined);
+  const providerId = id ? Number(id) : undefined;
+  const { data: provider, isLoading } = useProvider(providerId);
+  const { data: reviewsData } = useProviderReviews(providerId);
   const { data: favorites } = useFavorites();
+  const { data: reputationData } = useReputation(providerId);
+  const { data: badgesData } = useBadges(providerId);
   const toggleFavorite = useToggleFavorite();
 
-  const isFavorited = favorites?.some((f: any) => f.provider_id === Number(id));
+  const isFavorited = favorites?.some((f: any) => f.provider_id === providerId);
+  const reputation = reputationData;
+  const badges = badgesData?.badges || [];
 
   const handleContact = async () => {
     if (!isAuthenticated) { navigate('/login'); return; }
     setContactLoading(true);
     try {
-      const conv = await messagingApi.createConversation(Number(id));
+      const conv = await messagingApi.createConversation(providerId!);
       navigate('/chat', { state: { conversationId: conv.id } });
     } catch {
       navigate('/chat');
@@ -113,15 +118,22 @@ const ProviderProfilePage: React.FC = () => {
           {/* Left column */}
           <div>
             {/* Profile header */}
-            <div className="card" style={{ marginBottom: 20 }}>
+            <div className="card relative overflow-hidden" style={{ marginBottom: 20 }}>
+              
+              {/* Premium indicator backgrounds */}
+              {reputation && reputation.score >= 75 && (
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-bl-full pointer-events-none -z-10"></div>
+              )}
+
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {/* Avatar */}
                 <div style={{
-                  width: 90, height: 90, borderRadius: '50%', flexShrink: 0,
+                  width: 100, height: 100, borderRadius: '50%', flexShrink: 0,
                   background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '2.4rem', fontWeight: 700, color: 'white',
-                  boxShadow: '0 0 30px rgba(99, 102, 241, 0.3)',
+                  boxShadow: '0 8px 30px rgba(99, 102, 241, 0.3)',
+                  border: '4px solid white'
                 }}>
                   {provider.avatar_url
                     ? <img src={provider.avatar_url} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} alt="" />
@@ -130,19 +142,50 @@ const ProviderProfilePage: React.FC = () => {
 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
-                    <h1 style={{ fontWeight: 900, fontSize: '1.5rem', margin: 0 }}>{provider.business_name}</h1>
+                    <h1 style={{ fontWeight: 900, fontSize: '1.75rem', margin: 0, color: 'var(--color-text)' }}>{provider.business_name}</h1>
                     {provider.badge_type && (
-                      <span className="badge badge-primary">
-                        {provider.badge_type === 'diamond' ? '💎 Elmas' :
-                         provider.badge_type === 'gold' ? '🥇 Altın' :
-                         provider.badge_type === 'silver' ? '🥈 Gümüş' : '🥉 Bronz'}
+                      <span className="badge badge-primary" style={{ padding: '4px 10px' }}>
+                        {provider.badge_type === 'diamond' ? '💎 Elmas Üye' :
+                         provider.badge_type === 'gold' ? '🥇 Altın Üye' :
+                         provider.badge_type === 'silver' ? '🥈 Gümüş Üye' : '🥉 Bronz Üye'}
                       </span>
                     )}
                   </div>
 
-                  <VerificationBadge level={provider.verification_level} />
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <VerificationBadge level={provider.verification_level} />
+                    
+                    {reputation && (
+                      <div className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-gray-100 text-gray-700">
+                        <TrendingUp size={12} className="text-indigo-600" />
+                        Güven Skoru: <span className={reputation.score >= 75 ? 'text-green-600' : 'text-indigo-600'}>{reputation.score}/100</span>
+                        <span className="ml-1 text-gray-400 font-normal">({reputation.label})</span>
+                      </div>
+                    )}
+                  </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+                  {/* Badges display */}
+                  {badges.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {badges.slice(0, 4).map(badge => (
+                        <div 
+                          key={badge.id}
+                          className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full border shadow-sm transition-all hover:-translate-y-0.5"
+                          style={{ borderColor: `${badge.color}30`, backgroundColor: `${badge.color}10`, color: badge.color }}
+                          title={badge.description}
+                        >
+                          <span>{badge.icon}</span> {badge.label}
+                        </div>
+                      ))}
+                      {badges.length > 4 && (
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-xs font-bold text-gray-500 cursor-help" title="Diğer rozetleri gör">
+                          +{badges.length - 4}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginTop: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <StarRating rating={provider.rating} />
                       <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>{provider.rating?.toFixed(1)}</span>
@@ -150,18 +193,18 @@ const ProviderProfilePage: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 16 }}>
                       <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <TrendingUp size={13} /> {provider.completed_jobs} iş
+                        <Briefcase size={13} /> {provider.completed_jobs} iş
                       </span>
                       <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Clock size={13} /> {provider.years_experience} yıl
+                        <Clock size={13} /> {provider.years_experience} yıl deneyim
                       </span>
                     </div>
                   </div>
 
                   {provider.locations?.length > 0 && (
-                    <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      {provider.locations.slice(0, 3).map(loc => (
-                        <span key={loc.id} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                    <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {provider.locations.slice(0, 4).map(loc => (
+                        <span key={loc.id} style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, background: 'var(--color-surface-2)', padding: '4px 10px', borderRadius: 20 }}>
                           <MapPin size={12} /> {loc.city?.name}{loc.district ? `, ${loc.district.name}` : ''}
                         </span>
                       ))}
@@ -199,17 +242,45 @@ const ProviderProfilePage: React.FC = () => {
                   <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
                     {provider.bio || 'Bu uzman henüz bir biyografi eklememiş.'}
                   </p>
+                  
+                  {/* Detailed Reputation breakdown if available */}
+                  {reputation && (
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                      <h4 className="font-bold mb-4 flex items-center gap-2">
+                        <TrendingUp size={16} className="text-indigo-600" /> Profil Performansı
+                      </h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 mb-1">Müşteri Puanı</div>
+                          <div className="font-bold text-gray-900">{reputation.breakdown.rating_score}/40</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 mb-1">İş Tamamlama</div>
+                          <div className="font-bold text-gray-900">{reputation.breakdown.completion_score}/25</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 mb-1">Doğrulama</div>
+                          <div className="font-bold text-gray-900">{reputation.breakdown.verification_score}/15</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg text-center">
+                          <div className="text-xs text-gray-500 mb-1">Tekrar Müşteri</div>
+                          <div className="font-bold text-gray-900">{reputation.breakdown.repeat_score}/10</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {provider.availability?.length > 0 && (
                     <>
-                      <h4 style={{ fontWeight: 700, marginTop: 20, marginBottom: 12 }}>Müsaitlik</h4>
+                      <h4 style={{ fontWeight: 700, marginTop: 24, marginBottom: 12 }}>Müsaitlik Durumu</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map((day, i) => {
                           const avail = provider.availability.find(a => a.day_of_week === i);
                           return (
-                            <div key={day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '8px 0', borderBottom: '1px solid var(--color-border)' }}>
+                            <div key={day} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', padding: '10px 12px', background: 'var(--color-surface-2)', borderRadius: 8 }}>
                               <span style={{ fontWeight: 600 }}>{day}</span>
-                              <span style={{ color: avail ? 'var(--color-success)' : 'var(--color-text-dim)' }}>
-                                {avail ? `${avail.start_time} - ${avail.end_time}` : 'Müsait Değil'}
+                              <span style={{ color: avail ? 'var(--color-success)' : 'var(--color-text-dim)', fontWeight: 500 }}>
+                                {avail ? `${avail.start_time.substring(0,5)} - ${avail.end_time.substring(0,5)}` : 'Müsait Değil'}
                               </span>
                             </div>
                           );
@@ -227,13 +298,13 @@ const ProviderProfilePage: React.FC = () => {
                       Henüz hizmet eklenmemiş
                     </div>
                   ) : provider.services?.map(s => (
-                    <div key={s.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={s.id} className="card hover:shadow-md transition-shadow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontWeight: 700 }}>{s.service?.name}</div>
-                        {s.description && <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{s.description}</div>}
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.service?.name}</div>
+                        {s.description && <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 6 }}>{s.description}</div>}
                       </div>
                       {s.starting_price && (
-                        <div style={{ fontWeight: 700, color: 'var(--color-primary-light)', fontSize: '1.1rem', flexShrink: 0 }}>
+                        <div style={{ fontWeight: 800, color: 'var(--color-primary-light)', fontSize: '1.15rem', flexShrink: 0, background: 'rgba(99,102,241,0.1)', padding: '6px 12px', borderRadius: 8 }}>
                           ₺{s.starting_price}'den başlayan
                         </div>
                       )}
@@ -245,54 +316,70 @@ const ProviderProfilePage: React.FC = () => {
               {activeTab === 'reviews' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {/* Overall rating */}
-                  <div className="card" style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-text)' }}>{provider.rating?.toFixed(1)}</div>
-                      <StarRating rating={provider.rating} size={18} />
-                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>{provider.review_count} yorum</div>
+                  <div className="card" style={{ display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'center', minWidth: 120 }}>
+                      <div style={{ fontSize: '3.5rem', fontWeight: 900, color: 'var(--color-text)', lineHeight: 1 }}>{provider.rating?.toFixed(1)}</div>
+                      <div className="mt-2 flex justify-center"><StarRating rating={provider.rating} size={20} /></div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 6 }}>{provider.review_count} müşteri değerlendirmesi</div>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                       {/* Rating bars would go here in a real app, currently mocked structure */}
+                       {[5, 4, 3, 2, 1].map(r => (
+                          <div key={r} className="flex items-center gap-2 text-sm">
+                            <span className="w-4 font-medium text-gray-500">{r}</span>
+                            <Star size={12} className="text-amber-500" />
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-amber-500 rounded-full" style={{ width: r === 5 ? '80%' : r === 4 ? '15%' : '0%' }}></div>
+                            </div>
+                          </div>
+                       ))}
                     </div>
                   </div>
 
                   {reviews.length === 0 ? (
-                    <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 40 }}>
+                    <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 60 }}>
                       Henüz yorum yapılmamış
                     </div>
                   ) : reviews.map((review: any) => (
-                    <div key={review.id} className="card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div key={review.id} className="card p-5">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <div style={{
-                            width: 36, height: 36, borderRadius: '50%',
-                            background: 'var(--color-surface-3)',
+                            width: 42, height: 42, borderRadius: '50%',
+                            background: 'var(--color-surface-3)', color: 'var(--color-text)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+                            fontSize: '1.1rem'
                           }}>
                             {review.customer?.first_name?.[0]}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
                               {review.customer?.first_name} {review.customer?.last_name?.[0]}.
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                              {new Date(review.created_at).toLocaleDateString('tr-TR')}
+                            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                              {new Date(review.created_at).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}
                             </div>
                           </div>
                         </div>
-                        <StarRating rating={review.rating} />
+                        <div className="bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100 h-fit">
+                          <StarRating rating={review.rating} />
+                        </div>
                       </div>
                       {review.comment && (
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: 1.6 }}>{review.comment}</p>
+                        <p style={{ color: 'var(--color-text-dim)', fontSize: '0.95rem', lineHeight: 1.6, marginTop: 12 }}>{review.comment}</p>
                       )}
                       {review.provider_reply && (
                         <div style={{
-                          marginTop: 12, padding: 12,
-                          background: 'rgba(99, 102, 241, 0.08)',
-                          border: '1px solid rgba(99, 102, 241, 0.2)',
-                          borderRadius: 10,
+                          marginTop: 16, padding: 16,
+                          background: 'rgba(99, 102, 241, 0.05)',
+                          borderLeft: '3px solid var(--color-primary)',
+                          borderRadius: '0 8px 8px 0',
                         }}>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--color-primary-light)', fontWeight: 700, marginBottom: 4 }}>
-                            Uzman yanıtı:
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-primary-light)', fontWeight: 700, marginBottom: 6 }}>
+                            Uzman yanıtı
                           </div>
-                          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{review.provider_reply}</p>
+                          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.5 }}>{review.provider_reply}</p>
                         </div>
                       )}
                     </div>
@@ -301,14 +388,19 @@ const ProviderProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'portfolio' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
                   {provider.portfolio?.length === 0 ? (
-                    <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--color-text-muted)', padding: 40 }}>
+                    <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--color-text-muted)', padding: 60 }}>
                       Portföy öğesi bulunmuyor
                     </div>
                   ) : provider.portfolio?.map(item => (
-                    <div key={item.id} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', aspectRatio: '1' }}>
-                      <img src={item.image_url} alt={item.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div key={item.id} className="group relative" style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', aspectRatio: '1' }}>
+                      <img src={item.image_url} alt={item.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} className="group-hover:scale-105" />
+                      {item.title && (
+                        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
+                          <div className="font-medium text-sm truncate">{item.title}</div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -318,45 +410,45 @@ const ProviderProfilePage: React.FC = () => {
 
           {/* Right sidebar */}
           <div style={{ position: 'sticky', top: 80 }}>
-            <div className="card" style={{ marginBottom: 16 }}>
+            <div className="card" style={{ marginBottom: 16, padding: 24 }}>
               {/* Pricing */}
               {provider.hourly_rate && (
-                <div style={{ textAlign: 'center', padding: '16px 0 20px', borderBottom: '1px solid var(--color-border)', marginBottom: 20 }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--color-primary-light)' }}>
+                <div style={{ textAlign: 'center', padding: '0 0 24px', borderBottom: '1px solid var(--color-border)', marginBottom: 24 }}>
+                  <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--color-primary-light)', lineHeight: 1 }}>
                     ₺{provider.hourly_rate}
                   </div>
-                  <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>saat başına</div>
+                  <div style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginTop: 4 }}>saatlik çalışma ücreti</div>
                 </div>
               )}
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <button
                   id="hire-btn"
-                  className="btn btn-primary"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  className="btn btn-primary shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                  style={{ width: '100%', justifyContent: 'center', padding: '14px 20px', fontSize: '1.05rem' }}
                   onClick={handleRequest}
                 >
-                  <Calendar size={16} /> Hizmet Talebi Oluştur
+                  <Calendar size={18} /> Talep Oluştur
                 </button>
                 <button
                   id="message-btn"
                   className="btn btn-outline"
-                  style={{ width: '100%', justifyContent: 'center' }}
+                  style={{ width: '100%', justifyContent: 'center', padding: '14px 20px' }}
                   onClick={handleContact}
                   disabled={contactLoading}
                 >
-                  <MessageSquare size={16} />
-                  {contactLoading ? 'Yükleniyor...' : 'Mesaj Gönder'}
+                  <MessageSquare size={18} />
+                  {contactLoading ? 'Yükleniyor...' : 'Soru Sor'}
                 </button>
                 {isAuthenticated && (
                   <button
                     id="favorite-btn"
                     className={`btn btn-ghost`}
-                    style={{ width: '100%', justifyContent: 'center', color: isFavorited ? '#ef4444' : 'var(--color-text-muted)' }}
+                    style={{ width: '100%', justifyContent: 'center', color: isFavorited ? '#ef4444' : 'var(--color-text-muted)', marginTop: 8 }}
                     onClick={() => toggleFavorite.mutate(Number(id))}
                   >
-                    <Heart size={16} fill={isFavorited ? '#ef4444' : 'transparent'} />
+                    <Heart size={18} fill={isFavorited ? '#ef4444' : 'transparent'} />
                     {isFavorited ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
                   </button>
                 )}
@@ -365,23 +457,48 @@ const ProviderProfilePage: React.FC = () => {
 
             {/* Stats card */}
             <div className="card">
-              <h4 style={{ fontWeight: 700, marginBottom: 16, fontSize: '0.9rem' }}>İstatistikler</h4>
+              <h4 style={{ fontWeight: 800, marginBottom: 16, fontSize: '1rem' }}>Uzman Özeti</h4>
               {[
-                { icon: <Star size={14} />, label: 'Ortalama Puan', value: `${provider.rating?.toFixed(1)}/5.0` },
-                { icon: <TrendingUp size={14} />, label: 'Tamamlanan İş', value: provider.completed_jobs },
-                { icon: <Clock size={14} />, label: 'Deneyim', value: `${provider.years_experience} yıl` },
-                { icon: <Award size={14} />, label: 'Doğrulama', value: provider.verification_level },
+                { icon: <Star size={16} className="text-amber-500" />, label: 'Ortalama Puan', value: `${provider.rating?.toFixed(1)}/5.0` },
+                { icon: <Check size={16} className="text-emerald-500" />, label: 'Tamamlanan İş', value: provider.completed_jobs },
+                { icon: <Clock size={16} className="text-blue-500" />, label: 'Deneyim', value: `${provider.years_experience} yıl` },
+                { icon: <Award size={16} className="text-purple-500" />, label: 'Doğrulama', value: provider.verification_level },
               ].map(item => (
                 <div key={item.label} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '10px 0', borderBottom: '1px solid var(--color-border)',
+                  padding: '12px 0', borderBottom: '1px solid var(--color-border)',
                 }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-dim)', fontSize: '0.9rem', fontWeight: 500 }}>
                     {item.icon} {item.label}
                   </span>
-                  <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{item.value}</span>
+                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.value}</span>
                 </div>
               ))}
+              
+              {reputation && reputation.metrics.response_time_minutes > 0 && (
+                 <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 0',
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-dim)', fontSize: '0.9rem', fontWeight: 500 }}>
+                    <MessageSquare size={16} className="text-indigo-500" /> Yanıt Hızı
+                  </span>
+                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{reputation.metrics.response_time_minutes} dk</span>
+                </div>
+              )}
+            </div>
+
+            {/* Buyer Protection Promise */}
+            <div className="mt-4 p-4 rounded-xl border border-indigo-100 bg-indigo-50/50">
+              <div className="flex gap-3">
+                <Shield className="text-indigo-600 flex-shrink-0" size={24} />
+                <div>
+                  <h5 className="font-bold text-indigo-900 text-sm mb-1">Şehrimin Uzmanı Garantisi</h5>
+                  <p className="text-xs text-indigo-700/80 leading-relaxed">
+                    Platform üzerinden anlaştığınız hizmetler güvencemiz altındadır.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -391,3 +508,4 @@ const ProviderProfilePage: React.FC = () => {
 };
 
 export default ProviderProfilePage;
+

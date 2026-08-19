@@ -4,6 +4,7 @@ import {
   searchApi, requestsApi, reviewsApi, favoritesApi,
   notificationsApi, messagingApi, commissionsApi,
   subscriptionsApi, promotionsApi, disputesApi, adminApi,
+  reputationApi, badgesApi,
 } from '../services';
 import type { SearchFilters } from '../types';
 
@@ -130,6 +131,22 @@ export const useDispute = (id?: number) =>
 // ADMIN
 export const useAdminDashboard = () =>
   useQuery({ queryKey: ['adminDashboard'], queryFn: adminApi.getDashboard });
+
+// REPUTATION & BADGES
+export const useReputation = (providerId?: number) =>
+  useQuery({
+    queryKey: ['reputation', providerId],
+    queryFn: () => providerId ? reputationApi.getProviderReputation(providerId) : reputationApi.getMyReputation(),
+    enabled: true,
+  });
+
+export const useBadges = (providerId?: number) =>
+  useQuery({
+    queryKey: ['badges', providerId],
+    queryFn: () => providerId ? badgesApi.getProviderBadges(providerId) : badgesApi.getMyBadges(),
+    enabled: true,
+  });
+
 
 // FAVORITES
 export const useFavorites = () =>

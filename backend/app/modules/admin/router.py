@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sql_func
 from app.core.database import get_db
@@ -11,8 +11,12 @@ from app.modules.reviews.models import Review
 from app.modules.categories.models import Category
 from app.modules.locations.models import City
 from app.modules.admin.audit_model import AuditLog
+from app.modules.disputes.models import Dispute
+from app.modules.commissions.models import ProviderEarning, PayoutRequest
+from app.modules.subscriptions.models import ProviderSubscription
 from app.shared.pagination import PaginationParams, PaginatedResponse
 from typing import Optional
+
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -269,3 +273,84 @@ def list_audit_logs(
         page=pagination.page,
         limit=pagination.limit,
     )
+
+
+@router.get("/payouts")
+def list_payout_requests(
+    status: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    current_user: User = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db),
+):
+    pagination = PaginationParams(page, limit)
+    query = db.query(PayoutRequest)
+    
+    if status:
+        query = query.filter(PayoutRequest.status == status)
+
+    total = query.count()
+    payouts = query.order_by(PayoutRequest.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+
+    return PaginatedResponse.create(
+        items=[
+            {
+                "id": p.id,
+                "provider_id": p.provider_id,
+                "amount": p.amount,
+                "bank_name": p.bank_name,
+                "status": p.status,
+                "created_at": p.created_at,
+            }
+            for p in payouts
+        ],
+        total=total,
+        page=pagination.page,
+        limit=pagination.limit,
+    )
+
+
+@router.get("/disputes")
+def list_disputes(
+    status: Optional[str] = None,
+    page: int = 1,
+    limit: int = 20,
+    current_user: User = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db),
+):
+    pagination = PaginationParams(page, limit)
+    query = db.query(Dispute)
+
+    if status:
+        query = query.filter(Dispute.status == status)
+
+    total = query.count()
+    disputes = query.order_by(Dispute.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+
+    return PaginatedResponse.create(
+        items=[
+            {
+                "id": d.id,
+                "reporter_id": d.reporter_id,
+                "reported_id": d.reported_id,
+                "reason": d.reason,
+                "status": d.status,
+                "priority": d.priority,
+                "created_at": d.created_at,
+            }
+            for d in disputes
+        ],
+        total=total,
+        page=pagination.page,
+        limit=pagination.limit,
+    )
+
+
+@router.get("/users/{user_id}/fraud-risk")
+def get_user_fraud_risk(
+    user_id: int,
+    current_user: User = Depends(require_role("ADMIN")),
+    db: Session = Depends(get_db),
+):
+    from app.modules.admin.fraud import calculate_risk_score
+    return calculate_risk_score(user_id, db)

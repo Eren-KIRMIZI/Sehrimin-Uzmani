@@ -4,6 +4,8 @@ import { Check, ChevronLeft, ChevronRight, Upload, MapPin, Calendar, DollarSign,
 import Layout from '../components/layout/Layout';
 import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
 import { requestsApi } from '../services';
+import { AIRequestAssistant } from '../components/ai/AIRequestAssistant';
+import type { AIAnalysis } from '../types';
 
 const STEPS = [
   { num: 1, title: 'Kategori' },
@@ -49,6 +51,59 @@ const ServiceRequestForm: React.FC = () => {
   const selectedSubcategory = selectedCategory?.subcategories?.find(s => s.id === form.subcategory_id);
 
   const setField = (key: string, value: unknown) => setForm(prev => ({ ...prev, [key]: value }));
+
+  const handleAIAnalysisComplete = (data: AIAnalysis) => {
+    // 1. Kategoriyi bul
+    let catId: number | undefined, subId: number | undefined;
+    if (data.category_slug && categories) {
+      const cat = categories.find(c => c.slug === data.category_slug);
+      if (cat) {
+        catId = cat.id;
+        // Alt kategoriyi bul (basit string eşleşmesi ile)
+        if (data.subcategory && cat.subcategories) {
+          const sub = cat.subcategories.find(s => 
+            s.name.toLowerCase().includes(data.subcategory!.toLowerCase()) || 
+            s.slug.includes(data.subcategory!.toLowerCase())
+          );
+          if (sub) subId = sub.id;
+        }
+      }
+    }
+
+    // 2. Şehri bul
+    let cityId: number | undefined, distId: number | undefined;
+    if (data.location?.city && cities) {
+      const city = cities.find(c => 
+        c.name.toLowerCase() === data.location!.city!.toLowerCase() ||
+        c.name.toLowerCase().includes(data.location!.city!.toLowerCase())
+      );
+      if (city) {
+        cityId = city.id;
+      }
+    }
+
+    setForm(prev => ({
+      ...prev,
+      category_id: catId || prev.category_id,
+      subcategory_id: subId || prev.subcategory_id,
+      city_id: cityId || prev.city_id,
+      title: data.problem_description ? (data.problem_description.length > 50 ? data.problem_description.substring(0, 50) + '...' : data.problem_description) : (data.original_text || '').substring(0, 50),
+      description: data.original_text || prev.description,
+      urgency: data.urgency ? data.urgency.toUpperCase() as any : prev.urgency,
+      preferred_date: data.preferred_time || prev.preferred_date,
+      budget_min: data.budget?.min?.toString() || prev.budget_min,
+      budget_max: data.budget?.max?.toString() || prev.budget_max,
+    }));
+
+    // Otomatik olarak 9. adıma (Önizleme) atla veya eksik varsa oraya git
+    if (catId && cityId) {
+      setStep(9);
+    } else if (catId) {
+      setStep(4);
+    } else {
+      setStep(1);
+    }
+  };
 
   const canProceed = () => {
     switch (step) {
@@ -108,6 +163,13 @@ const ServiceRequestForm: React.FC = () => {
         <p style={{ color: 'var(--color-text-muted)', marginBottom: 36 }}>
           Uzmanlardan teklif almak için talebinizi oluşturun
         </p>
+
+        {step < 9 && (
+          <div className="mb-8">
+            <AIRequestAssistant onAnalysisComplete={handleAIAnalysisComplete} />
+          </div>
+        )}
+
 
         {/* Progress steps */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 40, overflowX: 'auto', paddingBottom: 8 }}>

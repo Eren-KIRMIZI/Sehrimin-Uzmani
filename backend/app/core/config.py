@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 10485760
 
+    # OpenRouter AI
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash-001"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+
     @property
     def cors_origins_list(self) -> List[str]:
         return json.loads(self.CORS_ORIGINS)
@@ -51,3 +56,4 @@ class Settings(BaseSettings):
 
 settings = Settings()
 settings.validate_security()
+

@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useUnreadNotifications, useUnreadMessages, useCategories } from '../../hooks/useQueries';
 import { authApi } from '../../services';
 import { searchApi } from '../../services';
+import { NotificationCenter } from '../notifications/NotificationCenter';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -155,19 +156,8 @@ const Navbar: React.FC = () => {
               </Link>
 
               {/* Notifications */}
-              <Link to="/dashboard" style={{ position: 'relative', display: 'flex', padding: 8, color: 'var(--color-text-muted)', textDecoration: 'none' }}>
-                <Bell size={20} />
-                {unreadNotifs && unreadNotifs.count > 0 && (
-                  <span style={{
-                    position: 'absolute', top: 4, right: 4,
-                    background: 'var(--color-error)', color: 'white',
-                    borderRadius: '50%', width: 16, height: 16,
-                    fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
-                  }}>
-                    {unreadNotifs.count > 9 ? '9+' : unreadNotifs.count}
-                  </span>
-                )}
-              </Link>
+              <NotificationCenter />
+
 
               {/* User menu */}
               <div ref={userMenuRef} style={{ position: 'relative' }}>

@@ -379,3 +379,85 @@ export interface DetectResult {
   subcategory_slug?: string;
   service_slug?: string;
 }
+
+// ===== REPUTATION & BADGES =====
+export interface ReputationScore {
+  score: number;
+  label: string;
+  breakdown: {
+    rating_score: number;
+    completion_score: number;
+    verification_score: number;
+    response_score: number;
+    repeat_score: number;
+  };
+  metrics: {
+    avg_rating: number;
+    review_count: number;
+    completed_jobs: number;
+    response_time_minutes: number;
+    verification_status: string;
+    recent_review_count: number;
+    recent_avg_rating?: number;
+  };
+}
+
+export interface Badge {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  color: string;
+  earned: boolean;
+}
+
+// ===== ANALYTICS =====
+export interface ProviderAnalytics {
+  period_days: number;
+  quotes_received: number;
+  quotes_sent: number;
+  jobs_won: number;
+  quotes_pending: number;
+  conversion_rate: number;
+  avg_rating: number;
+  total_review_count: number;
+  recent_avg_rating: number;
+  recent_review_count: number;
+  total_earnings_30d: number;
+  daily_breakdown: Array<{
+    date: string;
+    day_name: string;
+    quotes: number;
+    reviews: number;
+  }>;
+  ai_insights: Array<{
+    type: 'warning' | 'info' | 'success';
+    icon: string;
+    text: string;
+  }>;
+}
+
+export interface AIAnalysis {
+  category_slug: string | null;
+  category_name: string | null;
+  subcategory: string | null;
+  service: string | null;
+  urgency: 'low' | 'medium' | 'high' | 'emergency' | null;
+  location: { city: string | null; district: string | null } | null;
+  preferred_time: string | null;
+  budget: { min: number | null; max: number | null } | null;
+  keywords: string[];
+  problem_description: string | null;
+  confidence: number;
+  is_emergency: boolean;
+  detected: boolean;
+  original_text?: string;
+}
+
+export interface AIMatchExplanation {
+  match_percent: number;
+  summary: string;
+  reasons: string[];
+  highlight: string;
+}
+
