@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Tex
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from app.core.database import Base
+from app.core.base.models import BaseModel
 
 
 class PromotedStatus(str, enum.Enum):
@@ -12,10 +12,9 @@ class PromotedStatus(str, enum.Enum):
     CANCELLED = "cancelled"
 
 
-class PromotedProvider(Base):
+class PromotedProvider(BaseModel):
     __tablename__ = "promoted_providers"
 
-    id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
@@ -32,22 +31,19 @@ class PromotedProvider(Base):
     priority_boost = Column(Float, default=1.0)
     is_featured = Column(Boolean, default=False)
     badge_text = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     provider = relationship("User", lazy="joined")
     plan = relationship("SubscriptionPlan", lazy="joined")
     category = relationship("Category", lazy="joined")
 
 
-class PromotionLog(Base):
+class PromotionLog(BaseModel):
     __tablename__ = "promotion_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
     promoted_id = Column(Integer, ForeignKey("promoted_providers.id"), nullable=False)
     event_type = Column(String(50), nullable=False)
     budget_spent = Column(Float, default=0.0)
     impressions = Column(Integer, default=0)
     clicks = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     promoted = relationship("PromotedProvider", lazy="joined")

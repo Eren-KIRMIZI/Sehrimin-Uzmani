@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enu
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
-from app.core.database import Base
+from app.core.base.models import BaseModel
 
 
 class DisputeStatus(str, enum.Enum):
@@ -23,10 +23,9 @@ class DisputeReason(str, enum.Enum):
     OTHER = "other"
 
 
-class Dispute(Base):
+class Dispute(BaseModel):
     __tablename__ = "disputes"
 
-    id = Column(Integer, primary_key=True, index=True)
     request_id = Column(Integer, ForeignKey("service_requests.id"), nullable=True)
     appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=True)
     reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -39,37 +38,31 @@ class Dispute(Base):
     resolution = Column(Text, nullable=True)
     resolved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     resolved_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     reporter = relationship("User", foreign_keys=[reporter_id], lazy="joined")
     reported = relationship("User", foreign_keys=[reported_id], lazy="joined")
     resolver = relationship("User", foreign_keys=[resolved_by], lazy="joined")
 
 
-class DisputeMessage(Base):
+class DisputeMessage(BaseModel):
     __tablename__ = "dispute_messages"
 
-    id = Column(Integer, primary_key=True, index=True)
     dispute_id = Column(Integer, ForeignKey("disputes.id"), nullable=False)
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     message = Column(Text, nullable=False)
     is_admin = Column(Boolean, default=False)
     attachment_url = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     sender = relationship("User", lazy="joined")
     dispute = relationship("Dispute", lazy="joined")
 
 
-class DisputeEvidence(Base):
+class DisputeEvidence(BaseModel):
     __tablename__ = "dispute_evidence"
 
-    id = Column(Integer, primary_key=True, index=True)
     dispute_id = Column(Integer, ForeignKey("disputes.id"), nullable=False)
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     file_url = Column(String(500), nullable=False)
     description = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     uploader = relationship("User", lazy="joined")

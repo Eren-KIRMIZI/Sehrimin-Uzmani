@@ -1,16 +1,15 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.core.database import Base
+from app.core.base.models import BaseModel
 
 
-class Review(Base):
+class Review(BaseModel):
     __tablename__ = "reviews"
     __table_args__ = (
         UniqueConstraint("request_id", "customer_id", name="uq_review_request_customer"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     request_id = Column(Integer, ForeignKey("service_requests.id"), nullable=False, index=True)
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
@@ -24,7 +23,6 @@ class Review(Base):
     provider_replied_at = Column(DateTime(timezone=True), nullable=True)
     is_visible = Column(Integer, default=1)
     status = Column(String(20), default="ACTIVE")
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     request = relationship("ServiceRequest")
     customer = relationship("User", back_populates="reviews_given", foreign_keys=[customer_id])

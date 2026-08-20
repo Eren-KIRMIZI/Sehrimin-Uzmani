@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 import enum
-from app.core.database import Base
+from app.core.base.models import BaseModel
 from app.core.encryption import encrypt, decrypt
 
 
@@ -14,24 +14,21 @@ class CommissionStatus(str, enum.Enum):
     REFUNDED = "refunded"
 
 
-class CommissionRate(Base):
+class CommissionRate(BaseModel):
     __tablename__ = "commission_rates"
 
-    id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
     rate = Column(Float, nullable=False, default=0.10)
     min_amount = Column(Float, nullable=True)
     description = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     category = relationship("Category", lazy="joined")
 
 
-class Transaction(Base):
+class Transaction(BaseModel):
     __tablename__ = "transactions"
 
-    id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=True)
     amount = Column(Float, nullable=False)
@@ -41,17 +38,15 @@ class Transaction(Base):
     status = Column(String(20), default="pending")
     payment_method = Column(String(50), nullable=True)
     description = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
 
     provider = relationship("User", lazy="joined")
     appointment = relationship("Appointment", lazy="joined")
 
 
-class ProviderEarning(Base):
+class ProviderEarning(BaseModel):
     __tablename__ = "provider_earnings"
 
-    id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     total_earned = Column(Float, default=0.0)
     total_commission_paid = Column(Float, default=0.0)
@@ -62,10 +57,9 @@ class ProviderEarning(Base):
     provider = relationship("User", lazy="joined")
 
 
-class PayoutRequest(Base):
+class PayoutRequest(BaseModel):
     __tablename__ = "payout_requests"
 
-    id = Column(Integer, primary_key=True, index=True)
     provider_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     amount = Column(Float, nullable=False)
     bank_name = Column(String(100), nullable=True)
@@ -74,7 +68,6 @@ class PayoutRequest(Base):
     status = Column(String(20), default="pending")
     processed_at = Column(DateTime, nullable=True)
     admin_note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
     provider = relationship("User", lazy="joined")
 
