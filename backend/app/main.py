@@ -13,6 +13,7 @@ from app.api.router import api_router
 from app.modules.messaging.router import router as messaging_router
 from app.middleware.logging_middleware import RequestLoggingMiddleware
 from app.websocket.manager import websocket_endpoint
+from app.shared.models import SystemSetting  # noqa: F401 — metadata discovery
 
 # Logging'i mümkün olan en erken an kur
 setup_logging()

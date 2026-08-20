@@ -63,6 +63,22 @@ class ProviderMatcher:
         for ps in self.db.query(ProviderService).filter(ProviderService.provider_id.in_(provider_ids)).all():
             services_by_provider.setdefault(ps.provider_id, []).append(ps.service_id)
 
+        # service_id → category_id eşleşmesi için bulk yükleme (N+1 önle)
+        all_service_ids = [
+            sid
+            for sids in services_by_provider.values()
+            for sid in sids
+        ]
+        service_category_map = {}
+        if all_service_ids:
+            for svc in self.db.query(Service).filter(Service.id.in_(all_service_ids)).all():
+                service_category_map[svc.id] = svc.category_id
+
+        # provider_id → category_ids kümesi
+        categories_by_provider = {}
+        for pid, sids in services_by_provider.items():
+            categories_by_provider[pid] = {service_category_map[s] for s in sids if s in service_category_map}
+
         return {
             "profiles": profiles,
             "rating_data": rating_data,
@@ -70,6 +86,7 @@ class ProviderMatcher:
             "subscriptions": subscriptions,
             "promoted": promoted,
             "services": services_by_provider,
+            "categories": categories_by_provider,
         }
 
     def score_provider(
@@ -80,8 +97,6 @@ class ProviderMatcher:
         category_id: int = None,
         city_id: int = None,
         district_id: int = None,
-        lat: float = None,
-        lng: float = None,
         lat: float = None,
         lng: float = None,
         budget: float = None,
@@ -151,14 +166,8 @@ class ProviderMatcher:
             score += 15
 
         if category_id:
-            service_ids_for_cat = set(
-                ps.service_id
-                for ps in self.db.query(ProviderService)
-                .join(Service)
-                .filter(ProviderService.provider_id == provider.id, Service.category_id == category_id)
-                .all()
-            )
-            if provider_service_ids and any(s in service_ids_for_cat for s in provider_service_ids):
+            provider_cat_ids = data["categories"].get(provider.id, set())
+            if category_id in provider_cat_ids:
                 score += 10
 
         if lat and lng:
@@ -187,9 +196,15 @@ class ProviderMatcher:
                     score += 7
 
         if budget:
-            provider_locations = data["locations"].get(provider.id)
-            if provider_locations and provider_locations.latitude and provider_locations.longitude:
-                score += 3
+            profile = data["profiles"].get(provider.id)
+            if profile and profile.hourly_rate:
+                # Bütçeye uygun provider'a bonus, fazla pahalıya ceza
+                if profile.hourly_rate <= budget:
+                    score += 5
+                elif profile.hourly_rate <= budget * 1.2:  # %20 tolerans
+                    score += 2
+                else:
+                    score -= 3
 
         portfolio_count = len(profile.portfolio_items) if profile.portfolio_items else 0
         if portfolio_count:
@@ -204,8 +219,6 @@ class ProviderMatcher:
         subcategory_id: int = None,
         city_id: int = None,
         district_id: int = None,
-        lat: float = None,
-        lng: float = None,
         lat: float = None,
         lng: float = None,
         budget: float = None,

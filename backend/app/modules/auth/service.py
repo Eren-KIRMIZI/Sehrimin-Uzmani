@@ -63,6 +63,7 @@ class AuthService:
     def verify_2fa_login(self, temp_token: str, code: str) -> dict:
         import pyotp
         from app.core.security import decode_token
+        from app.core.encryption import decrypt
 
         payload = decode_token(temp_token)
         if payload.get("type") != "2fa_pending":
@@ -76,7 +77,13 @@ class AuthService:
         if not user.two_factor_enabled or not user.two_factor_secret:
             raise BadRequestException("2FA aktif degil")
 
-        totp = pyotp.TOTP(user.two_factor_secret)
+        try:
+            secret = decrypt(user.two_factor_secret)
+        except Exception:
+            # Fallback: eski plaintext kayıtlar için (migration sonrası kaldırılabilir)
+            secret = user.two_factor_secret
+
+        totp = pyotp.TOTP(secret)
         if not totp.verify(code, valid_window=1):
             raise BadRequestException("Gecersiz dogrulama kodu")
 

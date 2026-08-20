@@ -5,6 +5,7 @@ import {
   SlidersHorizontal, ChevronDown, X, TrendingUp, Clock,
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
+import SEO from '../components/SEO';
 import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
 import { searchApi } from '../services';
 import { useQuery } from '@tanstack/react-query';
@@ -145,6 +146,10 @@ const SearchPage: React.FC = () => {
 
   return (
     <Layout>
+      <SEO 
+        title={filters.q ? `${filters.q} Arama Sonuçları` : "Uzman Ara"}
+        description="Şehrinin Uzmanı'nda ihtiyaçlarınıza en uygun profesyonelleri bulun ve hizmet alın."
+      />
       <div style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: '24px 0' }}>
         <div className="container">
           {/* Search bar */}

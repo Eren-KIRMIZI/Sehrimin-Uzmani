@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, KeyRound, ArrowRight } from 'lucide-react';
 import { authApi } from '../../services';
 import { useAuthStore } from '../../stores/authStore';
+import SEO from '../../components/SEO';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -63,8 +64,16 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>
-      {/* Form Side */}
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      backgroundColor: 'var(--color-bg)',
+    }}>
+      <SEO 
+        title="Giriş Yap" 
+        description="Şehrinin Uzmanı hesabınıza giriş yapın ve hizmet almaya veya vermeye başlayın."
+      />
+      {/* Sol taraf - Form */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '40px 24px' }}>
         <Link to="/" style={{ textDecoration: 'none', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-text)', display: 'inline-block', marginBottom: 40 }}>
           <span className="gradient-text">Şehrimin</span> Uzmanı

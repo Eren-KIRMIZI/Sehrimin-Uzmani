@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.database import get_db
@@ -121,8 +122,21 @@ def get_me(current_user: User = Depends(get_current_user)):
     }
 
 
+_bearer_scheme = HTTPBearer()
+
+
 @router.post("/logout")
-def logout(current_user: User = Depends(get_current_user)):
+def logout(
+    current_user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+    db: Session = Depends(get_db),
+):
+    """Token'ı blacklist'e ekleyerek kullanıcıyı güvenli şekilde çıkış yaptırır."""
+    service = AuthService(db)
+    try:
+        service.logout(token=credentials.credentials, user_id=current_user.id)
+    except Exception:
+        pass  # Token zaten geçersiz/revoked olsa bile başarı döndür
     return {"message": "Basariyla cikis yapildi"}
 
 
@@ -152,7 +166,7 @@ def forgot_password(
         message=f"Sifre sifirlama tokeniniz: {reset_token[:20]}... (30 dakika gecerli)",
     )
 
-    return {"message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir", "token": reset_token}
+    return {"message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir"}
 
 
 @router.post("/reset-password")
@@ -218,12 +232,13 @@ def enable_2fa(
     db: Session = Depends(get_db),
 ):
     import pyotp
+    from app.core.encryption import encrypt
 
     if current_user.two_factor_enabled:
         raise HTTPException(status_code=400, detail="2FA zaten aktif")
 
     secret = pyotp.random_base32()
-    current_user.two_factor_secret = secret
+    current_user.two_factor_secret = encrypt(secret)  # şifreli sakla
     db.commit()
 
     totp = pyotp.TOTP(secret)
@@ -246,11 +261,17 @@ def verify_2fa_enable(
     db: Session = Depends(get_db),
 ):
     import pyotp
+    from app.core.encryption import decrypt
 
     if not current_user.two_factor_secret:
         raise HTTPException(status_code=400, detail="Once 2FA kurulumunu baslatin")
 
-    totp = pyotp.TOTP(current_user.two_factor_secret)
+    try:
+        secret = decrypt(current_user.two_factor_secret)
+    except Exception:
+        secret = current_user.two_factor_secret  # fallback plaintext
+
+    totp = pyotp.TOTP(secret)
     if not totp.verify(code, valid_window=1):
         raise HTTPException(status_code=400, detail="Gecersiz dogrulama kodu")
 

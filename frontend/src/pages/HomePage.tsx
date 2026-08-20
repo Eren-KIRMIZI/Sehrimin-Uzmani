@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp } from 'lucide-react';
 import Layout from '../components/layout/Layout';
+import SEO from '../components/SEO';
 import { useCategories, useRecommendations, useCities } from '../hooks/useQueries';
 import { searchApi } from '../services';
 import { Link } from 'react-router-dom';
@@ -147,6 +148,10 @@ const HomePage: React.FC = () => {
 
   return (
     <Layout>
+      <SEO 
+        title="Ana Sayfa" 
+        description="Şehrinin Uzmanı ile ihtiyacınız olan tüm hizmetler için güvenilir uzmanları bulun. Temizlik, tamirat, nakliyat ve daha fazlası."
+      />
       {/* HERO */}
       <section className="hero-gradient" style={{ padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}>
         {/* Background orbs */}

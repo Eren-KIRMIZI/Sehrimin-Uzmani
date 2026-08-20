@@ -702,8 +702,36 @@ def seed_demo_users(db: Session):
 
 
 def run_all_seeds(db: Session):
+    """
+    Seed fonksiyonlarını çalıştırır.
+    system_settings tablosunda 'seeded' flag'i varsa tekrar çalışmaz.
+    """
+    try:
+        from app.shared.models import SystemSetting
+        existing = db.query(SystemSetting).filter(SystemSetting.key == "seeded").first()
+        if existing and existing.value == "true":
+            import logging
+            logging.getLogger(__name__).info("Seed zaten tamamlanmis, atlanıyor.")
+            return
+    except Exception:
+        # Tablo henüz oluşturulmamışsa seed'i çalıştır
+        pass
+
     seed_cities(db)
     seed_categories(db)
     seed_subscription_plans(db)
     seed_commission_rates(db)
     seed_demo_users(db)
+
+    # Seed tamamlandı flag'ini kaydet
+    try:
+        from app.shared.models import SystemSetting
+        flag = db.query(SystemSetting).filter(SystemSetting.key == "seeded").first()
+        if not flag:
+            flag = SystemSetting(key="seeded", value="true")
+            db.add(flag)
+        else:
+            flag.value = "true"
+        db.commit()
+    except Exception:
+        pass

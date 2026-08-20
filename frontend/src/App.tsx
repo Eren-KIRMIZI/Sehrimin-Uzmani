@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
@@ -6,21 +6,24 @@ import { authApi } from './services';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Pages
+// Pages (eager — kritik rotalar)
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import MapSearchPage from './pages/MapSearchPage';
 import ProviderProfilePage from './pages/ProviderProfilePage';
 import ServiceRequestForm from './pages/ServiceRequestForm';
-import ChatPage from './pages/ChatPage';
 import PricingPage from './pages/PricingPage';
-import EarningsPage from './pages/EarningsPage';
 import PromotionsPage from './pages/PromotionsPage';
-import DisputesPage from './pages/DisputesPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
 import AdminPage from './pages/admin/AdminPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import NotFoundPage from './pages/NotFoundPage';
+
+// Pages (lazy — code splitting ile yüklenecek)
+const ChatPage = lazy(() => import('./pages/ChatPage'));
+const DisputesPage = lazy(() => import('./pages/DisputesPage'));
+const EarningsPage = lazy(() => import('./pages/EarningsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +57,18 @@ const App: React.FC = () => {
     initAuth();
   }, [setUser, setInitializing]);
 
+  // Lazy sayfalari icin ortak yukleme gostergesi
+  const LazyFallback = (
+    <div style={{
+      minHeight: '60vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>
+      <div className="spinner" />
+    </div>
+  );
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -69,20 +84,38 @@ const App: React.FC = () => {
             
             {/* Protected Routes (All authenticated users) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <ChatPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
             <Route path="/request/create" element={<ProtectedRoute><ServiceRequestForm /></ProtectedRoute>} />
-            <Route path="/disputes" element={<ProtectedRoute><DisputesPage /></ProtectedRoute>} />
+            <Route path="/disputes" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <DisputesPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
             
             {/* Protected Routes (Providers only) */}
             <Route path="/pricing" element={<ProtectedRoute requiredRole="PROVIDER"><PricingPage /></ProtectedRoute>} />
-            <Route path="/earnings" element={<ProtectedRoute requiredRole="PROVIDER"><EarningsPage /></ProtectedRoute>} />
+            <Route path="/earnings" element={
+              <ProtectedRoute requiredRole="PROVIDER">
+                <Suspense fallback={LazyFallback}>
+                  <EarningsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
             <Route path="/promotions" element={<ProtectedRoute requiredRole="PROVIDER"><PromotionsPage /></ProtectedRoute>} />
 
             {/* Protected Routes (Admin only) */}
             <Route path="/admin" element={<ProtectedRoute requiredRole="ADMIN"><AdminPage /></ProtectedRoute>} />
 
-            {/* Fallback */}
-            <Route path="*" element={<HomePage />} />
+            {/* 404 — Bilinmeyen URL */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>

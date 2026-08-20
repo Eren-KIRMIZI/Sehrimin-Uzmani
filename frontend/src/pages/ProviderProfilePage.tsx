@@ -5,6 +5,7 @@ import {
   Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check, Info, AlertTriangle
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
+import SEO from '../components/SEO';
 import { useProvider, useProviderReviews, useFavorites, useToggleFavorite, useReputation, useBadges, useAvailableSlots } from '../hooks/useQueries';
 import { useAuthStore } from '../stores/authStore';
 import { messagingApi } from '../services';
@@ -91,6 +92,10 @@ const ProviderProfilePage: React.FC = () => {
 
   if (!provider) return (
     <Layout>
+      <SEO 
+        title="Uzman Bulunamadı"
+        description="Aradığınız uzman profili bulunamadı."
+      />
       <div style={{ textAlign: 'center', padding: '80px 0' }}>
         <div style={{ fontSize: '3rem', marginBottom: 16 }}>👤</div>
         <h2>Uzman bulunamadı</h2>
