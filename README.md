@@ -578,20 +578,7 @@ Tum API hatalari asagidaki formatta dondurulur:
 > **Geliştirme Felsefesi:**
 > Feature complete → Production hardening → Gerçek para → 50 uzman + 100 müşteri → Ölç → Optimize et
 
-### Faz 3 — İlk Gerçek Şehir: Kontrollü Beta 🟠 *(Şu an)*
-
-Özellik geliştirmeden önce pazar uyumunu (Product-Market Fit) kanıtlamak.
-
-| Hedef | Değer |
-|-------|-------|
-| Bölge | **Nevşehir** |
-| Uzman | 50 |
-| Kategori | 5 |
-| Müşteri | 100 |
-
-Amaç para kazanmaktan önce marketplace'in gerçekten çalıştığını kanıtlamak.
-
-### Faz 4 — Bölgesel Büyüme 🟢 *(Sonrası)*
+### Faz 4 — Bölgesel Büyüme 🟠 *(Şu an)*
 
 Kontrollü beta sonrası veriye dayalı genişleme:
 
