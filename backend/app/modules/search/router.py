@@ -12,7 +12,7 @@ from app.modules.categories.models import (
     SubCategory,
 )
 from app.modules.locations.models import ProviderLocation
-from app.modules.providers.models import ProviderProfile
+from app.modules.providers.models import ProviderPerformance, ProviderProfile
 from app.modules.users.models import User
 from app.shared.pagination import PaginatedResponse, PaginationParams
 
@@ -62,6 +62,10 @@ def search_providers(
         query = (
             db.query(ProviderProfile)
             .join(User, ProviderProfile.user_id == User.id)
+            .join(
+                ProviderPerformance,
+                ProviderPerformance.provider_id == ProviderProfile.id,
+            )
             .join(ProviderLocation, ProviderLocation.provider_id == ProviderProfile.id)
             .filter(ProviderProfile.is_available, User.is_active)
         )
@@ -69,6 +73,10 @@ def search_providers(
         query = (
             db.query(ProviderProfile)
             .join(User, ProviderProfile.user_id == User.id)
+            .outerjoin(
+                ProviderPerformance,
+                ProviderPerformance.provider_id == ProviderProfile.id,
+            )
             .filter(ProviderProfile.is_available, User.is_active)
         )
 
@@ -132,7 +140,7 @@ def search_providers(
             query = query.filter(ProviderProfile.id.in_(ps_subq))
 
     if min_rating:
-        query = query.filter(ProviderProfile.rating >= min_rating)
+        query = query.filter(ProviderPerformance.rating >= min_rating)
 
     if verified:
         query = query.filter(ProviderProfile.verification_status != "NONE")
@@ -179,16 +187,16 @@ def search_providers(
         query = query.add_columns(distance_col)
         query = query.order_by(distance_col.asc())
     elif sort == "rating":
-        query = query.order_by(ProviderProfile.rating.desc())
+        query = query.order_by(ProviderPerformance.rating.desc())
     elif sort == "reviews":
-        query = query.order_by(ProviderProfile.review_count.desc())
+        query = query.order_by(ProviderPerformance.review_count.desc())
     elif sort == "newest":
         query = query.order_by(ProviderProfile.created_at.desc())
     else:
         # recommended
         if rank is not None:
             # Order by search rank first, then rating
-            query = query.order_by(rank.desc(), ProviderProfile.rating.desc())
+            query = query.order_by(rank.desc(), ProviderPerformance.rating.desc())
         else:
             # Approximate reputation sorting natively
             # rating * 8 + verification priority
@@ -201,9 +209,9 @@ def search_providers(
                 (ProviderProfile.verification_status == "BASIC", 5),
                 else_=0,
             )
-            rep_approx = (ProviderProfile.rating * 8) + verif_case
+            rep_approx = (ProviderPerformance.rating * 8) + verif_case
             query = query.order_by(
-                rep_approx.desc(), ProviderProfile.review_count.desc()
+                rep_approx.desc(), ProviderPerformance.review_count.desc()
             )
 
     rows = query.offset(pagination.offset).limit(pagination.limit).all()
@@ -258,14 +266,15 @@ def search_providers(
         locs = locations_map.get(p.id, [])
         svcs = services_map.get(p.id, [])
 
+        perf = p.performance
         result.append(
             {
                 "id": p.id,
                 "business_name": p.business_name,
-                "rating": p.rating,
-                "review_count": p.review_count,
-                "completed_jobs": p.completed_jobs,
-                "response_time_minutes": p.response_time_minutes,
+                "rating": perf.rating if perf else 0.0,
+                "review_count": perf.review_count if perf else 0,
+                "completed_jobs": perf.completed_jobs if perf else 0,
+                "response_time_minutes": perf.average_response_time if perf else 0,
                 "verification_status": p.verification_status,
                 "user": {
                     "first_name": user.first_name if user else None,

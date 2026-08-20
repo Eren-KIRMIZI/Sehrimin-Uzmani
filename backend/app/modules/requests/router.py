@@ -5,6 +5,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
+from app.modules.requests.repository import request_repo
+from app.modules.requests.schemas import ServiceRequestCreate
 from app.modules.requests.service import request_service
 
 router = APIRouter(prefix="/requests", tags=["requests"])
@@ -13,6 +16,62 @@ router = APIRouter(prefix="/requests", tags=["requests"])
 class CreateFromAIBody(BaseModel):
     ai_payload: dict[str, Any]
     original_text: str
+
+
+@router.post("/")
+def create_request(
+    body: ServiceRequestCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from app.modules.requests.models import ServiceRequest
+
+    req = ServiceRequest(
+        customer_id=current_user.id,
+        category_id=body.category_id,
+        subcategory_id=body.subcategory_id,
+        service_id=body.service_id,
+        title=body.title,
+        description=body.description,
+        budget_min=body.budget_min,
+        budget_max=body.budget_max,
+        city_id=body.city_id,
+        district_id=body.district_id,
+        latitude=body.latitude,
+        longitude=body.longitude,
+        preferred_date=body.preferred_date,
+        preferred_time=body.preferred_time,
+        urgency=body.urgency,
+        status="DRAFT",
+    )
+    db.add(req)
+    db.flush()
+    return {
+        "id": req.id,
+        "title": req.title,
+        "status": req.status,
+        "message": "Talep oluşturuldu",
+    }
+
+
+@router.get("/my")
+def list_my_requests(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from app.shared.pagination import PaginatedResponse
+
+    requests = request_repo.get_by_customer(db, current_user.id)
+    result = [
+        {
+            "id": r.id,
+            "title": r.title,
+            "status": r.status,
+            "created_at": str(r.created_at),
+        }
+        for r in requests
+    ]
+    return PaginatedResponse.create(items=result, total=len(result), page=1, limit=100)
 
 
 @router.post("/from-ai")

@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_role
 from app.modules.reviews.repository import review_repo
 from app.modules.reviews.service import review_service
 
@@ -75,13 +76,15 @@ def list_provider_reviews(
 
 @router.post("/{review_id}/reply")
 def provider_reply(
-    review_id: int, body: ProviderReplyBody, db: Session = Depends(get_db)
+    review_id: int,
+    body: ProviderReplyBody,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_role("PROVIDER")),
 ):
     """Uzman değerlendirmeye cevap verir"""
     try:
-        provider_user_id = 3  # Mock
         review = review_service.add_provider_reply(
-            db, review_id, body.reply, provider_user_id
+            db, review_id, body.reply, current_user.id
         )
         return {"message": "Cevap eklendi", "reply": review.provider_reply}
     except Exception as e:
