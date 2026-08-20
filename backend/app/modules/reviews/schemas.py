@@ -1,17 +1,17 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class ReviewCreate(BaseModel):
     request_id: int
     provider_id: int
     rating: float
-    communication_rating: Optional[float] = None
-    quality_rating: Optional[float] = None
-    price_rating: Optional[float] = None
-    punctuality_rating: Optional[float] = None
-    comment: Optional[str] = None
+    communication_rating: float | None = None
+    quality_rating: float | None = None
+    price_rating: float | None = None
+    punctuality_rating: float | None = None
+    comment: str | None = None
 
 
 class ReviewResponse(BaseModel):
@@ -20,11 +20,11 @@ class ReviewResponse(BaseModel):
     customer_id: int
     provider_id: int
     rating: float
-    communication_rating: Optional[float]
-    quality_rating: Optional[float]
-    price_rating: Optional[float]
-    punctuality_rating: Optional[float]
-    comment: Optional[str]
+    communication_rating: float | None
+    quality_rating: float | None
+    price_rating: float | None
+    punctuality_rating: float | None
+    comment: str | None
     status: str
     created_at: datetime
 

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.modules.appointments.service import appointment_service
 from app.modules.appointments.repository import appointment_repo
+from app.modules.appointments.service import appointment_service
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 

@@ -1,15 +1,15 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class QuoteCreate(BaseModel):
     price: float
-    estimated_duration: Optional[str] = None
-    description: Optional[str] = None
-    materials: Optional[str] = None
-    available_date: Optional[datetime] = None
-    warranty_info: Optional[str] = None
+    estimated_duration: str | None = None
+    description: str | None = None
+    materials: str | None = None
+    available_date: datetime | None = None
+    warranty_info: str | None = None
 
 
 class QuoteResponse(BaseModel):
@@ -17,11 +17,11 @@ class QuoteResponse(BaseModel):
     request_id: int
     provider_id: int
     price: float
-    estimated_duration: Optional[str]
-    description: Optional[str]
-    materials: Optional[str]
-    available_date: Optional[datetime]
-    warranty_info: Optional[str]
+    estimated_duration: str | None
+    description: str | None
+    materials: str | None
+    available_date: datetime | None
+    warranty_info: str | None
     status: str
     created_at: datetime
 

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
-from typing import Optional
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.modules.reviews.service import review_service
 from app.modules.reviews.repository import review_repo
+from app.modules.reviews.service import review_service
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -13,11 +14,11 @@ class CreateReviewBody(BaseModel):
     request_id: int
     provider_id: int
     rating: float = Field(..., ge=1.0, le=5.0)
-    comment: Optional[str] = None
-    communication_rating: Optional[float] = Field(None, ge=1.0, le=5.0)
-    quality_rating: Optional[float] = Field(None, ge=1.0, le=5.0)
-    price_rating: Optional[float] = Field(None, ge=1.0, le=5.0)
-    punctuality_rating: Optional[float] = Field(None, ge=1.0, le=5.0)
+    comment: str | None = None
+    communication_rating: float | None = Field(None, ge=1.0, le=5.0)
+    quality_rating: float | None = Field(None, ge=1.0, le=5.0)
+    price_rating: float | None = Field(None, ge=1.0, le=5.0)
+    punctuality_rating: float | None = Field(None, ge=1.0, le=5.0)
 
 
 class ProviderReplyBody(BaseModel):

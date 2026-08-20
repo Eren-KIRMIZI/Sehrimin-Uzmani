@@ -1,4 +1,5 @@
-﻿from sqlalchemy import Column, String, Boolean, Text
+﻿from sqlalchemy import Boolean, Column, String, Text
+
 from app.core.base.models import BaseModel
 
 

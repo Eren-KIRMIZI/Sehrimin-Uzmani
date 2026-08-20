@@ -1,14 +1,14 @@
 """Provider Analytics — Son 30 günlük performans istatistikleri."""
 
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func as sql_func
-from datetime import datetime, timezone, timedelta
-from typing import List
-from app.modules.providers.models import ProviderProfile
-from app.modules.reviews.models import Review
+from sqlalchemy.orm import Session
+
+from app.modules.commissions.models import ProviderEarning
 from app.modules.quotes.models import Quote
 from app.modules.requests.models import ServiceRequest
-from app.modules.commissions.models import ProviderEarning
+from app.modules.reviews.models import Review
 
 
 def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
@@ -24,7 +24,6 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
     """
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)
-    seven_days_ago = now - timedelta(days=7)
 
     # Gönderilen teklifler (son 30 gün)
     quotes_sent = db.query(sql_func.count(Quote.id)).filter(
@@ -72,7 +71,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
     ).filter(
         Review.provider_id == provider_id,
         Review.created_at >= thirty_days_ago,
-        Review.is_visible == True,
+        Review.is_visible,
     ).first()
     recent_avg_rating = round(float(recent_rating_data[0] or 0), 1)
     recent_review_count = int(recent_rating_data[1] or 0)
@@ -83,7 +82,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         sql_func.count(Review.id),
     ).filter(
         Review.provider_id == provider_id,
-        Review.is_visible == True,
+        Review.is_visible,
     ).first()
     avg_rating = round(float(all_rating_data[0] or 0), 1)
     total_review_count = int(all_rating_data[1] or 0)
@@ -106,7 +105,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         day = now - timedelta(days=i)
         day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999)
-        
+
         day_quotes = db.query(sql_func.count(Quote.id)).filter(
             Quote.provider_id == provider_id,
             Quote.created_at >= day_start,

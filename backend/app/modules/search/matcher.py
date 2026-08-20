@@ -1,16 +1,20 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import func as sql_func
-from datetime import datetime
 import math
-from math import radians, sin, cos, sqrt, atan2
-from app.modules.providers.models import ProviderProfile, ProviderService, ProviderAvailability
-from app.modules.reviews.models import Review
-from app.modules.users.models import User
-from app.modules.categories.models import Category, SubCategory, Service
-from app.modules.locations.models import ProviderLocation, City, District
+from math import atan2, cos, radians, sin, sqrt
+from typing import Optional
+
+from sqlalchemy import func as sql_func
+from sqlalchemy.orm import Session
+
+from app.modules.categories.models import Service
+from app.modules.locations.models import ProviderLocation
 from app.modules.promotions.models import PromotedProvider
+from app.modules.providers.models import (
+    ProviderProfile,
+    ProviderService,
+)
+from app.modules.reviews.models import Review
 from app.modules.subscriptions.models import ProviderSubscription
-from app.modules.commissions.models import ProviderEarning
+from app.modules.users.models import User
 
 
 class ProviderMatcher:
@@ -33,7 +37,7 @@ class ProviderMatcher:
                 sql_func.count(Review.id),
                 sql_func.count(sql_func.distinct(Review.customer_id)),
             )
-            .filter(Review.provider_id.in_(provider_ids), Review.is_visible == True)
+            .filter(Review.provider_id.in_(provider_ids), Review.is_visible)
             .group_by(Review.provider_id)
             .all()
         )
@@ -93,13 +97,13 @@ class ProviderMatcher:
         self,
         provider: User,
         data: dict,
-        service_id: int = None,
-        category_id: int = None,
-        city_id: int = None,
-        district_id: int = None,
-        lat: float = None,
-        lng: float = None,
-        budget: float = None,
+        service_id: Optional[int] = None,
+        category_id: Optional[int] = None,
+        city_id: Optional[int] = None,
+        district_id: Optional[int] = None,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
+        budget: Optional[float] = None,
     ) -> float:
         profile = data["profiles"].get(provider.id)
         if not profile:
@@ -122,13 +126,20 @@ class ProviderMatcher:
         v_score = v_mapping.get((profile.verification_status or "NONE").upper(), 0)
         # Response score (10%)
         resp_minutes = profile.response_time_minutes or 0
-        if resp_minutes == 0: resp_score = 5
-        elif resp_minutes <= 15: resp_score = 10
-        elif resp_minutes <= 30: resp_score = 8
-        elif resp_minutes <= 60: resp_score = 6
-        elif resp_minutes <= 120: resp_score = 4
-        elif resp_minutes <= 240: resp_score = 2
-        else: resp_score = 0
+        if resp_minutes == 0:
+            resp_score = 5
+        elif resp_minutes <= 15:
+            resp_score = 10
+        elif resp_minutes <= 30:
+            resp_score = 8
+        elif resp_minutes <= 60:
+            resp_score = 6
+        elif resp_minutes <= 120:
+            resp_score = 4
+        elif resp_minutes <= 240:
+            resp_score = 2
+        else:
+            resp_score = 0
         # Repeat customer score (10%)
         if unique_customers == 0:
             rep_score = 5.0
@@ -141,7 +152,7 @@ class ProviderMatcher:
 
         if not profile.is_available:
             score -= 50  # Heavy penalty for being unavailable
-        
+
         if profile.experience_years:
             if profile.experience_years >= 10:
                 score += 5
@@ -214,14 +225,14 @@ class ProviderMatcher:
 
     def find_best_matches(
         self,
-        service_id: int = None,
-        category_id: int = None,
-        subcategory_id: int = None,
-        city_id: int = None,
-        district_id: int = None,
-        lat: float = None,
-        lng: float = None,
-        budget: float = None,
+        service_id: Optional[int] = None,
+        category_id: Optional[int] = None,
+        subcategory_id: Optional[int] = None,
+        city_id: Optional[int] = None,
+        district_id: Optional[int] = None,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
+        budget: Optional[float] = None,
         limit: int = 10,
         offset: int = 0,
     ) -> list:
@@ -230,7 +241,7 @@ class ProviderMatcher:
 
         q = self.db.query(User).filter(
             User.role == "provider",
-            User.is_active == True,
+            User.is_active,
         )
 
         if service_id:
@@ -288,7 +299,7 @@ class ProviderMatcher:
         results = []
         for provider, score in paginated:
             profile = data["profiles"].get(provider.id)
-            avg_rating, review_count, unique_customers = data["rating_data"].get(provider.id, (0, 0, 0))
+            avg_rating, review_count, _unique_customers = data["rating_data"].get(provider.id, (0, 0, 0))
             location = data["locations"].get(provider.id)
             promoted_obj = data["promoted"].get(provider.id)
 
@@ -331,7 +342,7 @@ class ProviderMatcher:
 def get_ai_matching_suggestions(
     user_text: str,
     db: Session,
-    city_id: int = None,
+    city_id: Optional[int] = None,
     limit: int = 5,
 ) -> dict:
     from app.modules.search.ai_detector import detect_category

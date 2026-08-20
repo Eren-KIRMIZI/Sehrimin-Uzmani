@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Text, ForeignKey, Boolean
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from app.core.base.models import BaseModel
+
 
 class Quote(BaseModel):
     __tablename__ = "quotes"
@@ -17,7 +19,7 @@ class Quote(BaseModel):
 
     request = relationship("ServiceRequest", back_populates="quotes")
     provider = relationship("ProviderProfile", back_populates="quotes")
-    
+
     items = relationship("QuoteItem", back_populates="quote", cascade="all, delete-orphan")
     revisions = relationship("QuoteRevision", back_populates="quote", cascade="all, delete-orphan")
     status_history = relationship("QuoteStatusHistory", back_populates="quote", cascade="all, delete-orphan")

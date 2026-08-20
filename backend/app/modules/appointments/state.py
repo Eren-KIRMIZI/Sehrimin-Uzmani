@@ -1,4 +1,5 @@
 from enum import Enum
+
 from app.core.base.state_machine import BaseStateMachine
 
 

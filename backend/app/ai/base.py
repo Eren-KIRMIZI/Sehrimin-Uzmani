@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 
 
 class AIProvider(ABC):
@@ -13,7 +12,7 @@ class AIProvider(ABC):
     async def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.3,
         max_tokens: int = 1024,
     ) -> str:
@@ -24,7 +23,7 @@ class AIProvider(ABC):
     async def generate_json(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.1,
     ) -> dict:
         """LLM'den JSON yapısında yanıt üretir."""

@@ -11,13 +11,16 @@ Dinlenen event'ler:
   REVIEW_CREATED        → Uzmana "Yeni değerlendirme" bildirimi
 """
 
+import asyncio
 import logging
+from typing import Optional
+
 from sqlalchemy.orm import Session
+
+from app.core.database import SessionLocal
+from app.core.events.bus import event_bus
 from app.modules.notifications.models import Notification
 from app.websocket.manager import manager
-from app.core.events.bus import event_bus
-from app.core.database import SessionLocal
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +43,8 @@ def create_notification(
     type_str: str,
     title: str,
     message: str,
-    data: dict = None,
-    action_url: str = None,
+    data: Optional[dict] = None,
+    action_url: Optional[str] = None,
 ) -> Notification:
     notif = Notification(
         user_id=user_id,
@@ -116,8 +119,8 @@ def _on_quote_accepted(payload: dict):
     """Uzmana: 'Teklifin kabul edildi' bildirimi."""
     db = SessionLocal()
     try:
-        from app.modules.quotes.repository import quote_repo
         from app.modules.providers.models import ProviderProfile
+        from app.modules.quotes.repository import quote_repo
         quote = quote_repo.get(db, payload.get("quote_id"))
         if quote:
             provider = db.query(ProviderProfile).filter_by(id=quote.provider_id).first()
@@ -128,7 +131,7 @@ def _on_quote_accepted(payload: dict):
                     type_str="QUOTE_ACCEPTED",
                     title="Teklifiniz Kabul Edildi! ✅",
                     message="Müşteri teklifinizi kabul etti. Randevu detaylarını kontrol edin.",
-                    action_url=f"/appointments",
+                    action_url="/appointments",
                 )
     except Exception as e:
         logger.error(f"QUOTE_ACCEPTED bildirimi hatası: {e}")

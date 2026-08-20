@@ -1,24 +1,26 @@
 from fastapi import APIRouter
-from app.modules.auth.router import router as auth_router
-from app.modules.users.router import router as users_router
-from app.modules.providers.router import router as providers_router
-from app.modules.providers.verification_router import router as verification_router
-from app.modules.categories.router import router as categories_router
-from app.modules.locations.router import router as locations_router
-from app.modules.search.router import router as search_router
-from app.modules.search.matching_router import router as matching_router
-from app.modules.requests.router import router as requests_router
-from app.modules.quotes.router import router as quotes_router
-from app.modules.appointments.router import router as appointments_router
-from app.modules.reviews.router import router as reviews_router
-from app.modules.favorites.router import router as favorites_router
-from app.modules.notifications.router import router as notifications_router
+
+from app.ai.router import router as ai_router
 from app.modules.admin.router import router as admin_router
+from app.modules.appointments.router import router as appointments_router
+from app.modules.auth.router import router as auth_router
+from app.modules.categories.router import router as categories_router
 from app.modules.commissions.router import router as commissions_router
 from app.modules.disputes.router import router as disputes_router
-from app.modules.subscriptions.router import router as subscriptions_router
+from app.modules.favorites.router import router as favorites_router
+from app.modules.locations.router import router as locations_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.pricing.router import router as pricing_router
 from app.modules.promotions.router import router as promotions_router
-from app.ai.router import router as ai_router
+from app.modules.providers.router import router as providers_router
+from app.modules.providers.verification_router import router as verification_router
+from app.modules.quotes.router import router as quotes_router
+from app.modules.requests.router import router as requests_router
+from app.modules.reviews.router import router as reviews_router
+from app.modules.search.matching_router import router as matching_router
+from app.modules.search.router import router as search_router
+from app.modules.subscriptions.router import router as subscriptions_router
+from app.modules.users.router import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -41,4 +43,5 @@ api_router.include_router(commissions_router)
 api_router.include_router(disputes_router)
 api_router.include_router(subscriptions_router)
 api_router.include_router(promotions_router)
+api_router.include_router(pricing_router)
 api_router.include_router(ai_router)

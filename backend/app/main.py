@@ -5,15 +5,15 @@ from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.core.config import settings
-from app.core.database import engine, Base, check_db_health
-from app.core.logging import setup_logging
-from app.core.redis import verify_redis_connection, check_redis_health
 from app.api.router import api_router
-from app.modules.messaging.router import router as messaging_router
+from app.core.config import settings
+from app.core.database import Base, check_db_health, engine
+from app.core.logging import setup_logging
+from app.core.redis import check_redis_health, verify_redis_connection
 from app.middleware.logging_middleware import RequestLoggingMiddleware
-from app.websocket.manager import websocket_endpoint
+from app.modules.messaging.router import router as messaging_router
 from app.shared.models import SystemSetting  # noqa: F401 — metadata discovery
+from app.websocket.manager import websocket_endpoint
 
 # Logging'i mümkün olan en erken an kur
 setup_logging()
@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
 
         # Süresi dolmuş abonelikleri kapat
         from datetime import datetime, timezone
+
         from app.modules.subscriptions.models import ProviderSubscription
         from app.modules.users.models import User
 

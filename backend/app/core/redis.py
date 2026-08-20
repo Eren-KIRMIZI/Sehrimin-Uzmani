@@ -9,7 +9,9 @@ Redis bağlantı yönetimi — production sertleştirmesi.
 - Başlangıçta bağlantı testi ile erken hata tespiti
 """
 import logging
+
 import redis
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

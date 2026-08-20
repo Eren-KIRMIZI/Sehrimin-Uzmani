@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, Text, ForeignKey, Index
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from app.core.base.models import BaseModel
+
 
 class ServiceRequest(BaseModel):
     __tablename__ = "service_requests"
@@ -28,7 +30,7 @@ class ServiceRequest(BaseModel):
     service = relationship("Service")
     city = relationship("City")
     district = relationship("District")
-    
+
     request_files = relationship("RequestFile", back_populates="request", cascade="all, delete-orphan")
     attributes = relationship("RequestAttribute", back_populates="request", cascade="all, delete-orphan")
     status_history = relationship("RequestStatusHistory", back_populates="request", cascade="all, delete-orphan")

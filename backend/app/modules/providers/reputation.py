@@ -8,13 +8,14 @@ Hesaplama ağırlıkları:
 - Yanıt hızı         (10%) → response_time_minutes'a göre (max 10)
 """
 
-from sqlalchemy.orm import Session
+import math
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func as sql_func
-from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import Session
+
 from app.modules.providers.models import ProviderProfile
 from app.modules.reviews.models import Review
-from app.modules.quotes.models import Quote
-import math
 
 
 def _rating_score(avg_rating: float) -> float:
@@ -67,12 +68,12 @@ def _repeat_customer_score(provider_id: int, db: Session) -> float:
     """
     total_reviews = db.query(sql_func.count(Review.id)).filter(
         Review.provider_id == provider_id,
-        Review.is_visible == True,
+        Review.is_visible,
     ).scalar() or 0
 
     unique_customers = db.query(sql_func.count(sql_func.distinct(Review.customer_id))).filter(
         Review.provider_id == provider_id,
-        Review.is_visible == True,
+        Review.is_visible,
     ).scalar() or 0
 
     if unique_customers == 0:
@@ -101,7 +102,7 @@ def calculate_reputation_score(provider: ProviderProfile, db: Session) -> dict:
         sql_func.count(Review.id),
     ).filter(
         Review.provider_id == provider.id,
-        Review.is_visible == True,
+        Review.is_visible,
     ).first()
 
     avg_rating = float(rating_data[0] or 0)
@@ -122,7 +123,7 @@ def calculate_reputation_score(provider: ProviderProfile, db: Session) -> dict:
     recent_reviews = db.query(Review).filter(
         Review.provider_id == provider.id,
         Review.created_at >= thirty_days_ago,
-        Review.is_visible == True,
+        Review.is_visible,
     ).all()
 
     recent_avg = None

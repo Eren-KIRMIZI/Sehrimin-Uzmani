@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from typing import Optional
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.modules.users.models import User
@@ -9,12 +12,12 @@ router = APIRouter(prefix="/matching", tags=["AI Eslestirme"])
 
 @router.post("/find")
 def find_matching_providers(
-    service_id: int = None,
-    category_id: int = None,
-    subcategory_id: int = None,
-    city_id: int = None,
-    district_id: int = None,
-    budget: float = None,
+    service_id: Optional[int] = None,
+    category_id: Optional[int] = None,
+    subcategory_id: Optional[int] = None,
+    city_id: Optional[int] = None,
+    district_id: Optional[int] = None,
+    budget: Optional[float] = None,
     limit: int = 10,
     skip: int = 0,
     db: Session = Depends(get_db),
@@ -41,7 +44,7 @@ def find_matching_providers(
 @router.post("/ai")
 def ai_matching(
     query: str,
-    city_id: int = None,
+    city_id: Optional[int] = None,
     limit: int = 5,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

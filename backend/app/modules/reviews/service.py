@@ -1,13 +1,15 @@
 import logging
-from sqlalchemy.orm import Session
+from typing import Optional
+
 from fastapi import BackgroundTasks
+from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.events.bus import event_bus
+from app.modules.appointments.repository import appointment_repo
+from app.modules.providers.models import ProviderPerformance
 from app.modules.reviews.models import Review
 from app.modules.reviews.repository import review_repo
-from app.modules.providers.models import ProviderPerformance
-from app.modules.appointments.repository import appointment_repo
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +22,12 @@ class ReviewService:
         customer_id: int,
         provider_id: int,
         rating: float,
-        comment: str = None,
-        communication_rating: float = None,
-        quality_rating: float = None,
-        price_rating: float = None,
-        punctuality_rating: float = None,
-        background_tasks: BackgroundTasks = None,
+        comment: Optional[str] = None,
+        communication_rating: Optional[float] = None,
+        quality_rating: Optional[float] = None,
+        price_rating: Optional[float] = None,
+        punctuality_rating: Optional[float] = None,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> Review:
         # Tekrar değerlendirme engeli
         if review_repo.exists(db, request_id, customer_id):

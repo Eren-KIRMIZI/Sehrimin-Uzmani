@@ -1,7 +1,12 @@
 from sqlalchemy.orm import Session
+
 from app.core.base.repository import BaseRepository
-from app.modules.requests.models import ServiceRequest, RequestMatch
-from app.modules.requests.schemas import ServiceRequestCreate, ServiceRequestUpdate # Bunları varsayıyoruz
+from app.modules.requests.models import RequestMatch, ServiceRequest
+from app.modules.requests.schemas import (  # Bunları varsayıyoruz
+    ServiceRequestCreate,
+    ServiceRequestUpdate,
+)
+
 
 class ServiceRequestRepository(BaseRepository[ServiceRequest, ServiceRequestCreate, ServiceRequestUpdate]):
     def get_by_customer(self, db: Session, customer_id: int, skip: int = 0, limit: int = 100):

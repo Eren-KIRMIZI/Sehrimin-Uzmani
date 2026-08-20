@@ -1,5 +1,6 @@
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel
-from typing import TypeVar, Generic, List, Optional
 
 T = TypeVar("T")
 
@@ -12,13 +13,13 @@ class PaginationParams:
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]
+    items: list[T]
     total: int
     page: int
     limit: int
     pages: int
 
     @classmethod
-    def create(cls, items: List[T], total: int, page: int, limit: int):
+    def create(cls, items: list[T], total: int, page: int, limit: int):
         pages = (total + limit - 1) // limit if limit > 0 else 0
         return cls(items=items, total=total, page=page, limit=limit, pages=pages)

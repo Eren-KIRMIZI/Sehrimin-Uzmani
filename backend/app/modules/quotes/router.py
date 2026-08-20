@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Any
+
 from app.core.database import get_db
 from app.modules.quotes.service import quote_service
 
@@ -35,7 +38,7 @@ def submit_quote(quote_id: int, background_tasks: BackgroundTasks, db: Session =
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/{quote_id}/revise")
-def revise_quote(quote_id: int, new_price: float, notes: str = None, requested_by: str = "CUSTOMER", db: Session = Depends(get_db)):
+def revise_quote(quote_id: int, new_price: float, notes: Optional[str] = None, requested_by: str = "CUSTOMER", db: Session = Depends(get_db)):
     """Teklif fiyatında indirim/revizyon (Pazarlık) talep eder"""
     try:
         # Mock user_id = 2 (Müşteri)

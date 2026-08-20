@@ -1,46 +1,46 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class ServiceRequestCreate(BaseModel):
-    category_id: Optional[int] = None
-    subcategory_id: Optional[int] = None
-    service_id: Optional[int] = None
+    category_id: int | None = None
+    subcategory_id: int | None = None
+    service_id: int | None = None
     title: str
-    description: Optional[str] = None
-    budget_min: Optional[float] = None
-    budget_max: Optional[float] = None
+    description: str | None = None
+    budget_min: float | None = None
+    budget_max: float | None = None
     city_id: int
-    district_id: Optional[int] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    preferred_date: Optional[datetime] = None
-    preferred_time: Optional[str] = None
+    district_id: int | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    preferred_date: datetime | None = None
+    preferred_time: str | None = None
     urgency: str = "NORMAL"
 
 
 class ServiceRequestUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    budget_min: Optional[float] = None
-    budget_max: Optional[float] = None
-    preferred_date: Optional[datetime] = None
-    preferred_time: Optional[str] = None
-    urgency: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    budget_min: float | None = None
+    budget_max: float | None = None
+    preferred_date: datetime | None = None
+    preferred_time: str | None = None
+    urgency: str | None = None
 
 
 class ServiceRequestResponse(BaseModel):
     id: int
     customer_id: int
     title: str
-    description: Optional[str]
-    budget_min: Optional[float]
-    budget_max: Optional[float]
+    description: str | None
+    budget_min: float | None
+    budget_max: float | None
     city_id: int
-    district_id: Optional[int]
-    preferred_date: Optional[datetime]
-    preferred_time: Optional[str]
+    district_id: int | None
+    preferred_date: datetime | None
+    preferred_time: str | None
     urgency: str
     status: str
     created_at: datetime

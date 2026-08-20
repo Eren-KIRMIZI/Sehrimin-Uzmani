@@ -1,8 +1,9 @@
 import json
-import re
 import logging
+import re
+
 import httpx
-from typing import Optional
+
 from app.ai.base import AIProvider
 from app.core.config import settings
 
@@ -26,7 +27,7 @@ class OpenRouterProvider(AIProvider):
     async def generate(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.3,
         max_tokens: int = 1024,
     ) -> str:
@@ -55,12 +56,12 @@ class OpenRouterProvider(AIProvider):
     async def generate_json(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.1,
     ) -> dict:
         """JSON yanıt üretir ve parse eder. Hata durumunda boş dict döner."""
         full_system = (system_prompt or "") + "\n\nYanıtını SADECE geçerli JSON olarak ver. Hiçbir açıklama, kod bloğu (```json) veya ek metin ekleme. Sadece ham JSON."
-        
+
         raw = await self.generate(
             prompt=prompt,
             system_prompt=full_system,

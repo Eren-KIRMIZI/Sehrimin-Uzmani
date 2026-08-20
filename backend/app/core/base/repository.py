@@ -1,6 +1,8 @@
-from typing import Generic, TypeVar, Type, Optional, List, Any
-from sqlalchemy.orm import Session
+from typing import Any, Generic, TypeVar
+
 from pydantic import BaseModel as PydanticBaseModel
+from sqlalchemy.orm import Session
+
 from app.core.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -8,13 +10,13 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=PydanticBaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=PydanticBaseModel)
 
 class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
-    def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: type[ModelType]):
         self.model = model
 
-    def get(self, db: Session, id: Any) -> Optional[ModelType]:
+    def get(self, db: Session, id: Any) -> ModelType | None:
         return db.query(self.model).filter(self.model.id == id).first()
 
-    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> list[ModelType]:
         return db.query(self.model).offset(skip).limit(limit).all()
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
@@ -30,11 +32,11 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             update_data = obj_in
         else:
             update_data = obj_in.model_dump(exclude_unset=True)
-        
+
         for field in obj_data:
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
-        
+
         db.add(db_obj)
         db.flush()
         return db_obj

@@ -1,22 +1,22 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class UserUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone: Optional[str] = None
-    avatar: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone: str | None = None
+    avatar: str | None = None
 
 
 class UserResponse(BaseModel):
     id: int
     email: str
-    phone: Optional[str]
+    phone: str | None
     first_name: str
     last_name: str
-    avatar: Optional[str]
+    avatar: str | None
     role: str
     email_verified: bool
     phone_verified: bool

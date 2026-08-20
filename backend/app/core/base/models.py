@@ -1,7 +1,8 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, DateTime, Integer
 from sqlalchemy.sql import func
+
 from app.core.database import Base
+
 
 class TimestampMixin:
     """Modeller için otomatik oluşturulma ve güncellenme zamanlarını tutar."""

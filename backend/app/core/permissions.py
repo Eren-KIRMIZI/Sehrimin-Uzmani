@@ -1,6 +1,8 @@
 from fastapi import HTTPException, status
-from app.shared.enums import UserRole
+
 from app.modules.users.models import User
+from app.shared.enums import UserRole
+
 
 def check_admin(user: User):
     if user.role != UserRole.ADMIN.value:

@@ -1,10 +1,10 @@
+
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    phone: Optional[str] = None
+    phone: str | None = None
     password: str
     first_name: str
     last_name: str

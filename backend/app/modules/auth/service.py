@@ -1,10 +1,21 @@
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
 from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from app.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+)
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
+from app.modules.auth.schemas import LoginRequest, RegisterRequest
 from app.modules.users.models import User
-from app.modules.auth.schemas import RegisterRequest, LoginRequest
-from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
-from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 
 
 class AuthService:
@@ -45,8 +56,9 @@ class AuthService:
             raise BadRequestException("Hesabiniz pasif durumda")
 
         if user.two_factor_enabled:
-            from app.core.security import create_access_token
             from datetime import timedelta
+
+            from app.core.security import create_access_token
             temp_token = create_access_token(
                 {"sub": str(user.id), "type": "2fa_pending"},
                 expires_delta=timedelta(minutes=5),
@@ -62,8 +74,9 @@ class AuthService:
 
     def verify_2fa_login(self, temp_token: str, code: str) -> dict:
         import pyotp
-        from app.core.security import decode_token
+
         from app.core.encryption import decrypt
+        from app.core.security import decode_token
 
         payload = decode_token(temp_token)
         if payload.get("type") != "2fa_pending":
@@ -104,7 +117,6 @@ class AuthService:
             raise BadRequestException("Hesabiniz pasif durumda, token yenilenemez")
 
         from app.modules.auth.models import RevokedToken
-        now = datetime.now(timezone.utc)
         expires_at = datetime.fromtimestamp(payload.get("exp", 0), tz=timezone.utc)
 
         revoked = RevokedToken(

@@ -1,8 +1,8 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-python-multipart==0.0.9
+python-multipart>=0.0.18
 python-jose[cryptography]==3.3.0
-cryptography>=41.0.0
+cryptography>=44.0.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 pydantic[email]==2.9.2
@@ -29,4 +29,4 @@ python-json-logger==2.0.7
 pip-audit==2.7.3
 
 # Linting (CI)
-ruff==0.6.9
+ruff==0.16.3

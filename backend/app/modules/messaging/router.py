@@ -1,12 +1,17 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
+from app.core.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+)
 from app.core.security import get_current_user
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
 from app.modules.messaging.models import Conversation, Message
 from app.modules.messaging.schemas import ConversationCreate, MessageSend
-from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
+from app.modules.providers.models import ProviderProfile
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/messaging", tags=["Messaging"])
 
@@ -90,8 +95,8 @@ def list_conversations(
         unread = db.query(Message).filter(
             Message.conversation_id == conv.id,
             Message.sender_id != current_user.id,
-            Message.is_read == False,
-        ).count()
+        not Message.is_read,
+    ).count()
 
         result.append({
             "id": conv.id,
@@ -148,7 +153,7 @@ def list_messages(
     db.query(Message).filter(
         Message.conversation_id == conversation_id,
         Message.sender_id != current_user.id,
-        Message.is_read == False,
+        not Message.is_read,
     ).update({"is_read": True})
     db.commit()
 
@@ -235,7 +240,7 @@ def unread_count(
         count = db.query(Message).filter(
             Message.conversation_id.in_(conv_ids),
             Message.sender_id != current_user.id,
-            Message.is_read == False,
+            not Message.is_read,
         ).count()
 
     return {"count": count}

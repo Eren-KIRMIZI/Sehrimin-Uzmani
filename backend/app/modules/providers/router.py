@@ -1,22 +1,23 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func as sql_func
+
 from app.core.database import get_db
-from app.core.security import get_current_user, require_role
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
-from app.modules.providers.availability_model import ProviderAvailability
-from app.modules.providers.portfolio_model import PortfolioItem
-from app.modules.locations.models import ProviderLocation
+from app.core.exceptions import BadRequestException, NotFoundException
+from app.core.security import require_role
 from app.modules.categories.models import ProviderService
+from app.modules.locations.models import ProviderLocation
+from app.modules.providers.availability_model import ProviderAvailability
+from app.modules.providers.models import ProviderProfile
+from app.modules.providers.portfolio_model import PortfolioItem
 from app.modules.providers.schemas import (
-    ProviderProfileCreate, ProviderProfileUpdate,
-    ProviderServiceCreate, PortfolioItemCreate,
-    ProviderLocationCreate, AvailabilityCreate
+    AvailabilityCreate,
+    PortfolioItemCreate,
+    ProviderLocationCreate,
+    ProviderProfileCreate,
+    ProviderProfileUpdate,
+    ProviderServiceCreate,
 )
-from app.core.exceptions import NotFoundException, ForbiddenException, BadRequestException
-from app.shared.pagination import PaginationParams, PaginatedResponse
-from app.shared.utils import haversine
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/providers", tags=["Providers"])
 
@@ -278,4 +279,98 @@ def get_my_badges(
     if not profile:
         raise NotFoundException("Uzman profili")
     return {"badges": calculate_badges(profile, db)}
+
+
+# ===== CRM (Müşteri İlişkileri Yönetimi) =====
+
+@router.get("/me/crm/dashboard")
+def get_crm_dashboard(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Uzman CRM dashboard — genel bakış."""
+    from app.modules.providers.crm import get_crm_dashboard
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_dashboard(profile.id, db)
+
+
+@router.get("/me/crm/customers")
+def get_crm_customers(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Uzmanın müşteri listesi (tekrar iş verenler öncelikli)."""
+    from app.modules.providers.crm import get_crm_customers
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_customers(profile.id, db)
+
+
+@router.get("/me/crm/revenue")
+def get_crm_revenue(
+    days: int = 30,
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Gelir/gider detayı."""
+    from app.modules.providers.crm import get_crm_revenue
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_revenue(profile.id, db, days)
+
+
+@router.get("/me/crm/calendar")
+def get_crm_calendar(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Yaklaşan randevular (takvim görünümü)."""
+    from app.modules.providers.crm import get_crm_calendar
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_calendar(profile.id, db)
+
+
+@router.get("/me/crm/conversion")
+def get_crm_conversion(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Dönüşüm oranı analitiği."""
+    from app.modules.providers.crm import get_crm_conversion
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_conversion(profile.id, db)
+
+
+@router.get("/me/crm/top-services")
+def get_crm_top_services(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """En çok kazandıran hizmetler."""
+    from app.modules.providers.crm import get_crm_top_services
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return {"services": get_crm_top_services(profile.id, db)}
+
+
+@router.get("/me/crm/regional")
+def get_crm_regional(
+    current_user: User = Depends(require_role("PROVIDER")),
+    db: Session = Depends(get_db),
+):
+    """Bölgesel performans karşılaştırması."""
+    from app.modules.providers.crm import get_crm_regional
+    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    if not profile:
+        raise NotFoundException("Uzman profili")
+    return get_crm_regional(profile.id, db)
 

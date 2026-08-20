@@ -1,30 +1,30 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class ProviderProfileCreate(BaseModel):
-    business_name: Optional[str] = None
-    bio: Optional[str] = None
+    business_name: str | None = None
+    bio: str | None = None
     experience_years: int = 0
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class ProviderProfileUpdate(BaseModel):
-    business_name: Optional[str] = None
-    bio: Optional[str] = None
-    experience_years: Optional[int] = None
-    is_available: Optional[bool] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    business_name: str | None = None
+    bio: str | None = None
+    experience_years: int | None = None
+    is_available: bool | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 class ProviderProfileResponse(BaseModel):
     id: int
     user_id: int
-    business_name: Optional[str]
-    bio: Optional[str]
+    business_name: str | None
+    bio: str | None
     experience_years: int
     rating: float
     review_count: int
@@ -32,8 +32,8 @@ class ProviderProfileResponse(BaseModel):
     response_time_minutes: int
     verification_status: str
     is_available: bool
-    latitude: Optional[float]
-    longitude: Optional[float]
+    latitude: float | None
+    longitude: float | None
     created_at: datetime
 
     class Config:
@@ -42,25 +42,25 @@ class ProviderProfileResponse(BaseModel):
 
 class ProviderServiceCreate(BaseModel):
     service_id: int
-    description: Optional[str] = None
-    starting_price: Optional[float] = None
+    description: str | None = None
+    starting_price: float | None = None
     pricing_type: str = "FIXED"
-    duration_minutes: Optional[int] = None
+    duration_minutes: int | None = None
 
 
 class PortfolioItemCreate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
     image_url: str
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class ProviderLocationCreate(BaseModel):
     city_id: int
-    district_id: Optional[int] = None
-    address: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    district_id: int | None = None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     is_primary: bool = False
 
 

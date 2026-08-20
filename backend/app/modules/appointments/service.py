@@ -1,13 +1,14 @@
 import logging
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+
 from fastapi import BackgroundTasks
+from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.events.bus import event_bus
 from app.modules.appointments.models import Appointment
 from app.modules.appointments.repository import appointment_repo
-from app.modules.appointments.state import AppointmentStateMachine, AppointmentState
+from app.modules.appointments.state import AppointmentState, AppointmentStateMachine
 from app.modules.quotes.repository import quote_repo
 
 logger = logging.getLogger(__name__)

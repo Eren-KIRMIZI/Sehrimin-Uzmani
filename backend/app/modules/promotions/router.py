@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
+from app.core.rate_limiter import get_client_ip, rate_limiter
 from app.core.security import get_current_active_user, require_role
-from app.core.rate_limiter import rate_limiter, get_client_ip
-from app.modules.users.models import User
 from app.modules.promotions.models import PromotedProvider, PromotionLog
-from app.modules.categories.models import Category
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/promotions", tags=["Promoted Provider"])
 
@@ -15,11 +17,11 @@ router = APIRouter(prefix="/promotions", tags=["Promoted Provider"])
 def create_promotion(
     category_id: int,
     budget: float,
-    daily_budget: float = None,
+    daily_budget: Optional[float] = None,
     bid_amount: float = 1.0,
     duration_days: int = 7,
     is_featured: bool = False,
-    badge_text: str = None,
+    badge_text: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -88,15 +90,15 @@ def my_promotions(
 
 @router.get("/featured")
 def get_featured_providers(
-    category_id: int = None,
-    city_id: int = None,
+    category_id: Optional[int] = None,
+    city_id: Optional[int] = None,
     limit: int = 10,
     db: Session = Depends(get_db),
 ):
     now = datetime.utcnow()
     q = db.query(PromotedProvider).filter(
         PromotedProvider.status == "active",
-        PromotedProvider.is_featured == True,
+        PromotedProvider.is_featured,
         PromotedProvider.end_date > now,
     )
     if category_id:
@@ -120,7 +122,7 @@ def get_featured_providers(
 
 @router.get("/leaderboard")
 def promotion_leaderboard(
-    category_id: int = None,
+    category_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):

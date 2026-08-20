@@ -1,5 +1,7 @@
 from enum import Enum
+
 from app.core.base.state_machine import BaseStateMachine
+
 
 class RequestState(str, Enum):
     DRAFT = "DRAFT"
@@ -15,7 +17,7 @@ class RequestState(str, Enum):
 class RequestStateMachine(BaseStateMachine):
     def __init__(self, current_state: RequestState):
         super().__init__(current_state)
-        
+
         self.transitions = {
             RequestState.DRAFT: [RequestState.PUBLISHED, RequestState.CANCELLED],
             RequestState.PUBLISHED: [RequestState.MATCHING, RequestState.CANCELLED],

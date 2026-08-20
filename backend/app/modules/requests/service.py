@@ -1,10 +1,12 @@
-from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
+from sqlalchemy.orm import Session
+
 from app.core.base.service import BaseService
-from app.modules.requests.models import ServiceRequest, RequestAttribute
-from app.modules.requests.repository import request_repo, ServiceRequestRepository
-from app.modules.requests.state import RequestStateMachine, RequestState
 from app.core.events.bus import event_bus
+from app.modules.requests.models import RequestAttribute, ServiceRequest
+from app.modules.requests.repository import ServiceRequestRepository, request_repo
+from app.modules.requests.state import RequestState, RequestStateMachine
+
 
 class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None, None]):
     def __init__(self):
@@ -14,9 +16,9 @@ class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None,
         req = self.get(db=db, id=request_id)
         if not req:
             raise ValueError("Talep bulunamadı")
-        
+
         sm = RequestStateMachine(RequestState(req.status))
-        
+
         def on_transition(old_state, new_state):
             req.status = new_state.value
             db.commit()
@@ -30,7 +32,7 @@ class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None,
         """AI'dan dönen JSON (is_complete: true) verisini veritabanına işler"""
         # Şehir/Kategori ID eşleştirmeleri normalde burada yapılır (isimden ID bulma vb.)
         # Şimdilik örnek (Mock) ID'ler atıyoruz.
-        
+
         req = ServiceRequest(
             customer_id=customer_id,
             city_id=1, # Mock
@@ -39,14 +41,14 @@ class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None,
             urgency=ai_payload.get("urgency", "NORMAL"),
             status="DRAFT"
         )
-        
+
         if ai_payload.get("budget"):
             req.budget_min = ai_payload["budget"].get("min")
             req.budget_max = ai_payload["budget"].get("max")
-            
+
         db.add(req)
         db.flush() # ID almak için
-        
+
         # Dinamik attribute'ları ekle
         attributes = ai_payload.get("attributes", [])
         for attr in attributes:
@@ -57,7 +59,7 @@ class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None,
                 confidence=attr.get("confidence")
             )
             db.add(req_attr)
-            
+
         db.commit()
         db.refresh(req)
         return req

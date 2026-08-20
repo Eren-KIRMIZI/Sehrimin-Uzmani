@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
+from app.modules.commissions.models import ProviderEarning, Transaction
+from app.modules.disputes.models import Dispute, DisputeEvidence, DisputeMessage
 from app.modules.users.models import User
-from app.modules.disputes.models import Dispute, DisputeMessage, DisputeEvidence
-from app.modules.commissions.models import Transaction, ProviderEarning, PayoutRequest
 
 router = APIRouter(prefix="/disputes", tags=["Anlasmazlik Cozum Sistemi"])
 
@@ -15,9 +18,9 @@ def create_dispute(
     reported_id: int,
     reason: str,
     description: str,
-    appointment_id: int = None,
-    request_id: int = None,
-    amount_involved: float = None,
+    appointment_id: Optional[int] = None,
+    request_id: Optional[int] = None,
+    amount_involved: Optional[float] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -41,7 +44,7 @@ def create_dispute(
 
 @router.get("")
 def list_my_disputes(
-    status: str = None,
+    status: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
@@ -75,8 +78,8 @@ def list_my_disputes(
 
 @router.get("/admin/all")
 def admin_list_disputes(
-    status: str = None,
-    priority: str = None,
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
     skip: int = 0,
     limit: int = 20,
     db: Session = Depends(get_db),
@@ -170,7 +173,7 @@ def get_dispute(
 def add_dispute_message(
     dispute_id: int,
     message: str,
-    attachment_url: str = None,
+    attachment_url: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -200,7 +203,7 @@ def add_dispute_message(
 def add_evidence(
     dispute_id: int,
     file_url: str,
-    description: str = None,
+    description: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -229,7 +232,7 @@ def add_evidence(
 def resolve_dispute(
     dispute_id: int,
     resolution: str,
-    refund_amount: float = None,
+    refund_amount: Optional[float] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN", "MODERATOR"])),
 ):
@@ -327,7 +330,6 @@ def dispute_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    from sqlalchemy import func as sql_func
     total = db.query(Dispute).count()
     open_count = db.query(Dispute).filter(Dispute.status == "open").count()
     under_review = db.query(Dispute).filter(Dispute.status == "under_review").count()

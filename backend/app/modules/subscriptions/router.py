@@ -1,10 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
+from app.modules.subscriptions.models import (
+    PlanFeature,
+    ProviderSubscription,
+    SubscriptionPayment,
+    SubscriptionPlan,
+)
 from app.modules.users.models import User
-from app.modules.subscriptions.models import SubscriptionPlan, PlanFeature, ProviderSubscription, SubscriptionPayment
 
 router = APIRouter(prefix="/subscriptions", tags=["Abonelik Modelleri"])
 
@@ -14,7 +22,7 @@ def list_plans(
     db: Session = Depends(get_db),
 ):
     plans = db.query(SubscriptionPlan).filter(
-        SubscriptionPlan.is_active == True
+        SubscriptionPlan.is_active
     ).order_by(SubscriptionPlan.sort_order.asc()).all()
     return [
         {
@@ -47,15 +55,15 @@ def create_plan(
     name: str,
     slug: str,
     price_monthly: float,
-    description: str = None,
-    price_quarterly: float = None,
-    price_yearly: float = None,
+    description: Optional[str] = None,
+    price_quarterly: Optional[float] = None,
+    price_yearly: Optional[float] = None,
     commission_discount: float = 0.0,
     featured_listings: int = 0,
     priority_support: bool = False,
     advanced_analytics: bool = False,
     highlighted_profile: bool = False,
-    badge_type: str = None,
+    badge_type: Optional[str] = None,
     max_portfolio_images: int = 10,
     max_services: int = 5,
     db: Session = Depends(get_db),
@@ -90,18 +98,18 @@ def create_plan(
 @router.put("/plans/{plan_id}")
 def update_plan(
     plan_id: int,
-    name: str = None,
-    price_monthly: float = None,
-    price_quarterly: float = None,
-    price_yearly: float = None,
-    commission_discount: float = None,
-    featured_listings: int = None,
-    priority_support: bool = None,
-    advanced_analytics: bool = None,
-    highlighted_profile: bool = None,
-    badge_type: str = None,
-    max_portfolio_images: int = None,
-    max_services: int = None,
+    name: Optional[str] = None,
+    price_monthly: Optional[float] = None,
+    price_quarterly: Optional[float] = None,
+    price_yearly: Optional[float] = None,
+    commission_discount: Optional[float] = None,
+    featured_listings: Optional[int] = None,
+    priority_support: Optional[bool] = None,
+    advanced_analytics: Optional[bool] = None,
+    highlighted_profile: Optional[bool] = None,
+    badge_type: Optional[str] = None,
+    max_portfolio_images: Optional[int] = None,
+    max_services: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
@@ -128,7 +136,7 @@ def update_plan(
 def add_plan_feature(
     plan_id: int,
     feature_name: str,
-    feature_value: str = None,
+    feature_value: Optional[str] = None,
     is_included: bool = True,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
@@ -271,7 +279,7 @@ def my_payments(
 
 @router.get("/admin/all")
 def admin_list_subscriptions(
-    status: str = None,
+    status: Optional[str] = None,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),

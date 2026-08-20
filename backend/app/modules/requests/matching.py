@@ -1,10 +1,14 @@
-from sqlalchemy.orm import Session
 import logging
-from app.core.events.bus import event_bus
+
 from app.core.database import SessionLocal
-from app.modules.requests.repository import request_repo, match_repo
+from app.core.events.bus import event_bus
+from app.modules.providers.models import (
+    ProviderPerformance,
+    ProviderProfile,
+    ProviderServiceArea,
+)
 from app.modules.requests.models import RequestMatch
-from app.modules.providers.models import ProviderProfile, ProviderPerformance, ProviderServiceArea
+from app.modules.requests.repository import request_repo
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +17,7 @@ class MatchingEngineService:
     def calculate_match_score(request, provider, performance, distance_km: float) -> float:
         """Basit eşleştirme algoritması (Ağırlıklı puanlama)"""
         score = 50.0 # Taban puan
-        
+
         # Performans etkileri
         if performance:
             score += (performance.rating * 2) # Max +10
@@ -21,7 +25,7 @@ class MatchingEngineService:
                 score += 5
             if performance.completed_jobs > 10:
                 score += 5
-        
+
         # Mesafe etkisi (Yakınsa daha yüksek puan)
         if distance_km is not None:
             if distance_km < 5:
@@ -30,7 +34,7 @@ class MatchingEngineService:
                 score += 10
             elif distance_km > 50:
                 score -= 20
-                
+
         return min(max(score, 0.0), 100.0)
 
     @staticmethod
@@ -45,12 +49,12 @@ class MatchingEngineService:
             req = request_repo.get(db, request_id)
             if not req:
                 return
-            
+
             logger.info(f"Matching Engine başlatıldı: Request #{req.id}")
-            
+
             # Bu talebe uygun uzmanları bul (Şimdilik sadece şehir bazlı basit eşleştirme)
             providers = db.query(ProviderProfile).join(ProviderServiceArea).filter(
-                ProviderProfile.is_available == True,
+                ProviderProfile.is_available,
                 ProviderServiceArea.city_id == req.city_id
             ).all()
 
@@ -58,7 +62,7 @@ class MatchingEngineService:
                 # Eşleşme skoru hesapla
                 performance = db.query(ProviderPerformance).filter_by(provider_id=provider.id).first()
                 score = MatchingEngineService.calculate_match_score(req, provider, performance, distance_km=10.0) # Mesafe şimdilik sabit
-                
+
                 # Minimum skor threshold (Örn: 40 altını önerme)
                 if score >= 40.0:
                     match = RequestMatch(
@@ -69,15 +73,15 @@ class MatchingEngineService:
                         status="INVITED"
                     )
                     db.add(match)
-            
+
             db.commit()
-            
+
             # MATCHING tamamlandı eventi fırlat
             event_bus.publish("REQUEST_MATCHED", {"request_id": req.id, "matches_count": len(providers)})
-            
+
         except Exception as e:
             db.rollback()
-            logger.error(f"Matching Engine Hatası: {str(e)}")
+            logger.error(f"Matching Engine Hatası: {e!s}")
         finally:
             db.close()
 

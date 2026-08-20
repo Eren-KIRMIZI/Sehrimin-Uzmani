@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Optional, List, Dict
-from app.ai.service import chat_service_request, explain_match
+
+from app.ai.service import chat_service_request
+
 # from app.core.security import get_current_user # Dependency injection will be handled correctly later
 
 router = APIRouter(prefix="/ai", tags=["AI"])
@@ -12,7 +14,7 @@ class ChatMessage(BaseModel):
 
 class ChatRequestBody(BaseModel):
     text: str
-    history: Optional[List[ChatMessage]] = []
+    history: list[ChatMessage] | None = []
 
 @router.post("/chat-request")
 async def chat_request(body: ChatRequestBody):
@@ -21,7 +23,7 @@ async def chat_request(body: ChatRequestBody):
     Eksik bilgi varsa soru sorar, tamamlandıysa JSON döndürür.
     """
     history_dicts = [{"role": msg.role, "content": msg.content} for msg in body.history] if body.history else []
-    
+
     result = await chat_service_request(body.text, history_dicts)
     return result
 

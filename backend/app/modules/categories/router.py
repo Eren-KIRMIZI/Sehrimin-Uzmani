@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session, joinedload
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.core.security import require_role
-from app.modules.users.models import User
-from app.modules.categories.models import Category, SubCategory, Service
-from app.modules.categories.schemas import (
-    CategoryCreate, SubCategoryCreate, ServiceCreate,
-    CategoryResponse, SubCategoryResponse, ServiceResponse
-)
 from app.core.exceptions import NotFoundException
+from app.core.security import require_role
+from app.modules.categories.models import Category, Service, SubCategory
+from app.modules.categories.schemas import (
+    CategoryCreate,
+    ServiceCreate,
+    SubCategoryCreate,
+)
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -17,7 +19,7 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 def list_categories(db: Session = Depends(get_db)):
     categories = (
         db.query(Category)
-        .filter(Category.is_active == True)
+        .filter(Category.is_active)
         .order_by(Category.sort_order)
         .all()
     )
@@ -25,7 +27,7 @@ def list_categories(db: Session = Depends(get_db)):
     for cat in categories:
         subcats = (
             db.query(SubCategory)
-            .filter(SubCategory.category_id == cat.id, SubCategory.is_active == True)
+.filter(SubCategory.category_id == cat.id, SubCategory.is_active)
             .order_by(SubCategory.sort_order)
             .all()
         )
@@ -45,7 +47,7 @@ def list_categories(db: Session = Depends(get_db)):
                     "services": [
                         {"id": s.id, "name": s.name, "slug": s.slug}
                         for s in db.query(Service).filter(
-                            Service.subcategory_id == sc.id, Service.is_active == True
+                            Service.subcategory_id == sc.id, Service.is_active
                         ).order_by(Service.sort_order).all()
                     ],
                 }
@@ -57,13 +59,13 @@ def list_categories(db: Session = Depends(get_db)):
 
 @router.get("/{slug}")
 def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
-    cat = db.query(Category).filter(Category.slug == slug, Category.is_active == True).first()
+    cat = db.query(Category).filter(Category.slug == slug, Category.is_active).first()
     if not cat:
         raise NotFoundException("Kategori")
 
     subcats = (
         db.query(SubCategory)
-        .filter(SubCategory.category_id == cat.id, SubCategory.is_active == True)
+        .filter(SubCategory.category_id == cat.id, SubCategory.is_active)
         .order_by(SubCategory.sort_order)
         .all()
     )
@@ -83,7 +85,7 @@ def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
                 "services": [
                     {"id": s.id, "name": s.name, "slug": s.slug}
                     for s in db.query(Service).filter(
-                        Service.subcategory_id == sc.id, Service.is_active == True
+                        Service.subcategory_id == sc.id, Service.is_active
                     ).all()
                 ],
             }
@@ -99,7 +101,7 @@ def get_category_services(slug: str, db: Session = Depends(get_db)):
         raise NotFoundException("Kategori")
 
     subcat_ids = [sc.id for sc in db.query(SubCategory).filter(SubCategory.category_id == cat.id).all()]
-    services = db.query(Service).filter(Service.subcategory_id.in_(subcat_ids), Service.is_active == True).all()
+    services = db.query(Service).filter(Service.subcategory_id.in_(subcat_ids), Service.is_active).all()
     return [
         {"id": s.id, "name": s.name, "slug": s.slug, "subcategory_id": s.subcategory_id}
         for s in services

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from app.modules.locations.models import City, District
-from app.modules.categories.models import Category, SubCategory, Service
 
+from app.modules.categories.models import Category, Service, SubCategory
+from app.modules.locations.models import City, District
 
 TURKEY_CITIES = [
     {"name": "Adana", "plate_code": "01"},
@@ -637,7 +637,7 @@ COMMISSION_RATES_DATA = [
 
 
 def seed_subscription_plans(db: Session):
-    from app.modules.subscriptions.models import SubscriptionPlan, PlanFeature
+    from app.modules.subscriptions.models import PlanFeature, SubscriptionPlan
     existing = db.query(SubscriptionPlan).count()
     if existing > 0:
         return
@@ -681,8 +681,8 @@ DEMO_USERS = [
 
 
 def seed_demo_users(db: Session):
-    from app.modules.users.models import User
     from app.core.security import hash_password
+    from app.modules.users.models import User
 
     for user_data in DEMO_USERS:
         existing = db.query(User).filter(User.email == user_data["email"]).first()

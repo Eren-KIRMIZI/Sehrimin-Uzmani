@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, Float, Text, ForeignKey
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
+
 from app.core.base.models import BaseModel
 
 
@@ -33,7 +34,7 @@ class ProviderPerformance(BaseModel):
     rating = Column(Float, default=0.0)
     review_count = Column(Integer, default=0)
     completed_jobs = Column(Integer, default=0)
-    
+
     # KPI'lar
     response_rate = Column(Float, default=100.0) # Yüzde
     average_response_time = Column(Integer, default=0) # Dakika

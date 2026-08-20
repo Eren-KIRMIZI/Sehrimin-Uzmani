@@ -10,16 +10,14 @@ Değişiklikler:
 import asyncio
 import json
 import logging
-from typing import Dict, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from app.core.security import decode_token
 from app.core.database import SessionLocal
-from app.core.security import check_token_blacklist
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
+from app.core.security import check_token_blacklist, decode_token
 from app.modules.messaging.models import Conversation, Message
+from app.modules.providers.models import ProviderProfile
+from app.modules.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ def _is_content_blocked(content: str) -> bool:
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[int, Set[WebSocket]] = {}
+        self.active_connections: dict[int, set[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
@@ -72,7 +70,7 @@ class ConnectionManager:
     async def send_to_user(self, user_id: int, message: dict):
         if user_id not in self.active_connections:
             return
-        dead_connections: Set[WebSocket] = set()
+        dead_connections: set[WebSocket] = set()
         for connection in self.active_connections[user_id]:
             try:
                 await connection.send_json(message)
@@ -131,7 +129,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             await websocket.close(code=4001, reason="Token revoked")
             return
 
-        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+        user = db.query(User).filter(User.id == user_id, User.is_active).first()
         if not user:
             await websocket.close(code=4001, reason="User not found or inactive")
             return
@@ -265,7 +263,7 @@ async def _handle_mark_read(websocket: WebSocket, user_id: int, msg_data: dict, 
     db.query(Message).filter(
         Message.conversation_id == conversation_id,
         Message.sender_id != user_id,
-        Message.is_read == False,
+        not Message.is_read,
     ).update({"is_read": True})
     db.commit()
 

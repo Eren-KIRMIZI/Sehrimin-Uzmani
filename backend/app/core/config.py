@@ -1,8 +1,9 @@
+import json
 import os
 import secrets
+from typing import Literal
+
 from pydantic_settings import BaseSettings
-from typing import List, Literal
-import json
 
 _DEFAULT_SECRET = os.environ.get("SECRET_KEY", "")
 if not _DEFAULT_SECRET:
@@ -42,7 +43,7 @@ class Settings(BaseSettings):
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
 
     @property
-    def cors_origins_list(self) -> List[str]:
+    def cors_origins_list(self) -> list[str]:
         return json.loads(self.CORS_ORIGINS)
 
     @property

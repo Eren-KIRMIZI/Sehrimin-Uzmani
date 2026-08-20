@@ -2,9 +2,11 @@
 SQLAlchemy veritabanı bağlantı yönetimi — production sertleştirmesi.
 """
 import logging
+
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ def get_db():
         logger.error("Veritabani hatasi, rollback yapiliyor: %s", str(exc), exc_info=True)
         db.rollback()
         raise
-    except Exception as exc:
+    except Exception:
         # Uygulama hatalarında da rollback yap
         db.rollback()
         raise

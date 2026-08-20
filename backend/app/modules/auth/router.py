@@ -1,22 +1,28 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
 from datetime import timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
+from app.core.rate_limiter import get_client_ip, rate_limiter
 from app.core.security import (
-    get_current_user, create_access_token, hash_password,
-    verify_password, create_refresh_token, decode_token, ALGORITHM
+    create_access_token,
+    decode_token,
+    get_current_user,
+    hash_password,
+    verify_password,
 )
-from app.core.rate_limiter import rate_limiter, get_client_ip
 from app.modules.auth.schemas import (
-    RegisterRequest, LoginRequest, TokenResponse,
-    RefreshRequest, ForgotPasswordRequest, ResetPasswordRequest,
-    ChangePasswordRequest
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
 )
 from app.modules.auth.service import AuthService
 from app.modules.users.models import User
-from jose import JWTError
-import secrets
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -97,7 +103,6 @@ def refresh(data: RefreshRequest, request: Request, db: Session = Depends(get_db
     rate_limiter.check(f"refresh:{get_client_ip(request)}", max_requests=10, window_seconds=300)
     service = AuthService(db)
     result = service.refresh_token(data.refresh_token)
-    user = result["user"]
     return {
         "access_token": result["access_token"],
         "refresh_token": result["refresh_token"],
@@ -232,6 +237,7 @@ def enable_2fa(
     db: Session = Depends(get_db),
 ):
     import pyotp
+
     from app.core.encryption import encrypt
 
     if current_user.two_factor_enabled:
@@ -261,6 +267,7 @@ def verify_2fa_enable(
     db: Session = Depends(get_db),
 ):
     import pyotp
+
     from app.core.encryption import decrypt
 
     if not current_user.two_factor_secret:

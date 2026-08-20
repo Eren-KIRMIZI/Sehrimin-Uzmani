@@ -1,7 +1,8 @@
-from typing import Optional
-from sqlalchemy.orm import Session
-from app.modules.categories.models import Category, SubCategory, Service
+import re
 
+from sqlalchemy.orm import Session
+
+from app.modules.categories.models import Category, Service, SubCategory
 
 KEYWORD_MAP = {
     "kombi": {"category": "teknik-hizmetler", "subcategory": "klima-kombi", "service": "Kombi Bakim"},
@@ -83,9 +84,7 @@ KEYWORD_MAP = {
 }
 
 
-import re
-
-def extract_urgency(text: str) -> Optional[str]:
+def extract_urgency(text: str) -> str | None:
     urgency_patterns = [r"\bacil\b", r"\bhemen\b", r"\bhızlıca\b", r"\bçabuk\b", r"\bşimdi\b", r"\bbugün\b"]
     for pattern in urgency_patterns:
         if re.search(pattern, text):
@@ -94,9 +93,9 @@ def extract_urgency(text: str) -> Optional[str]:
             return "high"
     return "medium"
 
-def extract_time(text: str) -> Optional[str]:
+def extract_time(text: str) -> str | None:
     time_patterns = [
-        r"\byarın\b", r"\bhafta sonu\b", r"\bpazartesi\b", r"\bsalı\b", r"\bçarşamba\b", 
+        r"\byarın\b", r"\bhafta sonu\b", r"\bpazartesi\b", r"\bsalı\b", r"\bçarşamba\b",
         r"\bperşembe\b", r"\bcuma\b", r"\bcumartesi\b", r"\bpazar\b", r"\bsabah\b", r"\bakşam\b",
         r"\d+\s+(?:gün|hafta|ay)\s+içinde"
     ]
@@ -105,26 +104,26 @@ def extract_time(text: str) -> Optional[str]:
         match = re.search(pattern, text)
         if match:
             matches.append(match.group(0))
-    
+
     if matches:
         return matches[0]
     return None
 
-def extract_budget(text: str) -> Optional[dict]:
+def extract_budget(text: str) -> dict | None:
     # Match patterns like "500 tl", "500tl", "1000 lira", "1000-2000 tl"
     range_pattern = r"(\d+)\s*-\s*(\d+)\s*(?:tl|lira|₺)"
     exact_pattern = r"(\d+)\s*(?:tl|lira|₺)"
-    
+
     range_match = re.search(range_pattern, text)
     if range_match:
         return {"min": int(range_match.group(1)), "max": int(range_match.group(2))}
-        
+
     exact_match = re.search(exact_pattern, text)
     if exact_match:
         val = int(exact_match.group(1))
         # Arbitrarily range it
         return {"min": val, "max": val}
-        
+
     return None
 
 def detect_category(user_input: str, db: Session) -> dict:

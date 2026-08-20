@@ -1,22 +1,22 @@
-from fastapi import APIRouter, Depends, Query, Body
-from sqlalchemy.orm import Session
-from sqlalchemy import func as sql_func
-from app.core.database import get_db
-from app.core.security import require_role
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
-from app.modules.requests.models import ServiceRequest
-from app.modules.quotes.models import Quote
-from app.modules.reviews.models import Review
-from app.modules.categories.models import Category
-from app.modules.locations.models import City
-from app.modules.admin.audit_model import AuditLog
-from app.modules.disputes.models import Dispute
-from app.modules.commissions.models import ProviderEarning, PayoutRequest
-from app.modules.subscriptions.models import ProviderSubscription
-from app.shared.pagination import PaginationParams, PaginatedResponse
+
 from typing import Optional
 
+from fastapi import APIRouter, Depends
+from sqlalchemy import func as sql_func
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.core.security import require_role
+from app.modules.admin.audit_model import AuditLog
+from app.modules.categories.models import Category
+from app.modules.commissions.models import PayoutRequest
+from app.modules.disputes.models import Dispute
+from app.modules.locations.models import City
+from app.modules.providers.models import ProviderProfile
+from app.modules.requests.models import ServiceRequest
+from app.modules.reviews.models import Review
+from app.modules.users.models import User
+from app.shared.pagination import PaginatedResponse, PaginationParams
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -49,8 +49,8 @@ def admin_dashboard(
 
 @router.get("/users")
 def list_users(
-    role: Optional[str] = None,
-    search: Optional[str] = None,
+    role: str | None = None,
+    search: str | None = None,
     page: int = 1,
     limit: int = 20,
     current_user: User = Depends(require_role("ADMIN")),
@@ -93,8 +93,8 @@ def list_users(
 @router.patch("/users/{user_id}")
 def update_user(
     user_id: int,
-    is_active: bool = None,
-    role: str = None,
+    is_active: Optional[bool] = None,
+    role: Optional[str] = None,
     current_user: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db),
 ):
@@ -114,8 +114,8 @@ def update_user(
 
 @router.get("/providers")
 def list_providers(
-    verification_status: Optional[str] = None,
-    search: Optional[str] = None,
+    verification_status: str | None = None,
+    search: str | None = None,
     page: int = 1,
     limit: int = 20,
     current_user: User = Depends(require_role("ADMIN")),
@@ -180,7 +180,7 @@ def verify_provider(
 
 @router.get("/requests")
 def list_all_requests(
-    status: Optional[str] = None,
+    status: str | None = None,
     page: int = 1,
     limit: int = 20,
     current_user: User = Depends(require_role("ADMIN")),
@@ -259,15 +259,15 @@ def list_audit_logs(
     return PaginatedResponse.create(
         items=[
             {
-                "id": l.id,
-                "user_id": l.user_id,
-                "action": l.action,
-                "entity": l.entity,
-                "entity_id": l.entity_id,
-                "ip_address": l.ip_address,
-                "created_at": l.created_at,
+                "id": log_entry.id,
+                "user_id": log_entry.user_id,
+                "action": log_entry.action,
+                "entity": log_entry.entity,
+                "entity_id": log_entry.entity_id,
+                "ip_address": log_entry.ip_address,
+                "created_at": log_entry.created_at,
             }
-            for l in logs
+            for log_entry in logs
         ],
         total=total,
         page=pagination.page,
@@ -277,7 +277,7 @@ def list_audit_logs(
 
 @router.get("/payouts")
 def list_payout_requests(
-    status: Optional[str] = None,
+    status: str | None = None,
     page: int = 1,
     limit: int = 20,
     current_user: User = Depends(require_role("ADMIN")),
@@ -285,7 +285,7 @@ def list_payout_requests(
 ):
     pagination = PaginationParams(page, limit)
     query = db.query(PayoutRequest)
-    
+
     if status:
         query = query.filter(PayoutRequest.status == status)
 
@@ -312,7 +312,7 @@ def list_payout_requests(
 
 @router.get("/disputes")
 def list_disputes(
-    status: Optional[str] = None,
+    status: str | None = None,
     page: int = 1,
     limit: int = 20,
     current_user: User = Depends(require_role("ADMIN")),

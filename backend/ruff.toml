@@ -1,0 +1,27 @@
+[lint]
+select = ["F", "E", "W", "I", "UP", "B", "A", "C4", "RUF", "S", "BLE", "DTZ", "G", "ASYNC", "LOG"]
+ignore = [
+    "B008",   # FastAPI Depends() in argument defaults — standard pattern
+    "BLE001", # Blind except — used intentionally for error boundaries
+    "S110",   # try-except-pass — used for fallback logic
+    "DTZ003", # datetime.utcnow() — used in existing codebase, migrate gradually
+    "G201",   # logging .exception() vs .error() — style preference
+    "ASYNC230", # blocking open in async — acceptable for file uploads
+    "LOG014", # exc-info outside except handler
+    "LOG015", # root logger call
+    "RUF012", # mutable class default
+    "RUF001", # ambiguous unicode — false positive on Turkish chars (ı, ş, ğ, ö, ç, ü)
+    "RUF002", # ambiguous unicode in docstrings — Turkish content
+    "RUF003", # ambiguous unicode in comments — Turkish content
+    "E501",   # line too long — cosmetic, not enforced
+    "W293",   # blank line with whitespace
+    "S311",   # suspicious random — used in seed data
+    "G004",   # logging f-string — acceptable
+    "A002",   # builtin-argument-shadowing — `type` param in routers
+    "RUF021", # parenthesize-chained-operators
+    "RUF006", # asyncio-dangling-task — managed in event bus
+    "B904",   # raise-without-from — acceptable in service layers
+    "C408",   # unnecessary collection call — style preference
+    "S105",   # hardcoded password — seed/test data only
+    "UP045",  # Optional[X] vs X | None — project uses Optional consistently
+]

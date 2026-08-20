@@ -4,15 +4,14 @@ Rozetler provider'ın performans metriklerine göre otomatik hesaplanır.
 Para ile satın alınamaz, kalite metrikleriyle kazanılır.
 """
 
-from typing import List, Optional
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func as sql_func
-from datetime import datetime, timezone, timedelta
+from sqlalchemy.orm import Session
+
+from app.modules.disputes.models import Dispute
 from app.modules.providers.models import ProviderProfile
 from app.modules.reviews.models import Review
-from app.modules.quotes.models import Quote
-from app.modules.disputes.models import Dispute
-
 
 BADGE_DEFINITIONS = [
     {
@@ -88,7 +87,7 @@ BADGE_DEFINITIONS = [
 ]
 
 
-def calculate_badges(provider: ProviderProfile, db: Session) -> List[dict]:
+def calculate_badges(provider: ProviderProfile, db: Session) -> list[dict]:
     """
     Provider'ın kazandığı rozetleri hesaplar ve döndürür.
     
@@ -103,7 +102,7 @@ def calculate_badges(provider: ProviderProfile, db: Session) -> List[dict]:
         sql_func.count(Review.id),
     ).filter(
         Review.provider_id == provider.id,
-        Review.is_visible == True,
+        Review.is_visible,
     ).first()
 
     avg_rating = float(rating_data[0] or 0)

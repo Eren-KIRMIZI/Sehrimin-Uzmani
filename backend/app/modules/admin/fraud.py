@@ -4,15 +4,16 @@ Bu modül ML kullanmaz; güvenilir kural tabanlı heuristikler kullanır.
 Ileride ML modeli eklendiğinde bu sınıf bir adapter olarak çalışır.
 """
 
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy import func as sql_func
-from datetime import datetime, timezone, timedelta
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
-from app.modules.reviews.models import Review
+from sqlalchemy.orm import Session
+
 from app.modules.disputes.models import Dispute
+from app.modules.providers.models import ProviderProfile
 from app.modules.quotes.models import Quote
-from app.modules.requests.models import ServiceRequest
+from app.modules.reviews.models import Review
+from app.modules.users.models import User
 
 
 def calculate_risk_score(user_id: int, db: Session) -> dict:

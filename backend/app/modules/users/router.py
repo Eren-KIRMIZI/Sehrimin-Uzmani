@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
+from app.core.exceptions import BadRequestException
 from app.core.security import get_current_user
 from app.modules.users.models import User
 from app.modules.users.schemas import UserUpdate
-from app.core.exceptions import NotFoundException, BadRequestException
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -46,8 +47,8 @@ def update_profile(data: UserUpdate, current_user: User = Depends(get_current_us
 
 @router.delete("/me")
 def delete_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+
     from app.modules.auth.models import RevokedToken
-    from datetime import datetime, timezone
 
     db.query(RevokedToken).filter(RevokedToken.user_id == current_user.id).delete()
     current_user.is_active = False

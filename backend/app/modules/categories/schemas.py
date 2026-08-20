@@ -1,29 +1,28 @@
+
 from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
 
 
 class CategoryCreate(BaseModel):
     name: str
     slug: str
-    icon: Optional[str] = None
-    image: Optional[str] = None
-    description: Optional[str] = None
+    icon: str | None = None
+    image: str | None = None
+    description: str | None = None
     sort_order: int = 0
 
 
 class SubCategoryCreate(BaseModel):
     name: str
     slug: str
-    icon: Optional[str] = None
-    description: Optional[str] = None
+    icon: str | None = None
+    description: str | None = None
     sort_order: int = 0
 
 
 class ServiceCreate(BaseModel):
     name: str
     slug: str
-    description: Optional[str] = None
+    description: str | None = None
     sort_order: int = 0
 
 
@@ -31,9 +30,9 @@ class CategoryResponse(BaseModel):
     id: int
     name: str
     slug: str
-    icon: Optional[str]
-    image: Optional[str]
-    description: Optional[str]
+    icon: str | None
+    image: str | None
+    description: str | None
     is_active: bool
     sort_order: int
 
@@ -46,8 +45,8 @@ class SubCategoryResponse(BaseModel):
     category_id: int
     name: str
     slug: str
-    icon: Optional[str]
-    description: Optional[str]
+    icon: str | None
+    description: str | None
     is_active: bool
     sort_order: int
 
@@ -60,7 +59,7 @@ class ServiceResponse(BaseModel):
     subcategory_id: int
     name: str
     slug: str
-    description: Optional[str]
+    description: str | None
     is_active: bool
     sort_order: int
 

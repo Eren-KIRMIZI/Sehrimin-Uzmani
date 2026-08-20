@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+
 from app.core.base.repository import BaseRepository
 from app.modules.appointments.models import Appointment
 

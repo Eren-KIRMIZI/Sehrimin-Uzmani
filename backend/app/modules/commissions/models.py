@@ -1,10 +1,21 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text, Boolean
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property
-from datetime import datetime
 import enum
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
+
 from app.core.base.models import BaseModel
-from app.core.encryption import encrypt, decrypt
+from app.core.encryption import decrypt, encrypt
 
 
 class CommissionStatus(str, enum.Enum):

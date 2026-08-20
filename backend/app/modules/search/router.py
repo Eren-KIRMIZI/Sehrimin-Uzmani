@@ -1,14 +1,20 @@
+from math import radians
+
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func as sql_func, and_, literal_column
-from math import radians, sin, cos, sqrt, atan2
+from sqlalchemy import func as sql_func
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.modules.providers.models import ProviderProfile
+from app.modules.categories.models import (
+    Category,
+    ProviderService,
+    Service,
+    SubCategory,
+)
 from app.modules.locations.models import ProviderLocation
-from app.modules.categories.models import ProviderService, Service, SubCategory, Category
+from app.modules.providers.models import ProviderProfile
 from app.modules.users.models import User
-from app.shared.pagination import PaginationParams, PaginatedResponse
-from typing import Optional
+from app.shared.pagination import PaginatedResponse, PaginationParams
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -26,20 +32,20 @@ def _haversine_sql(lat: float, lng: float):
 
 @router.get("/providers")
 def search_providers(
-    q: Optional[str] = None,
-    category: Optional[str] = None,
-    subcategory: Optional[str] = None,
-    service: Optional[str] = None,
-    city_id: Optional[int] = None,
-    district_id: Optional[int] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
-    min_rating: Optional[float] = None,
-    verified: Optional[bool] = None,
-    available: Optional[bool] = None,
-    lat: Optional[float] = None,
-    lng: Optional[float] = None,
-    radius: Optional[float] = 50.0,
+    q: str | None = None,
+    category: str | None = None,
+    subcategory: str | None = None,
+    service: str | None = None,
+    city_id: int | None = None,
+    district_id: int | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    min_rating: float | None = None,
+    verified: bool | None = None,
+    available: bool | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+    radius: float | None = 50.0,
     sort: str = "recommended",
     page: int = 1,
     limit: int = 20,
@@ -54,13 +60,13 @@ def search_providers(
             db.query(ProviderProfile)
             .join(User, ProviderProfile.user_id == User.id)
             .join(ProviderLocation, ProviderLocation.provider_id == ProviderProfile.id)
-            .filter(ProviderProfile.is_available == True, User.is_active == True)
+            .filter(ProviderProfile.is_available, User.is_active)
         )
     else:
         query = (
             db.query(ProviderProfile)
             .join(User, ProviderProfile.user_id == User.id)
-            .filter(ProviderProfile.is_available == True, User.is_active == True)
+            .filter(ProviderProfile.is_available, User.is_active)
         )
 
     if city_id:
@@ -123,7 +129,7 @@ def search_providers(
             sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(User.last_name, '')), 'C')
         )
         query = query.filter(vector.op('@@')(search_query))
-        
+
         # Add rank column for ordering later if sort is recommended
         rank = sql_func.ts_rank(vector, search_query).label("search_rank")
         query = query.add_columns(rank)
@@ -249,9 +255,9 @@ def autocomplete(q: str = Query(..., min_length=2), db: Session = Depends(get_db
     if cached_cats is not None:
         return cached_cats
 
-    categories = db.query(Category).filter(Category.name.ilike(search_term), Category.is_active == True).limit(5).all()
-    subcategories = db.query(SubCategory).filter(SubCategory.name.ilike(search_term), SubCategory.is_active == True).limit(5).all()
-    services = db.query(Service).filter(Service.name.ilike(search_term), Service.is_active == True).limit(5).all()
+    categories = db.query(Category).filter(Category.name.ilike(search_term), Category.is_active).limit(5).all()
+    subcategories = db.query(SubCategory).filter(SubCategory.name.ilike(search_term), SubCategory.is_active).limit(5).all()
+    services = db.query(Service).filter(Service.name.ilike(search_term), Service.is_active).limit(5).all()
 
     results = []
     for c in categories:

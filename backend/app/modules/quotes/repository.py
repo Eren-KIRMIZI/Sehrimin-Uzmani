@@ -1,11 +1,13 @@
 from sqlalchemy.orm import Session
+
 from app.core.base.repository import BaseRepository
 from app.modules.quotes.models import Quote, QuoteItem, QuoteRevision
+
 
 class QuoteRepository(BaseRepository[Quote, None, None]):
     def get_by_request(self, db: Session, request_id: int):
         return db.query(self.model).filter(self.model.request_id == request_id).all()
-        
+
     def get_by_provider(self, db: Session, provider_id: int):
         return db.query(self.model).filter(self.model.provider_id == provider_id).all()
 

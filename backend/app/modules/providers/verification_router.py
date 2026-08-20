@@ -1,13 +1,19 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from datetime import datetime
+
 from app.core.database import get_db
-from app.core.security import get_current_user, require_role
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
+from app.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+)
+from app.core.security import require_role
 from app.modules.admin.verification_model import VerificationRequest
+from app.modules.providers.models import ProviderProfile
 from app.modules.providers.verification_schemas import VerificationApply
-from app.core.exceptions import NotFoundException, ConflictException, BadRequestException
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/verification", tags=["Verification"])
 

@@ -1,5 +1,7 @@
-from typing import Callable, Dict, List, Any
 import logging
+from collections.abc import Callable
+from typing import Any
+
 from fastapi import BackgroundTasks
 
 logger = logging.getLogger(__name__)
@@ -7,7 +9,7 @@ logger = logging.getLogger(__name__)
 class EventBus:
     """Basit in-memory Event Bus. İleride Redis Pub/Sub veya Kafka'ya kolayca adapte edilebilir."""
     def __init__(self):
-        self._subscribers: Dict[str, List[Callable]] = {}
+        self._subscribers: dict[str, list[Callable]] = {}
 
     def subscribe(self, event_name: str, callback: Callable):
         if event_name not in self._subscribers:
@@ -23,6 +25,6 @@ class EventBus:
                     try:
                         callback(payload)
                     except Exception as e:
-                        logger.error(f"Event handler hatasi ({event_name}): {str(e)}")
+                        logger.error(f"Event handler hatasi ({event_name}): {e!s}")
 
 event_bus = EventBus()

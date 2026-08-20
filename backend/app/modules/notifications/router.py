@@ -1,16 +1,19 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.modules.users.models import User
 from app.modules.notifications.models import Notification
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
 @router.get("")
 def list_notifications(
-    is_read: bool = None,
+    is_read: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -41,7 +44,7 @@ def unread_count(
     db: Session = Depends(get_db),
 ):
     count = db.query(Notification).filter(
-        Notification.user_id == current_user.id, Notification.is_read == False
+        Notification.user_id == current_user.id, not Notification.is_read
     ).count()
     return {"count": count}
 
@@ -67,7 +70,7 @@ def mark_all_read(
     db: Session = Depends(get_db),
 ):
     db.query(Notification).filter(
-        Notification.user_id == current_user.id, Notification.is_read == False
+        Notification.user_id == current_user.id, not Notification.is_read
     ).update({"is_read": True})
     db.commit()
     return {"message": "Tüm bildirimler okundu"}

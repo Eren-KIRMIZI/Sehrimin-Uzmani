@@ -1,13 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func as sql_func
 from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
-from app.core.encryption import encrypt, decrypt
+from app.modules.commissions.models import (
+    CommissionRate,
+    PayoutRequest,
+    ProviderEarning,
+    Transaction,
+)
 from app.modules.users.models import User
-from app.modules.commissions.models import CommissionRate, Transaction, ProviderEarning, PayoutRequest
-from app.modules.appointments.models import Appointment
 
 router = APIRouter(prefix="/commissions", tags=["Komisyon Sistemi"])
 
@@ -17,7 +22,7 @@ def list_commission_rates(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    rates = db.query(CommissionRate).filter(CommissionRate.is_active == True).all()
+    rates = db.query(CommissionRate).filter(CommissionRate.is_active).all()
     return [
         {
             "id": r.id,
@@ -33,16 +38,16 @@ def list_commission_rates(
 
 @router.post("/rates")
 def create_commission_rate(
-    category_id: int = None,
+    category_id: Optional[int] = None,
     rate: float = 0.10,
-    min_amount: float = None,
-    description: str = None,
+    min_amount: Optional[float] = None,
+    description: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
     existing = db.query(CommissionRate).filter(
         CommissionRate.category_id == category_id,
-        CommissionRate.is_active == True,
+        CommissionRate.is_active,
     ).first()
     if existing:
         existing.rate = rate
@@ -79,8 +84,8 @@ def delete_commission_rate(
 
 @router.get("/transactions")
 def list_transactions(
-    status: str = None,
-    provider_id: int = None,
+    status: Optional[str] = None,
+    provider_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -177,9 +182,9 @@ def earnings_history(
 @router.post("/payout/request")
 def request_payout(
     amount: float,
-    bank_name: str = None,
-    iban: str = None,
-    account_holder: str = None,
+    bank_name: Optional[str] = None,
+    iban: Optional[str] = None,
+    account_holder: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -277,7 +282,7 @@ def approve_payout(
 @router.post("/payout/{payout_id}/reject")
 def reject_payout(
     payout_id: int,
-    admin_note: str = None,
+    admin_note: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
