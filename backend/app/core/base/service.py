@@ -11,14 +11,19 @@ ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseSchema)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseSchema)
 
-class BaseService(Generic[RepositoryType, ModelType, CreateSchemaType, UpdateSchemaType]):
+
+class BaseService(
+    Generic[RepositoryType, ModelType, CreateSchemaType, UpdateSchemaType]
+):
     def __init__(self, repository: RepositoryType):
         self.repository = repository
 
     def get(self, db: Session, id: Any) -> ModelType | None:
         return self.repository.get(db=db, id=id)
 
-    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> list[ModelType]:
+    def get_multi(
+        self, db: Session, *, skip: int = 0, limit: int = 100
+    ) -> list[ModelType]:
         return self.repository.get_multi(db=db, skip=skip, limit=limit)
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
@@ -27,7 +32,9 @@ class BaseService(Generic[RepositoryType, ModelType, CreateSchemaType, UpdateSch
         db.refresh(obj)
         return obj
 
-    def update(self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict) -> ModelType:
+    def update(
+        self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict
+    ) -> ModelType:
         obj = self.repository.update(db=db, db_obj=db_obj, obj_in=obj_in)
         db.commit()
         db.refresh(obj)

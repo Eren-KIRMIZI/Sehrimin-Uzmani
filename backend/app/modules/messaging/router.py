@@ -16,14 +16,27 @@ from app.modules.users.models import User
 router = APIRouter(prefix="/messaging", tags=["Messaging"])
 
 BLOCKED_PATTERNS = [
-    "whatsapp", "telegram", "instagram", "facebook",
-    "arama yapiyorum", "arama yapıyorum",
-    "numaram", "numaramı", "numara ver",
-    "disarida bulusalim", "dışarıda buluşalım",
-    "platform disinda", "platform dışı",
-    "site disinda", "site dışı",
-    "@gmail.com", "@hotmail.com", "@outlook.com", "@yahoo.com",
+    "whatsapp",
+    "telegram",
+    "instagram",
+    "facebook",
+    "arama yapiyorum",
+    "arama yapıyorum",
+    "numaram",
+    "numaramı",
+    "numara ver",
+    "disarida bulusalim",
+    "dışarıda buluşalım",
+    "platform disinda",
+    "platform dışı",
+    "site disinda",
+    "site dışı",
+    "@gmail.com",
+    "@hotmail.com",
+    "@outlook.com",
+    "@yahoo.com",
 ]
+
 
 def check_content(content: str) -> str:
     lower = content.lower()
@@ -39,14 +52,20 @@ def create_conversation(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    provider = db.query(ProviderProfile).filter(ProviderProfile.id == data.provider_id).first()
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.id == data.provider_id).first()
+    )
     if not provider:
         raise NotFoundException("Uzman")
 
-    existing = db.query(Conversation).filter(
-        Conversation.customer_id == current_user.id,
-        Conversation.provider_id == data.provider_id,
-    ).first()
+    existing = (
+        db.query(Conversation)
+        .filter(
+            Conversation.customer_id == current_user.id,
+            Conversation.provider_id == data.provider_id,
+        )
+        .first()
+    )
     if existing:
         return {"conversation_id": existing.id}
 
@@ -71,47 +90,82 @@ def list_conversations(
     limit = min(limit, 50)
     page = max(1, page)
 
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    provider = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
 
     if provider:
-        convs = db.query(Conversation).filter(Conversation.provider_id == provider.id).all()
+        convs = (
+            db.query(Conversation).filter(Conversation.provider_id == provider.id).all()
+        )
     else:
-        convs = db.query(Conversation).filter(Conversation.customer_id == current_user.id).all()
+        convs = (
+            db.query(Conversation)
+            .filter(Conversation.customer_id == current_user.id)
+            .all()
+        )
 
     result = []
     for conv in convs:
-        last_msg = db.query(Message).filter(Message.conversation_id == conv.id).order_by(Message.created_at.desc()).first()
+        last_msg = (
+            db.query(Message)
+            .filter(Message.conversation_id == conv.id)
+            .order_by(Message.created_at.desc())
+            .first()
+        )
 
         other_user = None
         if conv.customer_id == current_user.id and conv.provider_id:
-            p = db.query(ProviderProfile).filter(ProviderProfile.id == conv.provider_id).first()
+            p = (
+                db.query(ProviderProfile)
+                .filter(ProviderProfile.id == conv.provider_id)
+                .first()
+            )
             if p:
                 u = db.query(User).filter(User.id == p.user_id).first()
                 if u:
-                    other_user = {"id": u.id, "first_name": u.first_name, "last_name": u.last_name, "avatar": u.avatar}
+                    other_user = {
+                        "id": u.id,
+                        "first_name": u.first_name,
+                        "last_name": u.last_name,
+                        "avatar": u.avatar,
+                    }
         elif conv.provider_id:
             other_user = {"id": conv.customer_id}
 
-        unread = db.query(Message).filter(
-            Message.conversation_id == conv.id,
-            Message.sender_id != current_user.id,
-        not Message.is_read,
-    ).count()
+        unread = (
+            db.query(Message)
+            .filter(
+                Message.conversation_id == conv.id,
+                Message.sender_id != current_user.id,
+                not Message.is_read,
+            )
+            .count()
+        )
 
-        result.append({
-            "id": conv.id,
-            "request_id": conv.request_id,
-            "last_message": {
-                "content": last_msg.content if last_msg else None,
-                "created_at": str(last_msg.created_at) if last_msg else None,
-                "sender_id": last_msg.sender_id if last_msg else None,
-            } if last_msg else None,
-            "unread_count": unread,
-            "other_user": other_user,
-            "created_at": str(conv.created_at),
-        })
+        result.append(
+            {
+                "id": conv.id,
+                "request_id": conv.request_id,
+                "last_message": {
+                    "content": last_msg.content if last_msg else None,
+                    "created_at": str(last_msg.created_at) if last_msg else None,
+                    "sender_id": last_msg.sender_id if last_msg else None,
+                }
+                if last_msg
+                else None,
+                "unread_count": unread,
+                "other_user": other_user,
+                "created_at": str(conv.created_at),
+            }
+        )
 
-    result.sort(key=lambda x: x["last_message"]["created_at"] if x["last_message"] else "", reverse=True)
+    result.sort(
+        key=lambda x: x["last_message"]["created_at"] if x["last_message"] else "",
+        reverse=True,
+    )
     return result
 
 
@@ -131,9 +185,14 @@ def list_messages(
 
     is_participant = conv.customer_id == current_user.id
     if not is_participant and conv.provider_id:
-        provider = db.query(ProviderProfile).filter(
-            ProviderProfile.id == conv.provider_id, ProviderProfile.user_id == current_user.id
-        ).first()
+        provider = (
+            db.query(ProviderProfile)
+            .filter(
+                ProviderProfile.id == conv.provider_id,
+                ProviderProfile.user_id == current_user.id,
+            )
+            .first()
+        )
         is_participant = provider is not None
 
     if not is_participant:
@@ -184,9 +243,14 @@ def send_message_rest(
 
     is_participant = conv.customer_id == current_user.id
     if not is_participant and conv.provider_id:
-        provider = db.query(ProviderProfile).filter(
-            ProviderProfile.id == conv.provider_id, ProviderProfile.user_id == current_user.id
-        ).first()
+        provider = (
+            db.query(ProviderProfile)
+            .filter(
+                ProviderProfile.id == conv.provider_id,
+                ProviderProfile.user_id == current_user.id,
+            )
+            .first()
+        )
         is_participant = provider is not None
 
     if not is_participant:
@@ -199,7 +263,9 @@ def send_message_rest(
 
     filtered = check_content(data.content)
     if filtered is None:
-        raise BadRequestException("Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)")
+        raise BadRequestException(
+            "Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)"
+        )
 
     message = Message(
         conversation_id=conversation_id,
@@ -228,19 +294,37 @@ def unread_count(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    provider = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
 
     if provider:
-        conv_ids = [c.id for c in db.query(Conversation).filter(Conversation.provider_id == provider.id).all()]
+        conv_ids = [
+            c.id
+            for c in db.query(Conversation)
+            .filter(Conversation.provider_id == provider.id)
+            .all()
+        ]
     else:
-        conv_ids = [c.id for c in db.query(Conversation).filter(Conversation.customer_id == current_user.id).all()]
+        conv_ids = [
+            c.id
+            for c in db.query(Conversation)
+            .filter(Conversation.customer_id == current_user.id)
+            .all()
+        ]
 
     count = 0
     if conv_ids:
-        count = db.query(Message).filter(
-            Message.conversation_id.in_(conv_ids),
-            Message.sender_id != current_user.id,
-            not Message.is_read,
-        ).count()
+        count = (
+            db.query(Message)
+            .filter(
+                Message.conversation_id.in_(conv_ids),
+                Message.sender_id != current_user.id,
+                not Message.is_read,
+            )
+            .count()
+        )
 
     return {"count": count}

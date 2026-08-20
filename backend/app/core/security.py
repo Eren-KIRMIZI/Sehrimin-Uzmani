@@ -25,7 +25,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
@@ -50,6 +52,7 @@ def decode_token(token: str) -> dict:
 
 def check_token_blacklist(token: str, db: Session) -> bool:
     from app.modules.auth.models import RevokedToken
+
     revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
     return revoked is not None
 
@@ -91,4 +94,5 @@ def require_role(*roles):
         if current_user.role not in roles:
             raise HTTPException(status_code=403, detail="Yetkiniz yetersiz")
         return current_user
+
     return role_checker

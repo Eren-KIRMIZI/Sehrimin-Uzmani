@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -26,7 +25,11 @@ class ProviderReplyBody(BaseModel):
 
 
 @router.post("/")
-def create_review(body: CreateReviewBody, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def create_review(
+    body: CreateReviewBody,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """Müşteri tamamlanan hizmet için değerlendirme yapar"""
     try:
         customer_id = 2  # Mock — auth middleware ile değiştirilecek
@@ -43,29 +46,43 @@ def create_review(body: CreateReviewBody, background_tasks: BackgroundTasks, db:
             punctuality_rating=body.punctuality_rating,
             background_tasks=background_tasks,
         )
-        return {"id": review.id, "rating": review.rating, "message": "Değerlendirme kaydedildi"}
+        return {
+            "id": review.id,
+            "rating": review.rating,
+            "message": "Değerlendirme kaydedildi",
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/provider/{provider_id}")
-def list_provider_reviews(provider_id: int, skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+def list_provider_reviews(
+    provider_id: int, skip: int = 0, limit: int = 20, db: Session = Depends(get_db)
+):
     """Bir uzmanın tüm değerlendirmelerini listeler"""
     reviews = review_repo.get_by_provider(db, provider_id, skip, limit)
     return [
         {
-            "id": r.id, "rating": r.rating, "comment": r.comment,
-            "provider_reply": r.provider_reply, "created_at": str(r.created_at)
-        } for r in reviews
+            "id": r.id,
+            "rating": r.rating,
+            "comment": r.comment,
+            "provider_reply": r.provider_reply,
+            "created_at": str(r.created_at),
+        }
+        for r in reviews
     ]
 
 
 @router.post("/{review_id}/reply")
-def provider_reply(review_id: int, body: ProviderReplyBody, db: Session = Depends(get_db)):
+def provider_reply(
+    review_id: int, body: ProviderReplyBody, db: Session = Depends(get_db)
+):
     """Uzman değerlendirmeye cevap verir"""
     try:
         provider_user_id = 3  # Mock
-        review = review_service.add_provider_reply(db, review_id, body.reply, provider_user_id)
+        review = review_service.add_provider_reply(
+            db, review_id, body.reply, provider_user_id
+        )
         return {"message": "Cevap eklendi", "reply": review.provider_reply}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

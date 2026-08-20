@@ -25,3 +25,6 @@ ignore = [
     "S105",   # hardcoded password — seed/test data only
     "UP045",  # Optional[X] vs X | None — project uses Optional consistently
 ]
+
+[lint.per-file-ignores]
+"tests/**" = ["S101", "F401", "F841", "I001", "B007", "RUF059"]

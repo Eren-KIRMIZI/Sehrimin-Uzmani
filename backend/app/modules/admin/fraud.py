@@ -19,13 +19,13 @@ from app.modules.users.models import User
 def calculate_risk_score(user_id: int, db: Session) -> dict:
     """
     Belirli bir kullanıcı için fraud risk skoru hesaplar.
-    
+
     Skor 0-100 arasındadır:
     - 0-30:  Düşük risk (SAFE)
     - 31-60: Orta risk (MODERATE)
     - 61-80: Yüksek risk (HIGH)
     - 81+:   Kritik risk (CRITICAL)
-    
+
     Returns:
         {
             risk_score: int,
@@ -47,10 +47,15 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
 
     # === DISPUTE ANALİZİ ===
     # Son 30 günde açık anlaşmazlık sayısı
-    recent_disputes = db.query(sql_func.count(Dispute.id)).filter(
-        Dispute.reported_id == user_id,
-        Dispute.created_at >= thirty_days_ago,
-    ).scalar() or 0
+    recent_disputes = (
+        db.query(sql_func.count(Dispute.id))
+        .filter(
+            Dispute.reported_id == user_id,
+            Dispute.created_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
 
     if recent_disputes >= 8:
         score += 30
@@ -63,9 +68,14 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
         reasons.append(f"⚠️ Son 30 günde {recent_disputes} anlaşmazlık raporu")
 
     # Toplam anlaşmazlık
-    total_disputes = db.query(sql_func.count(Dispute.id)).filter(
-        Dispute.reported_id == user_id,
-    ).scalar() or 0
+    total_disputes = (
+        db.query(sql_func.count(Dispute.id))
+        .filter(
+            Dispute.reported_id == user_id,
+        )
+        .scalar()
+        or 0
+    )
 
     if total_disputes >= 15:
         score += 20
@@ -75,13 +85,20 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
         reasons.append(f"⚠️ Toplam {total_disputes} anlaşmazlık kaydı")
 
     # === YORUM ANALİZİ (sadece provider için) ===
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == user_id).first()
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.user_id == user_id).first()
+    )
     if provider:
         # Anormal yorum paterni: 7 günde 10+ yorum şüpheli
-        recent_reviews = db.query(sql_func.count(Review.id)).filter(
-            Review.provider_id == provider.id,
-            Review.created_at >= seven_days_ago,
-        ).scalar() or 0
+        recent_reviews = (
+            db.query(sql_func.count(Review.id))
+            .filter(
+                Review.provider_id == provider.id,
+                Review.created_at >= seven_days_ago,
+            )
+            .scalar()
+            or 0
+        )
 
         if recent_reviews >= 15:
             score += 25
@@ -91,10 +108,15 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
             reasons.append(f"⚠️ Son 7 günde {recent_reviews} yorum — şüpheli yoğunluk")
 
         # Düşük completion rate
-        total_quotes_accepted = db.query(sql_func.count(Quote.id)).filter(
-            Quote.provider_id == provider.id,
-            Quote.status == "ACCEPTED",
-        ).scalar() or 0
+        total_quotes_accepted = (
+            db.query(sql_func.count(Quote.id))
+            .filter(
+                Quote.provider_id == provider.id,
+                Quote.status == "ACCEPTED",
+            )
+            .scalar()
+            or 0
+        )
 
         completed_jobs = provider.completed_jobs or 0
 
@@ -102,18 +124,24 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
             completion_rate = completed_jobs / total_quotes_accepted
             if completion_rate < 0.3:
                 score += 20
-                reasons.append(f"🚨 Düşük tamamlama oranı: %{completion_rate * 100:.0f}")
+                reasons.append(
+                    f"🚨 Düşük tamamlama oranı: %{completion_rate * 100:.0f}"
+                )
             elif completion_rate < 0.5:
                 score += 10
                 reasons.append(f"⚠️ Düşük tamamlama oranı: %{completion_rate * 100:.0f}")
 
         # Çok düşük puan
-        avg_rating_data = db.query(
-            sql_func.avg(Review.rating),
-            sql_func.count(Review.id),
-        ).filter(
-            Review.provider_id == provider.id,
-        ).first()
+        avg_rating_data = (
+            db.query(
+                sql_func.avg(Review.rating),
+                sql_func.count(Review.id),
+            )
+            .filter(
+                Review.provider_id == provider.id,
+            )
+            .first()
+        )
 
         avg_rating = float(avg_rating_data[0] or 5.0)
         review_count = int(avg_rating_data[1] or 0)
@@ -126,7 +154,11 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
             reasons.append(f"⚠️ Düşük ortalama puan: {avg_rating:.1f}/5.0")
 
     # === HESAP YAŞ ANALİZİ ===
-    account_age_days = (now - user.created_at.replace(tzinfo=timezone.utc)).days if user.created_at else 999
+    account_age_days = (
+        (now - user.created_at.replace(tzinfo=timezone.utc)).days
+        if user.created_at
+        else 999
+    )
 
     if account_age_days < 7 and provider:
         score += 10

@@ -51,26 +51,35 @@ class TestAuthRegister:
 class TestAuthLogin:
     def test_login_success(self, client, sample_user_data):
         client.post("/api/v1/auth/register", json=sample_user_data)
-        response = client.post("/api/v1/auth/login", json={
-            "email": sample_user_data["email"],
-            "password": sample_user_data["password"],
-        })
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": sample_user_data["email"],
+                "password": sample_user_data["password"],
+            },
+        )
         assert response.status_code == 200
         assert "access_token" in response.json()
 
     def test_login_wrong_password(self, client, sample_user_data):
         client.post("/api/v1/auth/register", json=sample_user_data)
-        response = client.post("/api/v1/auth/login", json={
-            "email": sample_user_data["email"],
-            "password": "WrongPassword123",
-        })
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": sample_user_data["email"],
+                "password": "WrongPassword123",
+            },
+        )
         assert response.status_code == 400
 
     def test_login_nonexistent_user(self, client):
-        response = client.post("/api/v1/auth/login", json={
-            "email": "nonexistent@example.com",
-            "password": "Test1234",
-        })
+        response = client.post(
+            "/api/v1/auth/login",
+            json={
+                "email": "nonexistent@example.com",
+                "password": "Test1234",
+            },
+        )
         assert response.status_code == 400
 
 
@@ -78,9 +87,9 @@ class TestAuthMe:
     def test_get_me_authenticated(self, client, sample_user_data):
         register = client.post("/api/v1/auth/register", json=sample_user_data)
         token = register.json()["access_token"]
-        response = client.get("/api/v1/auth/me", headers={
-            "Authorization": f"Bearer {token}"
-        })
+        response = client.get(
+            "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
+        )
         assert response.status_code == 200
         assert response.json()["email"] == sample_user_data["email"]
 
@@ -93,14 +102,20 @@ class TestAuthRefresh:
     def test_refresh_token(self, client, sample_user_data):
         register = client.post("/api/v1/auth/register", json=sample_user_data)
         refresh_token = register.json()["refresh_token"]
-        response = client.post("/api/v1/auth/refresh", json={
-            "refresh_token": refresh_token,
-        })
+        response = client.post(
+            "/api/v1/auth/refresh",
+            json={
+                "refresh_token": refresh_token,
+            },
+        )
         assert response.status_code == 200
         assert "access_token" in response.json()
 
     def test_refresh_invalid_token(self, client):
-        response = client.post("/api/v1/auth/refresh", json={
-            "refresh_token": "invalid.token.here",
-        })
+        response = client.post(
+            "/api/v1/auth/refresh",
+            json={
+                "refresh_token": "invalid.token.here",
+            },
+        )
         assert response.status_code in [400, 401]

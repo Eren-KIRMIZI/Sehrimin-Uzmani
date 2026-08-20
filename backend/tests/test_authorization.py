@@ -7,20 +7,25 @@ Bu dosya şu senaryoları sistematik olarak test eder:
 3. Token güvenliği: Revoke edilmiş veya geçersiz token reddedilir
 4. Provider kısıtlaması: USER provider endpoint'lerine erişemez
 """
+
 import pytest
 
 
 # ─── Yardımcı Fonksiyonlar ─────────────────────────────────────────────────────
 
+
 def _register_and_login(client, email: str, role: str = "USER") -> dict:
     """Kullanıcı kaydeder ve access_token ile user dict döndürür."""
-    register_resp = client.post("/api/v1/auth/register", json={
-        "email": email,
-        "password": "Test1234",
-        "first_name": "Test",
-        "last_name": "User",
-        "role": role,
-    })
+    register_resp = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Test1234",
+            "first_name": "Test",
+            "last_name": "User",
+            "role": role,
+        },
+    )
     assert register_resp.status_code == 200, f"Register failed: {register_resp.text}"
     data = register_resp.json()
     return {
@@ -36,17 +41,22 @@ def _auth_headers(token: str) -> dict:
 
 # ─── Admin Endpoint Koruması ───────────────────────────────────────────────────
 
+
 class TestAdminEndpointProtection:
     """Admin endpoint'leri yalnızca ADMIN rolüne açık olmalı."""
 
     def test_user_cannot_access_admin_dashboard(self, client):
         user = _register_and_login(client, "user1@test.com", "USER")
-        resp = client.get("/api/v1/admin/dashboard", headers=_auth_headers(user["token"]))
+        resp = client.get(
+            "/api/v1/admin/dashboard", headers=_auth_headers(user["token"])
+        )
         assert resp.status_code == 403
 
     def test_provider_cannot_access_admin_dashboard(self, client):
         provider = _register_and_login(client, "prov1@test.com", "PROVIDER")
-        resp = client.get("/api/v1/admin/dashboard", headers=_auth_headers(provider["token"]))
+        resp = client.get(
+            "/api/v1/admin/dashboard", headers=_auth_headers(provider["token"])
+        )
         assert resp.status_code == 403
 
     def test_anonymous_cannot_access_admin_dashboard(self, client):
@@ -64,7 +74,6 @@ class TestAdminEndpointProtection:
         # 404: kaynak bulunamadı (her ikisi de güvenli — bilgi sızıntısı yok)
         assert resp.status_code in (403, 404)
 
-
     def test_user_cannot_list_all_users_via_admin(self, client):
         user = _register_and_login(client, "user3@test.com", "USER")
         resp = client.get("/api/v1/admin/users", headers=_auth_headers(user["token"]))
@@ -72,6 +81,7 @@ class TestAdminEndpointProtection:
 
 
 # ─── Provider Endpoint Koruması ───────────────────────────────────────────────
+
 
 class TestProviderEndpointProtection:
     """Provider endpoint'leri yalnızca PROVIDER rolüne açık olmalı."""
@@ -85,18 +95,24 @@ class TestProviderEndpointProtection:
         """USER rolüyle provider profil oluşturma denemesi 403 dönmeli."""
         user = _register_and_login(client, "user5@test.com", "USER")
         # Gerçek endpoint: /api/v1/providers/profile
-        resp = client.post("/api/v1/providers/profile", json={
-            "business_name": "Hack Provider",
-            "bio": "Test",
-            "experience_years": 1,
-        }, headers=_auth_headers(user["token"]))
+        resp = client.post(
+            "/api/v1/providers/profile",
+            json={
+                "business_name": "Hack Provider",
+                "bio": "Test",
+                "experience_years": 1,
+            },
+            headers=_auth_headers(user["token"]),
+        )
         assert resp.status_code == 403
 
     def test_user_cannot_access_provider_payout(self, client):
         """USER rolüyle payout talebi oluşturma denemesi — admin gerektirir."""
         user = _register_and_login(client, "user6@test.com", "USER")
         # Sadece ADMIN görebilir
-        resp = client.get("/api/v1/commissions/payout-requests", headers=_auth_headers(user["token"]))
+        resp = client.get(
+            "/api/v1/commissions/payout-requests", headers=_auth_headers(user["token"])
+        )
         # USER kendi payout talepleri için liste çekebilir (boş döner),
         # admin-only payout onay endpoint'i 403 dönmeli
         assert resp.status_code in (200, 403, 404)
@@ -107,6 +123,7 @@ class TestProviderEndpointProtection:
 
 
 # ─── Token Güvenliği ──────────────────────────────────────────────────────────
+
 
 class TestTokenSecurity:
     """Geçersiz veya revoke edilmiş token'lar reddedilmeli."""
@@ -157,6 +174,7 @@ class TestTokenSecurity:
 
 # ─── Kaynak Sahipliği ─────────────────────────────────────────────────────────
 
+
 class TestResourceOwnership:
     """Kullanıcılar yalnızca kendi kaynaklarına erişebilmeli."""
 
@@ -190,36 +208,46 @@ class TestResourceOwnership:
 
 # ─── Kayıt Rol Kısıtlaması ────────────────────────────────────────────────────
 
+
 class TestRegistrationRoleRestriction:
     """Kayıt sırasında ayrıcalıklı roller atanamamalı."""
 
     def test_cannot_self_assign_admin_role(self, client):
-        resp = client.post("/api/v1/auth/register", json={
-            "email": "fake_admin@test.com",
-            "password": "FakeAdmin123",
-            "first_name": "Fake",
-            "last_name": "Admin",
-            "role": "ADMIN",
-        })
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "fake_admin@test.com",
+                "password": "FakeAdmin123",
+                "first_name": "Fake",
+                "last_name": "Admin",
+                "role": "ADMIN",
+            },
+        )
         assert resp.status_code == 422
 
     def test_cannot_self_assign_moderator_role(self, client):
-        resp = client.post("/api/v1/auth/register", json={
-            "email": "fake_mod@test.com",
-            "password": "FakeMod1234",
-            "first_name": "Fake",
-            "last_name": "Mod",
-            "role": "MODERATOR",
-        })
+        resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "fake_mod@test.com",
+                "password": "FakeMod1234",
+                "first_name": "Fake",
+                "last_name": "Mod",
+                "role": "MODERATOR",
+            },
+        )
         assert resp.status_code == 422
 
     def test_valid_roles_are_accepted(self, client):
         for role in ["USER", "PROVIDER"]:
-            resp = client.post("/api/v1/auth/register", json={
-                "email": f"valid_{role.lower()}@test.com",
-                "password": "Valid1234",
-                "first_name": "Valid",
-                "last_name": "User",
-                "role": role,
-            })
+            resp = client.post(
+                "/api/v1/auth/register",
+                json={
+                    "email": f"valid_{role.lower()}@test.com",
+                    "password": "Valid1234",
+                    "first_name": "Valid",
+                    "last_name": "User",
+                    "role": role,
+                },
+            )
             assert resp.status_code == 200, f"Role {role} should be valid"

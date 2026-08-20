@@ -72,8 +72,11 @@ class ReviewService:
         perf.total_reviews = (perf.total_reviews or 0) + 1
         perf.rating = (old_total + new_rating) / perf.total_reviews
 
-    def add_provider_reply(self, db: Session, review_id: int, reply_text: str, provider_user_id: int) -> Review:
+    def add_provider_reply(
+        self, db: Session, review_id: int, reply_text: str, provider_user_id: int
+    ) -> Review:
         from datetime import datetime, timezone
+
         rev = review_repo.get(db, review_id)
         if not rev:
             raise ValueError("Değerlendirme bulunamadı")
@@ -98,6 +101,7 @@ def _on_appointment_completed(payload: dict):
     db = SessionLocal()
     try:
         from app.modules.notifications.service import create_notification
+
         appt = appointment_repo.get(db, appointment_id)
         if not appt:
             return

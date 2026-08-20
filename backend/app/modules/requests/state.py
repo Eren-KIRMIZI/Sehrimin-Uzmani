@@ -14,6 +14,7 @@ class RequestState(str, Enum):
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
+
 class RequestStateMachine(BaseStateMachine):
     def __init__(self, current_state: RequestState):
         super().__init__(current_state)
@@ -27,5 +28,5 @@ class RequestStateMachine(BaseStateMachine):
             RequestState.SCHEDULED: [RequestState.IN_PROGRESS, RequestState.CANCELLED],
             RequestState.IN_PROGRESS: [RequestState.COMPLETED, RequestState.CANCELLED],
             RequestState.COMPLETED: [],
-            RequestState.CANCELLED: []
+            RequestState.CANCELLED: [],
         }

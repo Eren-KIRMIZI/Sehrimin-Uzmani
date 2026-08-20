@@ -62,19 +62,29 @@ def _response_score(response_time_minutes: int) -> float:
 
 def _repeat_customer_score(provider_id: int, db: Session) -> float:
     """Tekrar müşteri heuristic → 0-10 (ağırlık %10)
-    
+
     Gerçek tekrar müşteri verisi olmadığından, yorum sayısı / benzersiz
     müşteri sayısı oranını kullanıyoruz.
     """
-    total_reviews = db.query(sql_func.count(Review.id)).filter(
-        Review.provider_id == provider_id,
-        Review.is_visible,
-    ).scalar() or 0
+    total_reviews = (
+        db.query(sql_func.count(Review.id))
+        .filter(
+            Review.provider_id == provider_id,
+            Review.is_visible,
+        )
+        .scalar()
+        or 0
+    )
 
-    unique_customers = db.query(sql_func.count(sql_func.distinct(Review.customer_id))).filter(
-        Review.provider_id == provider_id,
-        Review.is_visible,
-    ).scalar() or 0
+    unique_customers = (
+        db.query(sql_func.count(sql_func.distinct(Review.customer_id)))
+        .filter(
+            Review.provider_id == provider_id,
+            Review.is_visible,
+        )
+        .scalar()
+        or 0
+    )
 
     if unique_customers == 0:
         return 5.0  # nötr
@@ -87,7 +97,7 @@ def _repeat_customer_score(provider_id: int, db: Session) -> float:
 def calculate_reputation_score(provider: ProviderProfile, db: Session) -> dict:
     """
     Uzmanın kapsamlı reputation skorunu hesaplar.
-    
+
     Returns:
         {
             score: int (0-100),
@@ -97,13 +107,17 @@ def calculate_reputation_score(provider: ProviderProfile, db: Session) -> dict:
         }
     """
     # Gerçek rating verisi
-    rating_data = db.query(
-        sql_func.avg(Review.rating),
-        sql_func.count(Review.id),
-    ).filter(
-        Review.provider_id == provider.id,
-        Review.is_visible,
-    ).first()
+    rating_data = (
+        db.query(
+            sql_func.avg(Review.rating),
+            sql_func.count(Review.id),
+        )
+        .filter(
+            Review.provider_id == provider.id,
+            Review.is_visible,
+        )
+        .first()
+    )
 
     avg_rating = float(rating_data[0] or 0)
     review_count = int(rating_data[1] or 0)
@@ -120,15 +134,21 @@ def calculate_reputation_score(provider: ProviderProfile, db: Session) -> dict:
 
     # Son 30 gün yorumları
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-    recent_reviews = db.query(Review).filter(
-        Review.provider_id == provider.id,
-        Review.created_at >= thirty_days_ago,
-        Review.is_visible,
-    ).all()
+    recent_reviews = (
+        db.query(Review)
+        .filter(
+            Review.provider_id == provider.id,
+            Review.created_at >= thirty_days_ago,
+            Review.is_visible,
+        )
+        .all()
+    )
 
     recent_avg = None
     if recent_reviews:
-        recent_avg = round(sum(r.rating for r in recent_reviews) / len(recent_reviews), 1)
+        recent_avg = round(
+            sum(r.rating for r in recent_reviews) / len(recent_reviews), 1
+        )
 
     # Label
     if total >= 90:

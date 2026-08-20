@@ -25,13 +25,19 @@ def create_promotion(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    existing = db.query(PromotedProvider).filter(
-        PromotedProvider.provider_id == current_user.id,
-        PromotedProvider.category_id == category_id,
-        PromotedProvider.status == "active",
-    ).first()
+    existing = (
+        db.query(PromotedProvider)
+        .filter(
+            PromotedProvider.provider_id == current_user.id,
+            PromotedProvider.category_id == category_id,
+            PromotedProvider.status == "active",
+        )
+        .first()
+    )
     if existing:
-        raise HTTPException(status_code=400, detail="Bu kategoride zaten aktif tanitiminz var")
+        raise HTTPException(
+            status_code=400, detail="Bu kategoride zaten aktif tanitiminz var"
+        )
 
     if budget < 10:
         raise HTTPException(status_code=400, detail="Minimum butce 10 TL olmalidir")
@@ -53,7 +59,11 @@ def create_promotion(
     db.add(promotion)
     db.commit()
     db.refresh(promotion)
-    return {"message": "Tanitim baslatildi", "id": promotion.id, "priority_boost": promotion.priority_boost}
+    return {
+        "message": "Tanitim baslatildi",
+        "id": promotion.id,
+        "priority_boost": promotion.priority_boost,
+    }
 
 
 @router.get("/my")
@@ -61,9 +71,12 @@ def my_promotions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    items = db.query(PromotedProvider).filter(
-        PromotedProvider.provider_id == current_user.id
-    ).order_by(PromotedProvider.created_at.desc()).all()
+    items = (
+        db.query(PromotedProvider)
+        .filter(PromotedProvider.provider_id == current_user.id)
+        .order_by(PromotedProvider.created_at.desc())
+        .all()
+    )
     return [
         {
             "id": p.id,
@@ -155,7 +168,9 @@ def pause_promotion(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    promo = (
+        db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    )
     if not promo:
         raise HTTPException(status_code=404, detail="Tanitim bulunamadi")
     if promo.provider_id != current_user.id:
@@ -171,7 +186,9 @@ def resume_promotion(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    promo = (
+        db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    )
     if not promo:
         raise HTTPException(status_code=404, detail="Tanitim bulunamadi")
     if promo.provider_id != current_user.id:
@@ -187,7 +204,9 @@ def cancel_promotion(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    promo = (
+        db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).first()
+    )
     if not promo:
         raise HTTPException(status_code=404, detail="Tanitim bulunamadi")
     if promo.provider_id != current_user.id:
@@ -204,7 +223,12 @@ def update_bid(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
+    promo = (
+        db.query(PromotedProvider)
+        .filter(PromotedProvider.id == promotion_id)
+        .with_for_update()
+        .first()
+    )
     if not promo:
         raise HTTPException(status_code=404, detail="Tanitim bulunamadi")
     if promo.provider_id != current_user.id:
@@ -226,7 +250,12 @@ def record_impression(
     ip = get_client_ip(request)
     rate_limiter.check(f"promo_imp:{ip}", max_requests=60, window_seconds=300)
 
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
+    promo = (
+        db.query(PromotedProvider)
+        .filter(PromotedProvider.id == promotion_id)
+        .with_for_update()
+        .first()
+    )
     if not promo or promo.status != "active":
         return {"recorded": False}
 
@@ -258,7 +287,12 @@ def record_click(
     ip = get_client_ip(request)
     rate_limiter.check(f"promo_click:{ip}", max_requests=20, window_seconds=300)
 
-    promo = db.query(PromotedProvider).filter(PromotedProvider.id == promotion_id).with_for_update().first()
+    promo = (
+        db.query(PromotedProvider)
+        .filter(PromotedProvider.id == promotion_id)
+        .with_for_update()
+        .first()
+    )
     if not promo or promo.status != "active":
         return {"recorded": False}
 

@@ -14,15 +14,58 @@ from app.modules.locations.models import City, District, ProviderLocation
 from app.modules.providers.models import ProviderProfile
 from app.modules.users.models import User
 
-NAMES = ["Ali", "Ayşe", "Mehmet", "Fatma", "Mustafa", "Zeynep", "Ahmet", "Elif", "Hasan", "Hatice", "Hüseyin", "Merve", "İbrahim", "Esra", "Halil", "Büşra", "Cem", "Deniz", "Efe", "Gamze"]
-LAST_NAMES = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Yıldız", "Öztürk", "Aydın", "Özdemir", "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç", "Güneş", "Gül", "Özcan", "Erdoğan"]
+NAMES = [
+    "Ali",
+    "Ayşe",
+    "Mehmet",
+    "Fatma",
+    "Mustafa",
+    "Zeynep",
+    "Ahmet",
+    "Elif",
+    "Hasan",
+    "Hatice",
+    "Hüseyin",
+    "Merve",
+    "İbrahim",
+    "Esra",
+    "Halil",
+    "Büşra",
+    "Cem",
+    "Deniz",
+    "Efe",
+    "Gamze",
+]
+LAST_NAMES = [
+    "Yılmaz",
+    "Kaya",
+    "Demir",
+    "Çelik",
+    "Şahin",
+    "Yıldız",
+    "Öztürk",
+    "Aydın",
+    "Özdemir",
+    "Arslan",
+    "Doğan",
+    "Kılıç",
+    "Aslan",
+    "Çetin",
+    "Kara",
+    "Koç",
+    "Güneş",
+    "Gül",
+    "Özcan",
+    "Erdoğan",
+]
 
 DUMMY_DISTRICTS = {
     "Kayseri": ["Melikgazi", "Kocasinan", "Talas", "Develi", "Yahyalı"],
     "Aksaray": ["Merkez", "Ağaçören", "Eskil", "Gülağaç", "Güzelyurt"],
     "Konya": ["Selçuklu", "Meram", "Karatay", "Ereğli", "Akşehir"],
-    "Ankara": [] # Ankara already has districts from seed.py
+    "Ankara": [],  # Ankara already has districts from seed.py
 }
+
 
 def seed_phase4_data():
     db: Session = SessionLocal()
@@ -30,9 +73,22 @@ def seed_phase4_data():
         cities_to_seed = ["Kayseri", "Aksaray", "Konya", "Ankara"]
 
         # Get 5 Categories for expansion
-        target_category_slugs = ["ev-yasam", "teknik-hizmetler", "tasimacilik", "guzellik", "arac"]
-        categories = db.query(Category).filter(Category.slug.in_(target_category_slugs)).all()
-        services = db.query(Service).join(SubCategory).filter(SubCategory.category_id.in_([c.id for c in categories])).all()
+        target_category_slugs = [
+            "ev-yasam",
+            "teknik-hizmetler",
+            "tasimacilik",
+            "guzellik",
+            "arac",
+        ]
+        categories = (
+            db.query(Category).filter(Category.slug.in_(target_category_slugs)).all()
+        )
+        services = (
+            db.query(Service)
+            .join(SubCategory)
+            .filter(SubCategory.category_id.in_([c.id for c in categories]))
+            .all()
+        )
 
         if not services:
             print("No services found for selected categories")
@@ -47,7 +103,11 @@ def seed_phase4_data():
             # Seed districts if they don't exist
             if DUMMY_DISTRICTS.get(city_name):
                 for d_name in DUMMY_DISTRICTS[city_name]:
-                    district = db.query(District).filter(District.city_id == city.id, District.name == d_name).first()
+                    district = (
+                        db.query(District)
+                        .filter(District.city_id == city.id, District.name == d_name)
+                        .first()
+                    )
                     if not district:
                         district = District(city_id=city.id, name=d_name)
                         db.add(district)
@@ -71,7 +131,7 @@ def seed_phase4_data():
                         first_name=first_name,
                         last_name=last_name,
                         role="USER",
-                        is_active=True
+                        is_active=True,
                     )
                     db.add(user)
             db.commit()
@@ -90,7 +150,7 @@ def seed_phase4_data():
                         first_name=first_name,
                         last_name=last_name,
                         role="PROVIDER",
-                        is_active=True
+                        is_active=True,
                     )
                     db.add(user)
                     db.flush()
@@ -103,8 +163,10 @@ def seed_phase4_data():
                         rating=random.uniform(4.0, 5.0),
                         review_count=random.randint(0, 30),
                         completed_jobs=random.randint(0, 50),
-                        verification_status=random.choice(["NONE", "BASIC", "IDENTITY", "PROFESSIONAL", "BUSINESS"]),
-                        is_available=True
+                        verification_status=random.choice(
+                            ["NONE", "BASIC", "IDENTITY", "PROFESSIONAL", "BUSINESS"]
+                        ),
+                        is_available=True,
                     )
                     db.add(profile)
                     db.flush()
@@ -118,7 +180,7 @@ def seed_phase4_data():
                         district_id=district.id,
                         is_primary=True,
                         latitude=random.uniform(baselat - 0.5, baselat + 0.5),
-                        longitude=random.uniform(baselng - 0.5, baselng + 0.5)
+                        longitude=random.uniform(baselng - 0.5, baselng + 0.5),
                     )
                     db.add(loc)
 
@@ -127,7 +189,7 @@ def seed_phase4_data():
                         ps = ProviderService(
                             provider_id=profile.id,
                             service_id=s.id,
-                            starting_price=random.randint(100, 1000)
+                            starting_price=random.randint(100, 1000),
                         )
                         db.add(ps)
 
@@ -141,6 +203,7 @@ def seed_phase4_data():
         db.rollback()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     seed_phase4_data()

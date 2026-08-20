@@ -45,10 +45,14 @@ def create_commission_rate(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    existing = db.query(CommissionRate).filter(
-        CommissionRate.category_id == category_id,
-        CommissionRate.is_active,
-    ).first()
+    existing = (
+        db.query(CommissionRate)
+        .filter(
+            CommissionRate.category_id == category_id,
+            CommissionRate.is_active,
+        )
+        .first()
+    )
     if existing:
         existing.rate = rate
         existing.min_amount = min_amount
@@ -126,19 +130,31 @@ def get_my_earnings(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    earning = db.query(ProviderEarning).filter(
-        ProviderEarning.provider_id == current_user.id
-    ).first()
+    earning = (
+        db.query(ProviderEarning)
+        .filter(ProviderEarning.provider_id == current_user.id)
+        .first()
+    )
     if not earning:
-        earning = ProviderEarning(provider_id=current_user.id, total_earned=0, total_commission_paid=0, pending_amount=0, paid_amount=0)
+        earning = ProviderEarning(
+            provider_id=current_user.id,
+            total_earned=0,
+            total_commission_paid=0,
+            pending_amount=0,
+            paid_amount=0,
+        )
         db.add(earning)
         db.commit()
         db.refresh(earning)
 
-    transactions = db.query(Transaction).filter(
-        Transaction.provider_id == current_user.id,
-        Transaction.status == "completed",
-    ).all()
+    transactions = (
+        db.query(Transaction)
+        .filter(
+            Transaction.provider_id == current_user.id,
+            Transaction.status == "completed",
+        )
+        .all()
+    )
 
     return {
         "total_earned": earning.total_earned,
@@ -188,9 +204,12 @@ def request_payout(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    earning = db.query(ProviderEarning).filter(
-        ProviderEarning.provider_id == current_user.id
-    ).with_for_update().first()
+    earning = (
+        db.query(ProviderEarning)
+        .filter(ProviderEarning.provider_id == current_user.id)
+        .with_for_update()
+        .first()
+    )
     if not earning or earning.pending_amount < amount:
         raise HTTPException(status_code=400, detail="Yetersiz bakiye")
 
@@ -216,9 +235,12 @@ def my_payout_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    items = db.query(PayoutRequest).filter(
-        PayoutRequest.provider_id == current_user.id
-    ).order_by(PayoutRequest.created_at.desc()).all()
+    items = (
+        db.query(PayoutRequest)
+        .filter(PayoutRequest.provider_id == current_user.id)
+        .order_by(PayoutRequest.created_at.desc())
+        .all()
+    )
     return [
         {
             "id": p.id,
@@ -236,9 +258,12 @@ def pending_payouts(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    items = db.query(PayoutRequest).filter(
-        PayoutRequest.status == "pending"
-    ).order_by(PayoutRequest.created_at.asc()).all()
+    items = (
+        db.query(PayoutRequest)
+        .filter(PayoutRequest.status == "pending")
+        .order_by(PayoutRequest.created_at.asc())
+        .all()
+    )
     return [
         {
             "id": p.id,
@@ -260,7 +285,12 @@ def approve_payout(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).with_for_update().first()
+    payout = (
+        db.query(PayoutRequest)
+        .filter(PayoutRequest.id == payout_id)
+        .with_for_update()
+        .first()
+    )
     if not payout:
         raise HTTPException(status_code=404, detail="Odeme talebi bulunamadi")
     if payout.status != "pending":
@@ -269,9 +299,12 @@ def approve_payout(
     payout.status = "approved"
     payout.processed_at = datetime.utcnow()
 
-    earning = db.query(ProviderEarning).filter(
-        ProviderEarning.provider_id == payout.provider_id
-    ).with_for_update().first()
+    earning = (
+        db.query(ProviderEarning)
+        .filter(ProviderEarning.provider_id == payout.provider_id)
+        .with_for_update()
+        .first()
+    )
     if earning:
         earning.paid_amount += payout.amount
 
@@ -286,7 +319,12 @@ def reject_payout(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["ADMIN"])),
 ):
-    payout = db.query(PayoutRequest).filter(PayoutRequest.id == payout_id).with_for_update().first()
+    payout = (
+        db.query(PayoutRequest)
+        .filter(PayoutRequest.id == payout_id)
+        .with_for_update()
+        .first()
+    )
     if not payout:
         raise HTTPException(status_code=404, detail="Odeme talebi bulunamadi")
     if payout.status != "pending":
@@ -295,9 +333,12 @@ def reject_payout(
     payout.status = "rejected"
     payout.admin_note = admin_note
 
-    earning = db.query(ProviderEarning).filter(
-        ProviderEarning.provider_id == payout.provider_id
-    ).with_for_update().first()
+    earning = (
+        db.query(ProviderEarning)
+        .filter(ProviderEarning.provider_id == payout.provider_id)
+        .with_for_update()
+        .first()
+    )
     if earning:
         earning.pending_amount += payout.amount
 

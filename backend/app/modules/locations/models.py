@@ -13,7 +13,9 @@ class City(BaseModel):
     longitude = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True)
 
-    districts = relationship("District", back_populates="city", cascade="all, delete-orphan")
+    districts = relationship(
+        "District", back_populates="city", cascade="all, delete-orphan"
+    )
 
 
 class District(BaseModel):
@@ -26,14 +28,18 @@ class District(BaseModel):
     is_active = Column(Boolean, default=True)
 
     city = relationship("City", back_populates="districts")
-    neighborhoods = relationship("Neighborhood", back_populates="district", cascade="all, delete-orphan")
+    neighborhoods = relationship(
+        "Neighborhood", back_populates="district", cascade="all, delete-orphan"
+    )
     provider_locations = relationship("ProviderLocation", back_populates="district")
 
 
 class Neighborhood(BaseModel):
     __tablename__ = "neighborhoods"
 
-    district_id = Column(Integer, ForeignKey("districts.id"), nullable=False, index=True)
+    district_id = Column(
+        Integer, ForeignKey("districts.id"), nullable=False, index=True
+    )
     name = Column(String(100), nullable=False)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
@@ -48,7 +54,9 @@ class ProviderLocation(BaseModel):
         Index("ix_provider_location_city_district", "city_id", "district_id"),
     )
 
-    provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
+    provider_id = Column(
+        Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True
+    )
     city_id = Column(Integer, ForeignKey("cities.id"), nullable=False, index=True)
     district_id = Column(Integer, ForeignKey("districts.id"), nullable=True, index=True)
     address = Column(String(500), nullable=True)
@@ -63,13 +71,20 @@ class ProviderLocation(BaseModel):
 
 class ProviderServiceArea(BaseModel):
     """Uzmanların hizmet verdikleri bölgeleri (mahalle bazında veya çap olarak) tanımlar"""
+
     __tablename__ = "provider_service_areas"
 
-    provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
+    provider_id = Column(
+        Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True
+    )
     city_id = Column(Integer, ForeignKey("cities.id"), nullable=False, index=True)
     district_id = Column(Integer, ForeignKey("districts.id"), nullable=True, index=True)
-    neighborhood_id = Column(Integer, ForeignKey("neighborhoods.id"), nullable=True, index=True)
-    max_distance_km = Column(Float, nullable=True) # Eğer lokasyon/çap bazlı çalışacaksa
+    neighborhood_id = Column(
+        Integer, ForeignKey("neighborhoods.id"), nullable=True, index=True
+    )
+    max_distance_km = Column(
+        Float, nullable=True
+    )  # Eğer lokasyon/çap bazlı çalışacaksa
 
     provider = relationship("ProviderProfile", back_populates="service_areas")
     city = relationship("City")

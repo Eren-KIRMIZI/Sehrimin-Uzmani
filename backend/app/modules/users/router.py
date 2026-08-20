@@ -28,12 +28,20 @@ def get_profile(current_user: User = Depends(get_current_user)):
 
 
 @router.patch("/me")
-def update_profile(data: UserUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_profile(
+    data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     allowed_fields = {"first_name", "last_name", "phone", "avatar"}
     updates = data.model_dump(exclude_unset=True)
 
     if "phone" in updates and updates["phone"] != current_user.phone:
-        existing = db.query(User).filter(User.phone == updates["phone"], User.id != current_user.id).first()
+        existing = (
+            db.query(User)
+            .filter(User.phone == updates["phone"], User.id != current_user.id)
+            .first()
+        )
         if existing:
             raise BadRequestException("Bu telefon numarasi baska bir kullaniciya ait")
 
@@ -46,7 +54,9 @@ def update_profile(data: UserUpdate, current_user: User = Depends(get_current_us
 
 
 @router.delete("/me")
-def delete_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def delete_account(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
 
     from app.modules.auth.models import RevokedToken
 

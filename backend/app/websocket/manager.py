@@ -7,6 +7,7 @@ Değişiklikler:
 - JSON hata yönetimi: Geçersiz JSON'da bağlantı düşmez, hata mesajı döner
 - Bağlantı havuzu boyutu loglama
 """
+
 import asyncio
 import json
 import logging
@@ -25,13 +26,25 @@ logger = logging.getLogger(__name__)
 _WS_RECEIVE_TIMEOUT = 90.0
 
 BLOCKED_PATTERNS = [
-    "whatsapp", "telegram", "instagram", "facebook",
-    "arama yapiyorum", "arama yapıyorum",
-    "numaram", "numaramı", "numara ver",
-    "disarida bulusalim", "dışarıda buluşalım",
-    "platform disinda", "platform dışı",
-    "site disinda", "site dışı",
-    "@gmail.com", "@hotmail.com", "@outlook.com", "@yahoo.com",
+    "whatsapp",
+    "telegram",
+    "instagram",
+    "facebook",
+    "arama yapiyorum",
+    "arama yapıyorum",
+    "numaram",
+    "numaramı",
+    "numara ver",
+    "disarida bulusalim",
+    "dışarıda buluşalım",
+    "platform disinda",
+    "platform dışı",
+    "site disinda",
+    "site dışı",
+    "@gmail.com",
+    "@hotmail.com",
+    "@outlook.com",
+    "@yahoo.com",
 ]
 
 
@@ -81,12 +94,17 @@ class ConnectionManager:
             self.active_connections[user_id].discard(conn)
 
     async def send_personal_notification(self, user_id: int, notification: dict):
-        await self.send_to_user(user_id, {
-            "action": "new_notification",
-            "notification": notification,
-        })
+        await self.send_to_user(
+            user_id,
+            {
+                "action": "new_notification",
+                "notification": notification,
+            },
+        )
 
-    async def broadcast_to_conversation(self, conversation_id: int, sender_id: int, message: dict, db):
+    async def broadcast_to_conversation(
+        self, conversation_id: int, sender_id: int, message: dict, db
+    ):
         conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
         if not conv:
             return
@@ -95,7 +113,11 @@ class ConnectionManager:
         if conv.customer_id:
             participants.add(conv.customer_id)
         if conv.provider_id:
-            provider = db.query(ProviderProfile).filter(ProviderProfile.id == conv.provider_id).first()
+            provider = (
+                db.query(ProviderProfile)
+                .filter(ProviderProfile.id == conv.provider_id)
+                .first()
+            )
             if provider:
                 participants.add(provider.user_id)
 
@@ -179,7 +201,9 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     await _handle_typing(user_id, msg_data, db)
 
                 else:
-                    await websocket.send_json({"error": f"Bilinmeyen action: {action!r}"})
+                    await websocket.send_json(
+                        {"error": f"Bilinmeyen action: {action!r}"}
+                    )
 
         except WebSocketDisconnect:
             pass  # Normal kapanma
@@ -203,10 +227,16 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
         await websocket.send_json({"error": "Mesaj icerigi bos olamaz"})
         return
     if len(content) > 2000:
-        await websocket.send_json({"error": "Mesaj icerigi 2000 karakterden uzun olamaz"})
+        await websocket.send_json(
+            {"error": "Mesaj icerigi 2000 karakterden uzun olamaz"}
+        )
         return
     if _is_content_blocked(content):
-        await websocket.send_json({"error": "Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)"})
+        await websocket.send_json(
+            {
+                "error": "Mesaj icerigi platform kurallarina aykiri (iletisim bilgisi paylasimi)"
+            }
+        )
         return
 
     conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -214,9 +244,8 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
         await websocket.send_json({"error": "Konusma bulunamadi"})
         return
 
-    is_participant = (
-        conv.customer_id == user_id or
-        (conv.provider_id and _is_provider_owner(conv.provider_id, user_id, db))
+    is_participant = conv.customer_id == user_id or (
+        conv.provider_id and _is_provider_owner(conv.provider_id, user_id, db)
     )
     if not is_participant:
         await websocket.send_json({"error": "Yetkiniz yok"})
@@ -276,22 +305,33 @@ async def _handle_typing(user_id: int, msg_data: dict, db):
     participant_ids = set()
     participant_ids.add(conv.customer_id)
     if conv.provider_id:
-        provider = db.query(ProviderProfile).filter(ProviderProfile.id == conv.provider_id).first()
+        provider = (
+            db.query(ProviderProfile)
+            .filter(ProviderProfile.id == conv.provider_id)
+            .first()
+        )
         if provider:
             participant_ids.add(provider.user_id)
 
     for pid in participant_ids:
         if pid != user_id:
-            await manager.send_to_user(pid, {
-                "action": "typing",
-                "conversation_id": conversation_id,
-                "user_id": user_id,
-            })
+            await manager.send_to_user(
+                pid,
+                {
+                    "action": "typing",
+                    "conversation_id": conversation_id,
+                    "user_id": user_id,
+                },
+            )
 
 
 def _is_provider_owner(provider_id: int, user_id: int, db) -> bool:
-    provider = db.query(ProviderProfile).filter(
-        ProviderProfile.id == provider_id,
-        ProviderProfile.user_id == user_id,
-    ).first()
+    provider = (
+        db.query(ProviderProfile)
+        .filter(
+            ProviderProfile.id == provider_id,
+            ProviderProfile.user_id == user_id,
+        )
+        .first()
+    )
     return provider is not None

@@ -8,6 +8,7 @@ Redis bağlantı yönetimi — production sertleştirmesi.
 - Şifre desteği (REDIS_PASSWORD)
 - Başlangıçta bağlantı testi ile erken hata tespiti
 """
+
 import logging
 
 import redis
@@ -69,7 +70,9 @@ def check_redis_health() -> bool:
         logger.warning("Redis saglik kontrolu basarisiz: %s", str(e))
         return False
     except Exception as e:
-        logger.error("Redis saglik kontrolunda beklenmeyen hata: %s", str(e), exc_info=True)
+        logger.error(
+            "Redis saglik kontrolunda beklenmeyen hata: %s", str(e), exc_info=True
+        )
         return False
 
 
@@ -80,7 +83,9 @@ def verify_redis_connection() -> None:
     Redis olmadan da çalışabilmek için).
     """
     if check_redis_health():
-        logger.info("Redis baglantisi basarili: %s:%s", settings.REDIS_HOST, settings.REDIS_PORT)
+        logger.info(
+            "Redis baglantisi basarili: %s:%s", settings.REDIS_HOST, settings.REDIS_PORT
+        )
     else:
         logger.warning(
             "Redis'e baglanamadi (%s:%s). Cache ve rate-limiting devre disi olabilir.",

@@ -20,5 +20,10 @@ def list_districts(city_id: int, db: Session = Depends(get_db)):
     if not city:
         raise NotFoundException("Şehir")
 
-    districts = db.query(District).filter(District.city_id == city_id, District.is_active).order_by(District.name).all()
+    districts = (
+        db.query(District)
+        .filter(District.city_id == city_id, District.is_active)
+        .order_by(District.name)
+        .all()
+    )
     return [{"id": d.id, "name": d.name} for d in districts]

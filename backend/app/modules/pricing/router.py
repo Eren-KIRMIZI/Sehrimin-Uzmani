@@ -66,4 +66,7 @@ def refresh_estimates(
     Admin: Fiyat tahmin cache'ini yeniler.
     """
     updated = refresh_price_estimates(db, service_id)
-    return {"message": f"{updated} hizmet için fiyat verileri güncellendi.", "updated_count": updated}
+    return {
+        "message": f"{updated} hizmet için fiyat verileri güncellendi.",
+        "updated_count": updated,
+    }

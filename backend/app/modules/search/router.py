@@ -26,7 +26,10 @@ def _haversine_sql(lat: float, lng: float):
     lng_col = sql_func.radians(ProviderLocation.longitude)
     dlat = lat_col - lat_rad
     dlng = lng_col - lng_rad
-    a = sql_func.sin(dlat / 2) ** 2 + sql_func.cos(lat_rad) * sql_func.cos(lat_col) * sql_func.sin(dlng / 2) ** 2
+    a = (
+        sql_func.sin(dlat / 2) ** 2
+        + sql_func.cos(lat_rad) * sql_func.cos(lat_col) * sql_func.sin(dlng / 2) ** 2
+    )
     return 6371 * 2 * sql_func.atan2(sql_func.sqrt(a), sql_func.sqrt(1 - a))
 
 
@@ -93,7 +96,12 @@ def search_providers(
     if subcategory:
         subcat = db.query(SubCategory).filter(SubCategory.slug == subcategory).first()
         if subcat:
-            service_ids = [s.id for s in db.query(Service).filter(Service.subcategory_id == subcat.id).all()]
+            service_ids = [
+                s.id
+                for s in db.query(Service)
+                .filter(Service.subcategory_id == subcat.id)
+                .all()
+            ]
             ps_subq = (
                 db.query(ProviderService.provider_id)
                 .filter(ProviderService.service_id.in_(service_ids))
@@ -104,8 +112,18 @@ def search_providers(
     if category:
         cat = db.query(Category).filter(Category.slug == category).first()
         if cat:
-            subcat_ids = [sc.id for sc in db.query(SubCategory).filter(SubCategory.category_id == cat.id).all()]
-            service_ids = [s.id for s in db.query(Service).filter(Service.subcategory_id.in_(subcat_ids)).all()]
+            subcat_ids = [
+                sc.id
+                for sc in db.query(SubCategory)
+                .filter(SubCategory.category_id == cat.id)
+                .all()
+            ]
+            service_ids = [
+                s.id
+                for s in db.query(Service)
+                .filter(Service.subcategory_id.in_(subcat_ids))
+                .all()
+            ]
             ps_subq = (
                 db.query(ProviderService.provider_id)
                 .filter(ProviderService.service_id.in_(service_ids))
@@ -121,14 +139,30 @@ def search_providers(
 
     if q:
         # Full text search using tsvector
-        search_query = sql_func.plainto_tsquery('turkish', q)
+        search_query = sql_func.plainto_tsquery("turkish", q)
         vector = (
-            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(ProviderProfile.business_name, '')), 'A') |
-            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(ProviderProfile.bio, '')), 'B') |
-            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(User.first_name, '')), 'C') |
-            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(User.last_name, '')), 'C')
+            sql_func.setweight(
+                sql_func.to_tsvector(
+                    "turkish", sql_func.coalesce(ProviderProfile.business_name, "")
+                ),
+                "A",
+            )
+            | sql_func.setweight(
+                sql_func.to_tsvector(
+                    "turkish", sql_func.coalesce(ProviderProfile.bio, "")
+                ),
+                "B",
+            )
+            | sql_func.setweight(
+                sql_func.to_tsvector("turkish", sql_func.coalesce(User.first_name, "")),
+                "C",
+            )
+            | sql_func.setweight(
+                sql_func.to_tsvector("turkish", sql_func.coalesce(User.last_name, "")),
+                "C",
+            )
         )
-        query = query.filter(vector.op('@@')(search_query))
+        query = query.filter(vector.op("@@")(search_query))
 
         # Add rank column for ordering later if sort is recommended
         rank = sql_func.ts_rank(vector, search_query).label("search_rank")
@@ -159,15 +193,18 @@ def search_providers(
             # Approximate reputation sorting natively
             # rating * 8 + verification priority
             from sqlalchemy import case
+
             verif_case = case(
-                (ProviderProfile.verification_status == 'BUSINESS', 15),
-                (ProviderProfile.verification_status == 'PROFESSIONAL', 12),
-                (ProviderProfile.verification_status == 'IDENTITY', 8),
-                (ProviderProfile.verification_status == 'BASIC', 5),
-                else_=0
+                (ProviderProfile.verification_status == "BUSINESS", 15),
+                (ProviderProfile.verification_status == "PROFESSIONAL", 12),
+                (ProviderProfile.verification_status == "IDENTITY", 8),
+                (ProviderProfile.verification_status == "BASIC", 5),
+                else_=0,
             )
             rep_approx = (ProviderProfile.rating * 8) + verif_case
-            query = query.order_by(rep_approx.desc(), ProviderProfile.review_count.desc())
+            query = query.order_by(
+                rep_approx.desc(), ProviderProfile.review_count.desc()
+            )
 
     rows = query.offset(pagination.offset).limit(pagination.limit).all()
 
@@ -191,7 +228,11 @@ def search_providers(
 
     locations_map = {}
     if provider_ids:
-        locs = db.query(ProviderLocation).filter(ProviderLocation.provider_id.in_(provider_ids)).all()
+        locs = (
+            db.query(ProviderLocation)
+            .filter(ProviderLocation.provider_id.in_(provider_ids))
+            .all()
+        )
         for loc in locs:
             locations_map.setdefault(loc.provider_id, []).append(loc)
 
@@ -217,31 +258,41 @@ def search_providers(
         locs = locations_map.get(p.id, [])
         svcs = services_map.get(p.id, [])
 
-        result.append({
-            "id": p.id,
-            "business_name": p.business_name,
-            "rating": p.rating,
-            "review_count": p.review_count,
-            "completed_jobs": p.completed_jobs,
-            "response_time_minutes": p.response_time_minutes,
-            "verification_status": p.verification_status,
-            "user": {
-                "first_name": user.first_name if user else None,
-                "last_name": user.last_name if user else None,
-                "avatar": user.avatar if user else None,
-            },
-            "services": [
-                {"name": s.service.name if s.service else None, "starting_price": s.starting_price}
-                for s in svcs
-            ],
-            "locations": [
-                {"city": loc.city.name if loc.city else None, "district": loc.district.name if loc.district else None}
-                for loc in locs
-            ],
-            "distance_km": distance_map.get(p.id),
-        })
+        result.append(
+            {
+                "id": p.id,
+                "business_name": p.business_name,
+                "rating": p.rating,
+                "review_count": p.review_count,
+                "completed_jobs": p.completed_jobs,
+                "response_time_minutes": p.response_time_minutes,
+                "verification_status": p.verification_status,
+                "user": {
+                    "first_name": user.first_name if user else None,
+                    "last_name": user.last_name if user else None,
+                    "avatar": user.avatar if user else None,
+                },
+                "services": [
+                    {
+                        "name": s.service.name if s.service else None,
+                        "starting_price": s.starting_price,
+                    }
+                    for s in svcs
+                ],
+                "locations": [
+                    {
+                        "city": loc.city.name if loc.city else None,
+                        "district": loc.district.name if loc.district else None,
+                    }
+                    for loc in locs
+                ],
+                "distance_km": distance_map.get(p.id),
+            }
+        )
 
-    return PaginatedResponse.create(items=result, total=total, page=pagination.page, limit=pagination.limit)
+    return PaginatedResponse.create(
+        items=result, total=total, page=pagination.page, limit=pagination.limit
+    )
 
 
 @router.get("/autocomplete")
@@ -255,15 +306,34 @@ def autocomplete(q: str = Query(..., min_length=2), db: Session = Depends(get_db
     if cached_cats is not None:
         return cached_cats
 
-    categories = db.query(Category).filter(Category.name.ilike(search_term), Category.is_active).limit(5).all()
-    subcategories = db.query(SubCategory).filter(SubCategory.name.ilike(search_term), SubCategory.is_active).limit(5).all()
-    services = db.query(Service).filter(Service.name.ilike(search_term), Service.is_active).limit(5).all()
+    categories = (
+        db.query(Category)
+        .filter(Category.name.ilike(search_term), Category.is_active)
+        .limit(5)
+        .all()
+    )
+    subcategories = (
+        db.query(SubCategory)
+        .filter(SubCategory.name.ilike(search_term), SubCategory.is_active)
+        .limit(5)
+        .all()
+    )
+    services = (
+        db.query(Service)
+        .filter(Service.name.ilike(search_term), Service.is_active)
+        .limit(5)
+        .all()
+    )
 
     results = []
     for c in categories:
-        results.append({"type": "category", "name": c.name, "slug": c.slug, "icon": c.icon})
+        results.append(
+            {"type": "category", "name": c.name, "slug": c.slug, "icon": c.icon}
+        )
     for sc in subcategories:
-        results.append({"type": "subcategory", "name": sc.name, "slug": sc.slug, "icon": sc.icon})
+        results.append(
+            {"type": "subcategory", "name": sc.name, "slug": sc.slug, "icon": sc.icon}
+        )
     for s in services:
         results.append({"type": "service", "name": s.name, "slug": s.slug})
 
@@ -278,4 +348,5 @@ def detect_category_endpoint(
     db: Session = Depends(get_db),
 ):
     from app.modules.search.ai_detector import detect_category
+
     return detect_category(query, db)

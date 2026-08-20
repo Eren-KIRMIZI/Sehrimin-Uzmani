@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class AIProvider(ABC):
     """AI provider'ı için soyut temel sınıf.
-    
+
     Farklı LLM backend'lerini (OpenRouter, OpenAI, Gemini, Ollama vb.)
     aynı arayüzle kullanmayı sağlar.
     """

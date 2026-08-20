@@ -9,7 +9,9 @@ class PortfolioItem(Base):
     __tablename__ = "portfolio_items"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
+    provider_id = Column(
+        Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True
+    )
     title = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)
     image_url = Column(String(500), nullable=False)

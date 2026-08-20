@@ -23,9 +23,12 @@ import app.modules.commissions.models
 import app.modules.subscriptions.models
 import app.modules.promotions.models
 import app.modules.disputes.models
+import app.modules.pricing.models
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
-test_engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+test_engine = create_engine(
+    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
 
 @event.listens_for(test_engine, "connect")
@@ -49,6 +52,7 @@ def setup_database():
 @pytest.fixture(autouse=True)
 def db():
     from app.core.rate_limiter import rate_limiter
+
     rate_limiter._requests.clear()
     connection = test_engine.connect()
     transaction = connection.begin()
@@ -62,9 +66,12 @@ def db():
 def _create_test_app():
     from app.api.router import api_router
     from app.modules.messaging.router import router as messaging_router
+
     app = FastAPI(title="Test App")
     app.add_middleware(
-        __import__("fastapi.middleware.cors", fromlist=["CORSMiddleware"]).CORSMiddleware,
+        __import__(
+            "fastapi.middleware.cors", fromlist=["CORSMiddleware"]
+        ).CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "PUT"],

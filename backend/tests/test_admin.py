@@ -9,6 +9,7 @@ class TestAdmin:
     def _setup_admin(self, client, db):
         from app.modules.users.models import User
         from app.core.security import hash_password, create_access_token
+
         admin = User(
             email="admin_test@example.com",
             password_hash=hash_password("Admin1234"),
@@ -24,13 +25,16 @@ class TestAdmin:
         return create_access_token({"sub": str(uid), "role": "ADMIN", "type": "access"})
 
     def _setup_user(self, client):
-        r = client.post("/api/v1/auth/register", json={
-            "email": "admin_target@example.com",
-            "password": "Test1234",
-            "first_name": "Target",
-            "last_name": "User",
-            "role": "USER",
-        })
+        r = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "admin_target@example.com",
+                "password": "Test1234",
+                "first_name": "Target",
+                "last_name": "User",
+                "role": "USER",
+            },
+        )
         return r.json()["access_token"]
 
     def test_dashboard_requires_admin(self, client):

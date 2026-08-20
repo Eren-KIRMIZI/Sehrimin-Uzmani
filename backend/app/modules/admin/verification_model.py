@@ -9,7 +9,9 @@ class VerificationRequest(Base):
     __tablename__ = "verification_requests"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
+    provider_id = Column(
+        Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True
+    )
     verification_type = Column(String(30), nullable=False)
     document_url = Column(String(500), nullable=True)
     status = Column(String(20), default="PENDING")

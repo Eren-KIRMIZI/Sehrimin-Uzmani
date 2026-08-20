@@ -14,9 +14,13 @@ class BaseStateMachine:
         allowed = self.transitions.get(self.current_state, [])
         return new_state in allowed
 
-    def transition_to(self, new_state: Enum, on_transition: Optional[Callable] = None, **kwargs):
+    def transition_to(
+        self, new_state: Enum, on_transition: Optional[Callable] = None, **kwargs
+    ):
         if not self.can_transition_to(new_state):
-            raise ValueError(f"Geçersiz durum değişimi: {self.current_state} -> {new_state}")
+            raise ValueError(
+                f"Geçersiz durum değişimi: {self.current_state} -> {new_state}"
+            )
 
         old_state = self.current_state
         self.current_state = new_state

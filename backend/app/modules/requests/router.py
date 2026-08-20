@@ -9,12 +9,18 @@ from app.modules.requests.service import request_service
 
 router = APIRouter(prefix="/requests", tags=["requests"])
 
+
 class CreateFromAIBody(BaseModel):
     ai_payload: dict[str, Any]
     original_text: str
 
+
 @router.post("/from-ai")
-def create_from_ai(body: CreateFromAIBody, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def create_from_ai(
+    body: CreateFromAIBody,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     AI tarafından doldurulmuş (is_complete: true) talep verisini sisteme kaydeder
     ve talebi otomatik yayınlayıp Eşleştirme Motorunu (Matching Engine) tetikler.
@@ -34,7 +40,7 @@ def create_from_ai(body: CreateFromAIBody, background_tasks: BackgroundTasks, db
         return {
             "message": "Talep başarıyla oluşturuldu ve eşleştirme başlatıldı.",
             "request_id": req.id,
-            "status": req.status
+            "status": req.status,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -7,8 +7,12 @@ from app.core.base.models import BaseModel
 class Appointment(BaseModel):
     __tablename__ = "appointments"
 
-    request_id = Column(Integer, ForeignKey("service_requests.id"), unique=True, nullable=False)
-    provider_id = Column(Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True)
+    request_id = Column(
+        Integer, ForeignKey("service_requests.id"), unique=True, nullable=False
+    )
+    provider_id = Column(
+        Integer, ForeignKey("provider_profiles.id"), nullable=False, index=True
+    )
     customer_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     quote_id = Column(Integer, ForeignKey("quotes.id"), nullable=True)
     start_at = Column(DateTime(timezone=True), nullable=False)
@@ -19,6 +23,8 @@ class Appointment(BaseModel):
     reminder_sent = Column(Boolean, default=False)
 
     request = relationship("ServiceRequest", back_populates="appointment")
-    provider = relationship("ProviderProfile", back_populates="appointments", foreign_keys=[provider_id])
+    provider = relationship(
+        "ProviderProfile", back_populates="appointments", foreign_keys=[provider_id]
+    )
     customer = relationship("User", foreign_keys=[customer_id])
     quote = relationship("Quote")

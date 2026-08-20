@@ -10,17 +10,21 @@ Bu dosya veritabanı düzeyinde tutarlılığı test eder:
 Not: Gerçek concurrent test için PostgreSQL + pytest-xdist gerekir.
 Bu dosya logic-level doğrulama yapar (single thread, sequential calls).
 """
+
 import pytest
 
 
 def _register_and_login(client, email: str, role: str = "USER") -> dict:
-    resp = client.post("/api/v1/auth/register", json={
-        "email": email,
-        "password": "Test1234",
-        "first_name": "Test",
-        "last_name": "User",
-        "role": role,
-    })
+    resp = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            "password": "Test1234",
+            "first_name": "Test",
+            "last_name": "User",
+            "role": role,
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     return {
@@ -48,48 +52,66 @@ def _create_seed_data(client, user_token: str, provider_token: str) -> dict:
     city_id = cities[0]["id"]
 
     # Provider profil oluştur
-    provider_resp = client.post("/api/v1/providers/me", json={
-        "business_name": "Test Uzman",
-        "description": "Transaction test uzmanı",
-        "years_of_experience": 5,
-    }, headers=_auth_headers(provider_token))
+    provider_resp = client.post(
+        "/api/v1/providers/me",
+        json={
+            "business_name": "Test Uzman",
+            "description": "Transaction test uzmanı",
+            "years_of_experience": 5,
+        },
+        headers=_auth_headers(provider_token),
+    )
     if provider_resp.status_code not in (200, 409):
         pytest.skip(f"Provider profil oluşturulamadı: {provider_resp.text}")
 
     # Provider hizmet ekle
-    provider_profile = client.get("/api/v1/providers/me", headers=_auth_headers(provider_token)).json()
+    provider_profile = client.get(
+        "/api/v1/providers/me", headers=_auth_headers(provider_token)
+    ).json()
     provider_id = provider_profile.get("id")
     if not provider_id:
         pytest.skip("Provider ID alınamadı")
 
-    client.post(f"/api/v1/providers/me/services", json={
-        "category_id": category_id,
-        "title": "Test Hizmet",
-        "description": "Transaction test hizmeti",
-        "base_price": 100.0,
-        "city_id": city_id,
-    }, headers=_auth_headers(provider_token))
+    client.post(
+        "/api/v1/providers/me/services",
+        json={
+            "category_id": category_id,
+            "title": "Test Hizmet",
+            "description": "Transaction test hizmeti",
+            "base_price": 100.0,
+            "city_id": city_id,
+        },
+        headers=_auth_headers(provider_token),
+    )
 
     # Hizmet talebi oluştur
-    req_resp = client.post("/api/v1/requests/", json={
-        "category_id": category_id,
-        "city_id": city_id,
-        "title": "Test Talep",
-        "description": "Transaction test talebi",
-        "budget_min": 50.0,
-        "budget_max": 200.0,
-    }, headers=_auth_headers(user_token))
+    req_resp = client.post(
+        "/api/v1/requests/",
+        json={
+            "category_id": category_id,
+            "city_id": city_id,
+            "title": "Test Talep",
+            "description": "Transaction test talebi",
+            "budget_min": 50.0,
+            "budget_max": 200.0,
+        },
+        headers=_auth_headers(user_token),
+    )
     if req_resp.status_code != 200:
         pytest.skip(f"Talep oluşturulamadı: {req_resp.text}")
     request_id = req_resp.json()["id"]
 
     # Teklif oluştur
-    quote_resp = client.post("/api/v1/quotes/", json={
-        "request_id": request_id,
-        "amount": 100.0,
-        "description": "Test teklifi",
-        "estimated_hours": 2,
-    }, headers=_auth_headers(provider_token))
+    quote_resp = client.post(
+        "/api/v1/quotes/",
+        json={
+            "request_id": request_id,
+            "amount": 100.0,
+            "description": "Test teklifi",
+            "estimated_hours": 2,
+        },
+        headers=_auth_headers(provider_token),
+    )
     if quote_resp.status_code != 200:
         pytest.skip(f"Teklif oluşturulamadı: {quote_resp.text}")
     quote_id = quote_resp.json()["id"]

@@ -1,6 +1,7 @@
 """
 SQLAlchemy veritabanı bağlantı yönetimi — production sertleştirmesi.
 """
+
 import logging
 
 from sqlalchemy import create_engine, text
@@ -18,9 +19,9 @@ engine = create_engine(
     settings.DATABASE_URL,
     pool_size=20,
     max_overflow=10,
-    pool_pre_ping=True,          # Bağlantı kullanılmadan önce kontrol et
-    pool_recycle=3600,           # 1 saatte bir bağlantıyı yenile
-    pool_timeout=30,             # Bağlantı beklemesi için max süre
+    pool_pre_ping=True,  # Bağlantı kullanılmadan önce kontrol et
+    pool_recycle=3600,  # 1 saatte bir bağlantıyı yenile
+    pool_timeout=30,  # Bağlantı beklemesi için max süre
     echo=settings.DEBUG,
     # PostgreSQL bağlantı zaman aşımı (SQLite desteklemez)
     connect_args={} if _is_sqlite else {"connect_timeout": 10},
@@ -42,7 +43,9 @@ def get_db():
     try:
         yield db
     except SQLAlchemyError as exc:
-        logger.error("Veritabani hatasi, rollback yapiliyor: %s", str(exc), exc_info=True)
+        logger.error(
+            "Veritabani hatasi, rollback yapiliyor: %s", str(exc), exc_info=True
+        )
         db.rollback()
         raise
     except Exception:

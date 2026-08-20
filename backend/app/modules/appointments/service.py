@@ -46,7 +46,12 @@ class AppointmentService:
 
     # ── Durum Geçişleri ───────────────────────────────────────────────────────
     @staticmethod
-    def _transition(db: Session, appt: Appointment, new_state: AppointmentState, background_tasks: BackgroundTasks = None):
+    def _transition(
+        db: Session,
+        appt: Appointment,
+        new_state: AppointmentState,
+        background_tasks: BackgroundTasks = None,
+    ):
         sm = AppointmentStateMachine(AppointmentState(appt.status))
 
         def on_transition(old, new):
@@ -55,31 +60,70 @@ class AppointmentService:
             db.refresh(appt)
             event_bus.publish(
                 f"APPOINTMENT_{new.value}",
-                {"appointment_id": appt.id, "request_id": appt.request_id,
-                 "provider_id": appt.provider_id, "customer_id": appt.customer_id},
+                {
+                    "appointment_id": appt.id,
+                    "request_id": appt.request_id,
+                    "provider_id": appt.provider_id,
+                    "customer_id": appt.customer_id,
+                },
                 background_tasks,
             )
 
         sm.transition_to(new_state, on_transition=on_transition)
         return appt
 
-    def confirm(self, db: Session, appt_id: int, background_tasks: BackgroundTasks) -> Appointment:
+    def confirm(
+        self, db: Session, appt_id: int, background_tasks: BackgroundTasks
+    ) -> Appointment:
         """Uzman randevuyu onaylar."""
-        return self._transition(db, appointment_repo.get(db, appt_id), AppointmentState.CONFIRMED, background_tasks)
+        return self._transition(
+            db,
+            appointment_repo.get(db, appt_id),
+            AppointmentState.CONFIRMED,
+            background_tasks,
+        )
 
-    def start(self, db: Session, appt_id: int, background_tasks: BackgroundTasks) -> Appointment:
+    def start(
+        self, db: Session, appt_id: int, background_tasks: BackgroundTasks
+    ) -> Appointment:
         """Uzman işi başlattı."""
-        return self._transition(db, appointment_repo.get(db, appt_id), AppointmentState.IN_PROGRESS, background_tasks)
+        return self._transition(
+            db,
+            appointment_repo.get(db, appt_id),
+            AppointmentState.IN_PROGRESS,
+            background_tasks,
+        )
 
-    def complete(self, db: Session, appt_id: int, background_tasks: BackgroundTasks) -> Appointment:
+    def complete(
+        self, db: Session, appt_id: int, background_tasks: BackgroundTasks
+    ) -> Appointment:
         """İş tamamlandı → APPOINTMENT_COMPLETED eventi fırlatılır."""
-        return self._transition(db, appointment_repo.get(db, appt_id), AppointmentState.COMPLETED, background_tasks)
+        return self._transition(
+            db,
+            appointment_repo.get(db, appt_id),
+            AppointmentState.COMPLETED,
+            background_tasks,
+        )
 
-    def cancel(self, db: Session, appt_id: int, background_tasks: BackgroundTasks) -> Appointment:
-        return self._transition(db, appointment_repo.get(db, appt_id), AppointmentState.CANCELLED, background_tasks)
+    def cancel(
+        self, db: Session, appt_id: int, background_tasks: BackgroundTasks
+    ) -> Appointment:
+        return self._transition(
+            db,
+            appointment_repo.get(db, appt_id),
+            AppointmentState.CANCELLED,
+            background_tasks,
+        )
 
-    def no_show(self, db: Session, appt_id: int, background_tasks: BackgroundTasks) -> Appointment:
-        return self._transition(db, appointment_repo.get(db, appt_id), AppointmentState.NO_SHOW, background_tasks)
+    def no_show(
+        self, db: Session, appt_id: int, background_tasks: BackgroundTasks
+    ) -> Appointment:
+        return self._transition(
+            db,
+            appointment_repo.get(db, appt_id),
+            AppointmentState.NO_SHOW,
+            background_tasks,
+        )
 
 
 appointment_service = AppointmentService()

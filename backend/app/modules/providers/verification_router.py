@@ -24,19 +24,29 @@ def apply_verification(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    provider = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not provider:
         raise NotFoundException("Uzman profili")
 
     valid_types = ["IDENTITY", "PROFESSIONAL", "BUSINESS"]
     if data.verification_type not in valid_types:
-        raise BadRequestException(f"Gecersiz dogrulama tipi. Gecerli tipler: {', '.join(valid_types)}")
+        raise BadRequestException(
+            f"Gecersiz dogrulama tipi. Gecerli tipler: {', '.join(valid_types)}"
+        )
 
-    existing = db.query(VerificationRequest).filter(
-        VerificationRequest.provider_id == provider.id,
-        VerificationRequest.verification_type == data.verification_type,
-        VerificationRequest.status == "PENDING",
-    ).first()
+    existing = (
+        db.query(VerificationRequest)
+        .filter(
+            VerificationRequest.provider_id == provider.id,
+            VerificationRequest.verification_type == data.verification_type,
+            VerificationRequest.status == "PENDING",
+        )
+        .first()
+    )
     if existing:
         raise ConflictException("Bu turde zaten bekleyen bir dogrulama talebiniz var")
 
@@ -57,7 +67,11 @@ def my_verifications(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    provider = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not provider:
         raise NotFoundException("Uzman profili")
 
@@ -110,7 +124,11 @@ def approve_verification(
     current_user: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db),
 ):
-    vr = db.query(VerificationRequest).filter(VerificationRequest.id == verification_id).first()
+    vr = (
+        db.query(VerificationRequest)
+        .filter(VerificationRequest.id == verification_id)
+        .first()
+    )
     if not vr:
         raise NotFoundException("Dogrulama talebi")
     if vr.status != "PENDING":
@@ -120,7 +138,9 @@ def approve_verification(
     vr.reviewed_by = current_user.id
     vr.reviewed_at = datetime.utcnow()
 
-    provider = db.query(ProviderProfile).filter(ProviderProfile.id == vr.provider_id).first()
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.id == vr.provider_id).first()
+    )
     if provider:
         hierarchy = {"IDENTITY": 1, "PROFESSIONAL": 2, "BUSINESS": 3}
         current_level = hierarchy.get(provider.verification_status, 0)
@@ -139,7 +159,11 @@ def reject_verification(
     current_user: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db),
 ):
-    vr = db.query(VerificationRequest).filter(VerificationRequest.id == verification_id).first()
+    vr = (
+        db.query(VerificationRequest)
+        .filter(VerificationRequest.id == verification_id)
+        .first()
+    )
     if not vr:
         raise NotFoundException("Dogrulama talebi")
     if vr.status != "PENDING":

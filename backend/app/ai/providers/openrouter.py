@@ -60,7 +60,10 @@ class OpenRouterProvider(AIProvider):
         temperature: float = 0.1,
     ) -> dict:
         """JSON yanıt üretir ve parse eder. Hata durumunda boş dict döner."""
-        full_system = (system_prompt or "") + "\n\nYanıtını SADECE geçerli JSON olarak ver. Hiçbir açıklama, kod bloğu (```json) veya ek metin ekleme. Sadece ham JSON."
+        full_system = (
+            (system_prompt or "")
+            + "\n\nYanıtını SADECE geçerli JSON olarak ver. Hiçbir açıklama, kod bloğu (```json) veya ek metin ekleme. Sadece ham JSON."
+        )
 
         raw = await self.generate(
             prompt=prompt,

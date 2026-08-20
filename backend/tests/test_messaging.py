@@ -7,13 +7,16 @@ def _auth_header(token):
 
 class TestMessaging:
     def _setup_user(self, client):
-        r = client.post("/api/v1/auth/register", json={
-            "email": "msg_user@example.com",
-            "password": "Test1234",
-            "first_name": "Msg",
-            "last_name": "User",
-            "role": "USER",
-        })
+        r = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "msg_user@example.com",
+                "password": "Test1234",
+                "first_name": "Msg",
+                "last_name": "User",
+                "role": "USER",
+            },
+        )
         return r.json()["access_token"]
 
     def test_list_conversations(self, client):

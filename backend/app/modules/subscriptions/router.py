@@ -21,9 +21,12 @@ router = APIRouter(prefix="/subscriptions", tags=["Abonelik Modelleri"])
 def list_plans(
     db: Session = Depends(get_db),
 ):
-    plans = db.query(SubscriptionPlan).filter(
-        SubscriptionPlan.is_active
-    ).order_by(SubscriptionPlan.sort_order.asc()).all()
+    plans = (
+        db.query(SubscriptionPlan)
+        .filter(SubscriptionPlan.is_active)
+        .order_by(SubscriptionPlan.sort_order.asc())
+        .all()
+    )
     return [
         {
             "id": p.id,
@@ -42,7 +45,11 @@ def list_plans(
             "max_portfolio_images": p.max_portfolio_images,
             "max_services": p.max_services,
             "features": [
-                {"name": f.feature_name, "value": f.feature_value, "included": f.is_included}
+                {
+                    "name": f.feature_name,
+                    "value": f.feature_value,
+                    "included": f.is_included,
+                }
                 for f in sorted(p.features, key=lambda x: x.sort_order)
             ],
         }
@@ -118,12 +125,18 @@ def update_plan(
         raise HTTPException(status_code=404, detail="Plan bulunamadi")
 
     for field, value in [
-        ("name", name), ("price_monthly", price_monthly),
-        ("price_quarterly", price_quarterly), ("price_yearly", price_yearly),
-        ("commission_discount", commission_discount), ("featured_listings", featured_listings),
-        ("priority_support", priority_support), ("advanced_analytics", advanced_analytics),
-        ("highlighted_profile", highlighted_profile), ("badge_type", badge_type),
-        ("max_portfolio_images", max_portfolio_images), ("max_services", max_services),
+        ("name", name),
+        ("price_monthly", price_monthly),
+        ("price_quarterly", price_quarterly),
+        ("price_yearly", price_yearly),
+        ("commission_discount", commission_discount),
+        ("featured_listings", featured_listings),
+        ("priority_support", priority_support),
+        ("advanced_analytics", advanced_analytics),
+        ("highlighted_profile", highlighted_profile),
+        ("badge_type", badge_type),
+        ("max_portfolio_images", max_portfolio_images),
+        ("max_services", max_services),
     ]:
         if value is not None:
             setattr(plan, field, value)
@@ -168,10 +181,14 @@ def subscribe_to_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan bulunamadi")
 
-    existing = db.query(ProviderSubscription).filter(
-        ProviderSubscription.provider_id == current_user.id,
-        ProviderSubscription.status == "active",
-    ).first()
+    existing = (
+        db.query(ProviderSubscription)
+        .filter(
+            ProviderSubscription.provider_id == current_user.id,
+            ProviderSubscription.status == "active",
+        )
+        .first()
+    )
     if existing:
         raise HTTPException(status_code=400, detail="Zaten aktif aboneliginiz var")
 
@@ -206,7 +223,11 @@ def subscribe_to_plan(
     current_user.commission_discount = plan.commission_discount
     db.commit()
     db.refresh(sub)
-    return {"message": "Abonelik baslatildi", "subscription_id": sub.id, "expires_at": expires.isoformat()}
+    return {
+        "message": "Abonelik baslatildi",
+        "subscription_id": sub.id,
+        "expires_at": expires.isoformat(),
+    }
 
 
 @router.get("/my")
@@ -214,10 +235,14 @@ def my_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    sub = db.query(ProviderSubscription).filter(
-        ProviderSubscription.provider_id == current_user.id,
-        ProviderSubscription.status == "active",
-    ).first()
+    sub = (
+        db.query(ProviderSubscription)
+        .filter(
+            ProviderSubscription.provider_id == current_user.id,
+            ProviderSubscription.status == "active",
+        )
+        .first()
+    )
     if not sub:
         return None
 
@@ -238,10 +263,14 @@ def cancel_subscription(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    sub = db.query(ProviderSubscription).filter(
-        ProviderSubscription.provider_id == current_user.id,
-        ProviderSubscription.status == "active",
-    ).first()
+    sub = (
+        db.query(ProviderSubscription)
+        .filter(
+            ProviderSubscription.provider_id == current_user.id,
+            ProviderSubscription.status == "active",
+        )
+        .first()
+    )
     if not sub:
         raise HTTPException(status_code=404, detail="Aktif abonelik bulunamadi")
 
@@ -259,13 +288,20 @@ def my_payments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    subs = db.query(ProviderSubscription).filter(
-        ProviderSubscription.provider_id == current_user.id,
-    ).all()
+    subs = (
+        db.query(ProviderSubscription)
+        .filter(
+            ProviderSubscription.provider_id == current_user.id,
+        )
+        .all()
+    )
     sub_ids = [s.id for s in subs]
-    payments = db.query(SubscriptionPayment).filter(
-        SubscriptionPayment.subscription_id.in_(sub_ids)
-    ).order_by(SubscriptionPayment.created_at.desc()).all()
+    payments = (
+        db.query(SubscriptionPayment)
+        .filter(SubscriptionPayment.subscription_id.in_(sub_ids))
+        .order_by(SubscriptionPayment.created_at.desc())
+        .all()
+    )
     return [
         {
             "id": p.id,
@@ -289,7 +325,12 @@ def admin_list_subscriptions(
     if status:
         q = q.filter(ProviderSubscription.status == status)
     total = q.count()
-    items = q.order_by(ProviderSubscription.created_at.desc()).offset(skip).limit(limit).all()
+    items = (
+        q.order_by(ProviderSubscription.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return {
         "total": total,
         "items": [

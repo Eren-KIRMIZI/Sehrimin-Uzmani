@@ -25,7 +25,9 @@ def create_dispute(
     current_user: User = Depends(get_current_active_user),
 ):
     if reported_id == current_user.id:
-        raise HTTPException(status_code=400, detail="Kendinize karsi anlasmazlik acamazsiniz")
+        raise HTTPException(
+            status_code=400, detail="Kendinize karsi anlasmazlik acamazsiniz"
+        )
 
     dispute = Dispute(
         reporter_id=current_user.id,
@@ -51,7 +53,8 @@ def list_my_disputes(
     current_user: User = Depends(get_current_active_user),
 ):
     q = db.query(Dispute).filter(
-        (Dispute.reporter_id == current_user.id) | (Dispute.reported_id == current_user.id)
+        (Dispute.reporter_id == current_user.id)
+        | (Dispute.reported_id == current_user.id)
     )
     if status:
         q = q.filter(Dispute.status == status)
@@ -98,7 +101,9 @@ def admin_list_disputes(
             {
                 "id": d.id,
                 "reason": d.reason,
-                "description": d.description[:100] + "..." if len(d.description) > 100 else d.description,
+                "description": d.description[:100] + "..."
+                if len(d.description) > 100
+                else d.description,
                 "status": d.status,
                 "priority": d.priority,
                 "reporter_name": d.reporter.full_name if d.reporter else None,
@@ -121,18 +126,23 @@ def get_dispute(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
 
-    is_participant = dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    is_participant = (
+        dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    )
     is_admin = current_user.role in ["ADMIN", "MODERATOR"]
     if not is_participant and not is_admin:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
 
-    messages = db.query(DisputeMessage).filter(
-        DisputeMessage.dispute_id == dispute_id
-    ).order_by(DisputeMessage.created_at.asc()).all()
+    messages = (
+        db.query(DisputeMessage)
+        .filter(DisputeMessage.dispute_id == dispute_id)
+        .order_by(DisputeMessage.created_at.asc())
+        .all()
+    )
 
-    evidence = db.query(DisputeEvidence).filter(
-        DisputeEvidence.dispute_id == dispute_id
-    ).all()
+    evidence = (
+        db.query(DisputeEvidence).filter(DisputeEvidence.dispute_id == dispute_id).all()
+    )
 
     return {
         "id": dispute.id,
@@ -181,7 +191,9 @@ def add_dispute_message(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
 
-    is_participant = dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    is_participant = (
+        dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    )
     is_admin = current_user.role in ["ADMIN", "MODERATOR"]
     if not is_participant and not is_admin:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
@@ -211,7 +223,9 @@ def add_evidence(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
 
-    is_participant = dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    is_participant = (
+        dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    )
     is_admin = current_user.role in ["ADMIN", "MODERATOR"]
     if not is_participant and not is_admin:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
@@ -240,7 +254,9 @@ def resolve_dispute(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
     if dispute.status in ("resolved", "closed"):
-        raise HTTPException(status_code=400, detail="Bu anlasmazlik zaten cozulmus/kapatilmis")
+        raise HTTPException(
+            status_code=400, detail="Bu anlasmazlik zaten cozulmus/kapatilmis"
+        )
 
     dispute.status = "resolved"
     dispute.resolution = resolution
@@ -250,16 +266,24 @@ def resolve_dispute(
     refund_created = False
     if refund_amount and refund_amount > 0 and dispute.amount_involved:
         if refund_amount > dispute.amount_involved:
-            raise HTTPException(status_code=400, detail="Iade tutari ilgili tutardan fazla olamaz")
+            raise HTTPException(
+                status_code=400, detail="Iade tutari ilgili tutardan fazla olamaz"
+            )
 
         if dispute.appointment_id:
-            transaction = db.query(Transaction).filter(
-                Transaction.appointment_id == dispute.appointment_id,
-                Transaction.status == "completed",
-            ).first()
+            transaction = (
+                db.query(Transaction)
+                .filter(
+                    Transaction.appointment_id == dispute.appointment_id,
+                    Transaction.status == "completed",
+                )
+                .first()
+            )
 
             if transaction:
-                refund_commission = round(refund_amount * transaction.commission_rate, 2)
+                refund_commission = round(
+                    refund_amount * transaction.commission_rate, 2
+                )
 
                 refund_txn = Transaction(
                     provider_id=transaction.provider_id,
@@ -273,13 +297,21 @@ def resolve_dispute(
                 )
                 db.add(refund_txn)
 
-                earning = db.query(ProviderEarning).filter(
-                    ProviderEarning.provider_id == transaction.provider_id
-                ).first()
+                earning = (
+                    db.query(ProviderEarning)
+                    .filter(ProviderEarning.provider_id == transaction.provider_id)
+                    .first()
+                )
                 if earning:
-                    earning.total_earned = max(0, earning.total_earned - (refund_amount - refund_commission))
-                    earning.total_commission_paid = max(0, earning.total_commission_paid - refund_commission)
-                    earning.pending_amount = max(0, earning.pending_amount - (refund_amount - refund_commission))
+                    earning.total_earned = max(
+                        0, earning.total_earned - (refund_amount - refund_commission)
+                    )
+                    earning.total_commission_paid = max(
+                        0, earning.total_commission_paid - refund_commission
+                    )
+                    earning.pending_amount = max(
+                        0, earning.pending_amount - (refund_amount - refund_commission)
+                    )
 
                 refund_created = True
 
@@ -301,7 +333,9 @@ def close_dispute(
     if not dispute:
         raise HTTPException(status_code=404, detail="Anlasmazlik bulunamadi")
 
-    is_participant = dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    is_participant = (
+        dispute.reporter_id == current_user.id or dispute.reported_id == current_user.id
+    )
     if not is_participant:
         raise HTTPException(status_code=403, detail="Yetkiniz yok")
 

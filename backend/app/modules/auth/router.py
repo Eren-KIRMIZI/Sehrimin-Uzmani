@@ -29,7 +29,9 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=dict)
 def register(data: RegisterRequest, request: Request, db: Session = Depends(get_db)):
-    rate_limiter.check(f"register:{get_client_ip(request)}", max_requests=3, window_seconds=600)
+    rate_limiter.check(
+        f"register:{get_client_ip(request)}", max_requests=3, window_seconds=600
+    )
     service = AuthService(db)
     result = service.register(data)
     user = result["user"]
@@ -43,13 +45,15 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role,
-        }
+        },
     }
 
 
 @router.post("/login", response_model=dict)
 def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    rate_limiter.check(f"login:{get_client_ip(request)}", max_requests=5, window_seconds=300)
+    rate_limiter.check(
+        f"login:{get_client_ip(request)}", max_requests=5, window_seconds=300
+    )
     service = AuthService(db)
     result = service.login(data)
 
@@ -71,7 +75,7 @@ def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role,
-        }
+        },
     }
 
 
@@ -94,13 +98,15 @@ def login_2fa(
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role,
-        }
+        },
     }
 
 
 @router.post("/refresh", response_model=dict)
 def refresh(data: RefreshRequest, request: Request, db: Session = Depends(get_db)):
-    rate_limiter.check(f"refresh:{get_client_ip(request)}", max_requests=10, window_seconds=300)
+    rate_limiter.check(
+        f"refresh:{get_client_ip(request)}", max_requests=10, window_seconds=300
+    )
     service = AuthService(db)
     result = service.refresh_token(data.refresh_token)
     return {
@@ -151,11 +157,15 @@ def forgot_password(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    rate_limiter.check(f"forgot:{get_client_ip(request)}", max_requests=3, window_seconds=600)
+    rate_limiter.check(
+        f"forgot:{get_client_ip(request)}", max_requests=3, window_seconds=600
+    )
 
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
-        return {"message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir"}
+        return {
+            "message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir"
+        }
 
     reset_token = create_access_token(
         {"sub": str(user.id), "type": "reset"},
@@ -163,6 +173,7 @@ def forgot_password(
     )
 
     from app.modules.notifications.service import create_notification
+
     create_notification(
         db=db,
         user_id=user.id,
@@ -171,7 +182,9 @@ def forgot_password(
         message=f"Sifre sifirlama tokeniniz: {reset_token[:20]}... (30 dakika gecerli)",
     )
 
-    return {"message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir"}
+    return {
+        "message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir"
+    }
 
 
 @router.post("/reset-password")
@@ -195,9 +208,13 @@ def reset_password(
     if len(data.new_password) < 8:
         raise HTTPException(status_code=400, detail="Sifre en az 8 karakter olmalidir")
     if not any(c.isupper() for c in data.new_password):
-        raise HTTPException(status_code=400, detail="Sifre en az bir buyuk harf icermelidir")
+        raise HTTPException(
+            status_code=400, detail="Sifre en az bir buyuk harf icermelidir"
+        )
     if not any(c.islower() for c in data.new_password):
-        raise HTTPException(status_code=400, detail="Sifre en az bir kucuk harf icermelidir")
+        raise HTTPException(
+            status_code=400, detail="Sifre en az bir kucuk harf icermelidir"
+        )
     if not any(c.isdigit() for c in data.new_password):
         raise HTTPException(status_code=400, detail="Sifre en az bir rakam icermelidir")
 
@@ -217,13 +234,21 @@ def change_password(
         raise HTTPException(status_code=400, detail="Mevcut sifreniz hatali")
 
     if len(data.new_password) < 8:
-        raise HTTPException(status_code=400, detail="Yeni sifre en az 8 karakter olmalidir")
+        raise HTTPException(
+            status_code=400, detail="Yeni sifre en az 8 karakter olmalidir"
+        )
     if not any(c.isupper() for c in data.new_password):
-        raise HTTPException(status_code=400, detail="Yeni sifre en az bir buyuk harf icermelidir")
+        raise HTTPException(
+            status_code=400, detail="Yeni sifre en az bir buyuk harf icermelidir"
+        )
     if not any(c.islower() for c in data.new_password):
-        raise HTTPException(status_code=400, detail="Yeni sifre en az bir kucuk harf icermelidir")
+        raise HTTPException(
+            status_code=400, detail="Yeni sifre en az bir kucuk harf icermelidir"
+        )
     if not any(c.isdigit() for c in data.new_password):
-        raise HTTPException(status_code=400, detail="Yeni sifre en az bir rakam icermelidir")
+        raise HTTPException(
+            status_code=400, detail="Yeni sifre en az bir rakam icermelidir"
+        )
 
     current_user.password_hash = hash_password(data.new_password)
     db.commit()

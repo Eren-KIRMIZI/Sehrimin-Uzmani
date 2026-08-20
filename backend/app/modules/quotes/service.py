@@ -19,52 +19,89 @@ from app.modules.requests.state import RequestState, RequestStateMachine
 
 
 class QuoteService:
-    def create_draft_quote(self, db: Session, request_id: int, provider_id: int) -> Quote:
+    def create_draft_quote(
+        self, db: Session, request_id: int, provider_id: int
+    ) -> Quote:
         quote = Quote(
             request_id=request_id,
             provider_id=provider_id,
             total_price=0.0,
-            status="DRAFT"
+            status="DRAFT",
         )
         db.add(quote)
         db.commit()
         db.refresh(quote)
         return quote
 
-    def add_quote_item(self, db: Session, quote_id: int, name: str, price: float, item_type: str = "LABOR", quantity: float = 1.0) -> QuoteItem:
+    def add_quote_item(
+        self,
+        db: Session,
+        quote_id: int,
+        name: str,
+        price: float,
+        item_type: str = "LABOR",
+        quantity: float = 1.0,
+    ) -> QuoteItem:
         quote = quote_repo.get(db, quote_id)
         if not quote or quote.status not in ["DRAFT", "NEGOTIATING"]:
             raise ValueError("Teklife kalem eklenemez")
 
-        item = QuoteItem(quote_id=quote_id, name=name, price=price, type=item_type, quantity=quantity)
+        item = QuoteItem(
+            quote_id=quote_id, name=name, price=price, type=item_type, quantity=quantity
+        )
         db.add(item)
 
-        quote.total_price += (price * quantity)
+        quote.total_price += price * quantity
         db.commit()
         db.refresh(item)
         return item
 
-    def submit_quote(self, db: Session, quote_id: int, user_id: int, background_tasks: BackgroundTasks) -> Quote:
+    def submit_quote(
+        self,
+        db: Session,
+        quote_id: int,
+        user_id: int,
+        background_tasks: BackgroundTasks,
+    ) -> Quote:
         quote = quote_repo.get(db, quote_id)
         if quote.status != "DRAFT":
             raise ValueError("Sadece taslak teklifler gönderilebilir")
 
         quote.status = "SUBMITTED"
-        history = QuoteStatusHistory(quote_id=quote.id, old_status="DRAFT", new_status="SUBMITTED", changed_by_user_id=user_id)
+        history = QuoteStatusHistory(
+            quote_id=quote.id,
+            old_status="DRAFT",
+            new_status="SUBMITTED",
+            changed_by_user_id=user_id,
+        )
         db.add(history)
 
         req = request_repo.get(db, quote.request_id)
         if req.status == RequestState.MATCHING.value:
             sm = RequestStateMachine(RequestState(req.status))
-            sm.transition_to(RequestState.QUOTING, lambda o, n: setattr(req, "status", n.value))
+            sm.transition_to(
+                RequestState.QUOTING, lambda o, n: setattr(req, "status", n.value)
+            )
 
         db.commit()
         db.refresh(quote)
 
-        event_bus.publish("QUOTE_CREATED", {"quote_id": quote.id, "request_id": quote.request_id}, background_tasks)
+        event_bus.publish(
+            "QUOTE_CREATED",
+            {"quote_id": quote.id, "request_id": quote.request_id},
+            background_tasks,
+        )
         return quote
 
-    def revise_quote(self, db: Session, quote_id: int, new_price: float, user_id: int, requested_by: str, notes: Optional[str] = None) -> QuoteRevision:
+    def revise_quote(
+        self,
+        db: Session,
+        quote_id: int,
+        new_price: float,
+        user_id: int,
+        requested_by: str,
+        notes: Optional[str] = None,
+    ) -> QuoteRevision:
         quote = quote_repo.get(db, quote_id)
 
         # Revizyon numarası hesapla
@@ -78,7 +115,7 @@ class QuoteService:
             new_total_price=new_price,
             requested_by=requested_by,
             user_id=user_id,
-            notes=notes
+            notes=notes,
         )
         db.add(rev)
 
@@ -88,7 +125,13 @@ class QuoteService:
         db.refresh(rev)
         return rev
 
-    def accept_quote(self, db: Session, quote_id: int, user_id: int, background_tasks: BackgroundTasks) -> Quote:
+    def accept_quote(
+        self,
+        db: Session,
+        quote_id: int,
+        user_id: int,
+        background_tasks: BackgroundTasks,
+    ) -> Quote:
         quote = quote_repo.get(db, quote_id)
 
         # Diğer teklifleri reddet
@@ -98,18 +141,27 @@ class QuoteService:
                 oq.status = "REJECTED"
 
         quote.status = "ACCEPTED"
-        history = QuoteStatusHistory(quote_id=quote.id, new_status="ACCEPTED", changed_by_user_id=user_id)
+        history = QuoteStatusHistory(
+            quote_id=quote.id, new_status="ACCEPTED", changed_by_user_id=user_id
+        )
         db.add(history)
 
         # Talep durumunu güncelle
         req = request_repo.get(db, quote.request_id)
         sm = RequestStateMachine(RequestState(req.status))
-        sm.transition_to(RequestState.ACCEPTED, lambda o, n: setattr(req, "status", n.value))
+        sm.transition_to(
+            RequestState.ACCEPTED, lambda o, n: setattr(req, "status", n.value)
+        )
 
         db.commit()
         db.refresh(quote)
 
-        event_bus.publish("QUOTE_ACCEPTED", {"quote_id": quote.id, "request_id": quote.request_id}, background_tasks)
+        event_bus.publish(
+            "QUOTE_ACCEPTED",
+            {"quote_id": quote.id, "request_id": quote.request_id},
+            background_tasks,
+        )
         return quote
+
 
 quote_service = QuoteService()

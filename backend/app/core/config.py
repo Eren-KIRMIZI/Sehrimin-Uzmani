@@ -9,6 +9,7 @@ _DEFAULT_SECRET = os.environ.get("SECRET_KEY", "")
 if not _DEFAULT_SECRET:
     _DEFAULT_SECRET = secrets.token_urlsafe(64)
     import warnings
+
     warnings.warn(
         "SECRET_KEY .env dosyasinda bulunamadi! Otomatik olusturuldu. "
         "Uretim ortaminda .env dosyasina SECRET_KEY ekleyin!",
@@ -25,7 +26,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    DATABASE_URL: str = "postgresql+psycopg2://sehrim_admin:sehrim2026!@localhost:5432/sehriminuzmani"
+    DATABASE_URL: str = (
+        "postgresql+psycopg2://sehrim_admin:sehrim2026!@localhost:5432/sehriminuzmani"
+    )
 
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
@@ -60,7 +63,10 @@ class Settings(BaseSettings):
             raise ValueError("SECRET_KEY 32 karakterden uzun olmalidir")
         if self.DEBUG:
             import warnings
-            warnings.warn("DEBUG modu aktif! Uretim ortaminda DEBUG=false yapin.", stacklevel=1)
+
+            warnings.warn(
+                "DEBUG modu aktif! Uretim ortaminda DEBUG=false yapin.", stacklevel=1
+            )
 
     def validate_production(self):
         """Sadece production ortamında zorunlu kontroller."""
@@ -74,11 +80,13 @@ class Settings(BaseSettings):
         if not self.OPENROUTER_API_KEY:
             errors.append("Production ortaminda OPENROUTER_API_KEY zorunludur")
         if "sehrim2026!" in self.DATABASE_URL:
-            errors.append("Production ortaminda varsayilan veritabani sifresi kullanilmamalidir")
+            errors.append(
+                "Production ortaminda varsayilan veritabani sifresi kullanilmamalidir"
+            )
         if errors:
             raise ValueError(
-                "Production ortami guvenlik kontrolleri basarisiz:\n" +
-                "\n".join(f"  - {e}" for e in errors)
+                "Production ortami guvenlik kontrolleri basarisiz:\n"
+                + "\n".join(f"  - {e}" for e in errors)
             )
 
 

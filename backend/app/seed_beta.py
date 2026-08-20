@@ -14,8 +14,43 @@ from app.modules.locations.models import City, District, ProviderLocation
 from app.modules.providers.models import ProviderProfile
 from app.modules.users.models import User
 
-NAMES = ["Ali", "Ayşe", "Mehmet", "Fatma", "Mustafa", "Zeynep", "Ahmet", "Elif", "Hasan", "Hatice", "Hüseyin", "Merve", "İbrahim", "Esra", "Halil", "Büşra"]
-LAST_NAMES = ["Yılmaz", "Kaya", "Demir", "Çelik", "Şahin", "Yıldız", "Öztürk", "Aydın", "Özdemir", "Arslan", "Doğan", "Kılıç", "Aslan", "Çetin", "Kara", "Koç"]
+NAMES = [
+    "Ali",
+    "Ayşe",
+    "Mehmet",
+    "Fatma",
+    "Mustafa",
+    "Zeynep",
+    "Ahmet",
+    "Elif",
+    "Hasan",
+    "Hatice",
+    "Hüseyin",
+    "Merve",
+    "İbrahim",
+    "Esra",
+    "Halil",
+    "Büşra",
+]
+LAST_NAMES = [
+    "Yılmaz",
+    "Kaya",
+    "Demir",
+    "Çelik",
+    "Şahin",
+    "Yıldız",
+    "Öztürk",
+    "Aydın",
+    "Özdemir",
+    "Arslan",
+    "Doğan",
+    "Kılıç",
+    "Aslan",
+    "Çetin",
+    "Kara",
+    "Koç",
+]
+
 
 def seed_beta_data():
     db: Session = SessionLocal()
@@ -32,10 +67,23 @@ def seed_beta_data():
             return
 
         # Get 5 Categories for beta
-        target_category_slugs = ["ev-yasam", "teknik-hizmetler", "tasimacilik", "guzellik", "arac"]
-        categories = db.query(Category).filter(Category.slug.in_(target_category_slugs)).all()
+        target_category_slugs = [
+            "ev-yasam",
+            "teknik-hizmetler",
+            "tasimacilik",
+            "guzellik",
+            "arac",
+        ]
+        categories = (
+            db.query(Category).filter(Category.slug.in_(target_category_slugs)).all()
+        )
 
-        services = db.query(Service).join(SubCategory).filter(SubCategory.category_id.in_([c.id for c in categories])).all()
+        services = (
+            db.query(Service)
+            .join(SubCategory)
+            .filter(SubCategory.category_id.in_([c.id for c in categories]))
+            .all()
+        )
         if not services:
             print("No services found for selected categories")
             return
@@ -53,7 +101,7 @@ def seed_beta_data():
                     first_name=first_name,
                     last_name=last_name,
                     role="USER",
-                    is_active=True
+                    is_active=True,
                 )
                 db.add(user)
         db.commit()
@@ -72,7 +120,7 @@ def seed_beta_data():
                     first_name=first_name,
                     last_name=last_name,
                     role="PROVIDER",
-                    is_active=True
+                    is_active=True,
                 )
                 db.add(user)
                 db.flush()
@@ -86,8 +134,10 @@ def seed_beta_data():
                     rating=random.uniform(4.0, 5.0),
                     review_count=random.randint(0, 30),
                     completed_jobs=random.randint(0, 50),
-                    verification_status=random.choice(["NONE", "BASIC", "IDENTITY", "PROFESSIONAL", "BUSINESS"]),
-                    is_available=True
+                    verification_status=random.choice(
+                        ["NONE", "BASIC", "IDENTITY", "PROFESSIONAL", "BUSINESS"]
+                    ),
+                    is_available=True,
                 )
                 db.add(profile)
                 db.flush()
@@ -100,7 +150,7 @@ def seed_beta_data():
                     district_id=district.id,
                     is_primary=True,
                     latitude=random.uniform(38.6, 38.8),
-                    longitude=random.uniform(34.6, 34.8)
+                    longitude=random.uniform(34.6, 34.8),
                 )
                 db.add(loc)
 
@@ -110,7 +160,7 @@ def seed_beta_data():
                     ps = ProviderService(
                         provider_id=profile.id,
                         service_id=s.id,
-                        starting_price=random.randint(100, 1000)
+                        starting_price=random.randint(100, 1000),
                     )
                     db.add(ps)
 
@@ -122,6 +172,7 @@ def seed_beta_data():
         db.rollback()
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     seed_beta_data()

@@ -19,7 +19,7 @@ class AppointmentRepository(BaseRepository[Appointment, None, None]):
             db.query(self.model)
             .filter(
                 self.model.provider_id == provider_id,
-                self.model.status.in_(["PENDING", "CONFIRMED", "IN_PROGRESS"])
+                self.model.status.in_(["PENDING", "CONFIRMED", "IN_PROGRESS"]),
             )
             .all()
         )

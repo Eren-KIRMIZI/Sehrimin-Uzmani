@@ -25,12 +25,19 @@ def setup_logging():
     # APScheduler scheduler log seviyesi
     logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
-    for module in ["app.modules.auth", "app.modules.providers", "app.modules.commissions"]:
+    for module in [
+        "app.modules.auth",
+        "app.modules.providers",
+        "app.modules.commissions",
+    ]:
         logging.getLogger(module).setLevel(log_level)
 
     logging.getLogger(__name__).info(
         "Logging baslatildi",
-        extra={"environment": settings.ENVIRONMENT, "level": logging.getLevelName(log_level)},
+        extra={
+            "environment": settings.ENVIRONMENT,
+            "level": logging.getLevelName(log_level),
+        },
     )
 
 

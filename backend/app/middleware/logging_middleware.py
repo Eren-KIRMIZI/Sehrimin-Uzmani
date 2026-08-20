@@ -5,6 +5,7 @@ Her HTTP isteğine benzersiz bir X-Request-ID UUID'si atar.
 Request süresi, method, path ve status_code JSON loglanır.
 Request ID, contextvars aracılığıyla log kayıtlarına otomatik eklenir.
 """
+
 import logging
 import time
 import uuid

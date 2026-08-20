@@ -11,13 +11,21 @@ class QuoteRepository(BaseRepository[Quote, None, None]):
     def get_by_provider(self, db: Session, provider_id: int):
         return db.query(self.model).filter(self.model.provider_id == provider_id).all()
 
+
 class QuoteItemRepository(BaseRepository[QuoteItem, None, None]):
     def get_by_quote(self, db: Session, quote_id: int):
         return db.query(self.model).filter(self.model.quote_id == quote_id).all()
 
+
 class QuoteRevisionRepository(BaseRepository[QuoteRevision, None, None]):
     def get_by_quote(self, db: Session, quote_id: int):
-        return db.query(self.model).filter(self.model.quote_id == quote_id).order_by(self.model.revision_number.desc()).all()
+        return (
+            db.query(self.model)
+            .filter(self.model.quote_id == quote_id)
+            .order_by(self.model.revision_number.desc())
+            .all()
+        )
+
 
 quote_repo = QuoteRepository(Quote)
 quote_item_repo = QuoteItemRepository(QuoteItem)

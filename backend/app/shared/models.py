@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Boolean, Column, String, Text
+from sqlalchemy import Boolean, Column, String, Text
 
 from app.core.base.models import BaseModel
 
@@ -8,6 +8,7 @@ class SystemSetting(BaseModel):
     Sistem geneli anahtar-deger ayarlari.
     Ornegin: seed tamamlandi flagi, bakim modu, vb.
     """
+
     __tablename__ = "system_settings"
 
     key = Column(String(100), nullable=False, unique=True, index=True)

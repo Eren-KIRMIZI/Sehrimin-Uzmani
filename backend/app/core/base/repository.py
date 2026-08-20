@@ -9,6 +9,7 @@ ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=PydanticBaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=PydanticBaseModel)
 
+
 class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: type[ModelType]):
         self.model = model
@@ -16,7 +17,9 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def get(self, db: Session, id: Any) -> ModelType | None:
         return db.query(self.model).filter(self.model.id == id).first()
 
-    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> list[ModelType]:
+    def get_multi(
+        self, db: Session, *, skip: int = 0, limit: int = 100
+    ) -> list[ModelType]:
         return db.query(self.model).offset(skip).limit(limit).all()
 
     def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
@@ -26,7 +29,9 @@ class BaseRepository(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.flush()
         return db_obj
 
-    def update(self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict) -> ModelType:
+    def update(
+        self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType | dict
+    ) -> ModelType:
         obj_data = db_obj.__dict__
         if isinstance(obj_in, dict):
             update_data = obj_in

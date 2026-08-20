@@ -85,7 +85,9 @@ class ProviderSubscription(BaseModel):
 class SubscriptionPayment(BaseModel):
     __tablename__ = "subscription_payments"
 
-    subscription_id = Column(Integer, ForeignKey("provider_subscriptions.id"), nullable=False)
+    subscription_id = Column(
+        Integer, ForeignKey("provider_subscriptions.id"), nullable=False
+    )
     amount = Column(Float, nullable=False)
     status = Column(String(20), default="pending")
     payment_method = Column(String(50), nullable=True)

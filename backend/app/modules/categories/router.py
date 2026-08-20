@@ -27,33 +27,36 @@ def list_categories(db: Session = Depends(get_db)):
     for cat in categories:
         subcats = (
             db.query(SubCategory)
-.filter(SubCategory.category_id == cat.id, SubCategory.is_active)
+            .filter(SubCategory.category_id == cat.id, SubCategory.is_active)
             .order_by(SubCategory.sort_order)
             .all()
         )
-        result.append({
-            "id": cat.id,
-            "name": cat.name,
-            "slug": cat.slug,
-            "icon": cat.icon,
-            "image": cat.image,
-            "description": cat.description,
-            "subcategories": [
-                {
-                    "id": sc.id,
-                    "name": sc.name,
-                    "slug": sc.slug,
-                    "icon": sc.icon,
-                    "services": [
-                        {"id": s.id, "name": s.name, "slug": s.slug}
-                        for s in db.query(Service).filter(
-                            Service.subcategory_id == sc.id, Service.is_active
-                        ).order_by(Service.sort_order).all()
-                    ],
-                }
-                for sc in subcats
-            ],
-        })
+        result.append(
+            {
+                "id": cat.id,
+                "name": cat.name,
+                "slug": cat.slug,
+                "icon": cat.icon,
+                "image": cat.image,
+                "description": cat.description,
+                "subcategories": [
+                    {
+                        "id": sc.id,
+                        "name": sc.name,
+                        "slug": sc.slug,
+                        "icon": sc.icon,
+                        "services": [
+                            {"id": s.id, "name": s.name, "slug": s.slug}
+                            for s in db.query(Service)
+                            .filter(Service.subcategory_id == sc.id, Service.is_active)
+                            .order_by(Service.sort_order)
+                            .all()
+                        ],
+                    }
+                    for sc in subcats
+                ],
+            }
+        )
     return result
 
 
@@ -84,9 +87,9 @@ def get_category_by_slug(slug: str, db: Session = Depends(get_db)):
                 "icon": sc.icon,
                 "services": [
                     {"id": s.id, "name": s.name, "slug": s.slug}
-                    for s in db.query(Service).filter(
-                        Service.subcategory_id == sc.id, Service.is_active
-                    ).all()
+                    for s in db.query(Service)
+                    .filter(Service.subcategory_id == sc.id, Service.is_active)
+                    .all()
                 ],
             }
             for sc in subcats
@@ -100,8 +103,15 @@ def get_category_services(slug: str, db: Session = Depends(get_db)):
     if not cat:
         raise NotFoundException("Kategori")
 
-    subcat_ids = [sc.id for sc in db.query(SubCategory).filter(SubCategory.category_id == cat.id).all()]
-    services = db.query(Service).filter(Service.subcategory_id.in_(subcat_ids), Service.is_active).all()
+    subcat_ids = [
+        sc.id
+        for sc in db.query(SubCategory).filter(SubCategory.category_id == cat.id).all()
+    ]
+    services = (
+        db.query(Service)
+        .filter(Service.subcategory_id.in_(subcat_ids), Service.is_active)
+        .all()
+    )
     return [
         {"id": s.id, "name": s.name, "slug": s.slug, "subcategory_id": s.subcategory_id}
         for s in services

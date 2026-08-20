@@ -88,27 +88,82 @@ TURKEY_CITIES = [
 ]
 
 NEVSEHIR_DISTRICTS = [
-    "Acıgöl", "Avanos", "Derinkuyu", "Gülşehir", "Hacıbektaş",
-    "Kozaklı", "Merkez", "Ürgüp"
+    "Acıgöl",
+    "Avanos",
+    "Derinkuyu",
+    "Gülşehir",
+    "Hacıbektaş",
+    "Kozaklı",
+    "Merkez",
+    "Ürgüp",
 ]
 
 ISTANBUL_DISTRICTS = [
-    "Adalar", "Arnavutköy", "Ataşehir", "Avcılar", "Bağcılar",
-    "Bahçelievler", "Bakırköy", "Başakşehir", "Bayrampaşa", "Beşiktaş",
-    "Beykoz", "Beylikdüzü", "Beyoğlu", "Büyükçekmece", "Çatalca",
-    "Çekmeköy", "Esenler", "Esenyurt", "Eyüpsultan", "Fatih",
-    "Gaziosmanpaşa", "Güngören", "Kadıköy", "Kağıthane", "Kartal",
-    "Küçükçekmece", "Maltepe", "Pendik", "Sancaktepe", "Sarıyer",
-    "Silivri", "Sultanbeyli", "Sultangazi", "Şile", "Şişli",
-    "Tuzla", "Ümraniye", "Üsküdar", "Zeytinburnu"
+    "Adalar",
+    "Arnavutköy",
+    "Ataşehir",
+    "Avcılar",
+    "Bağcılar",
+    "Bahçelievler",
+    "Bakırköy",
+    "Başakşehir",
+    "Bayrampaşa",
+    "Beşiktaş",
+    "Beykoz",
+    "Beylikdüzü",
+    "Beyoğlu",
+    "Büyükçekmece",
+    "Çatalca",
+    "Çekmeköy",
+    "Esenler",
+    "Esenyurt",
+    "Eyüpsultan",
+    "Fatih",
+    "Gaziosmanpaşa",
+    "Güngören",
+    "Kadıköy",
+    "Kağıthane",
+    "Kartal",
+    "Küçükçekmece",
+    "Maltepe",
+    "Pendik",
+    "Sancaktepe",
+    "Sarıyer",
+    "Silivri",
+    "Sultanbeyli",
+    "Sultangazi",
+    "Şile",
+    "Şişli",
+    "Tuzla",
+    "Ümraniye",
+    "Üsküdar",
+    "Zeytinburnu",
 ]
 
 ANKARA_DISTRICTS = [
-    "Akyurt", "Altındağ", "Ayaş", "Bala", "Beypazarı",
-    "Çamlıdere", "Çankaya", "Çubuk", "Elmadağ", "Etimesgut",
-    "Evren", "Gölbaşı", "Haymana", "Kalecik", "Kahramankazan",
-    "Keçiören", "Mamak", "Nallıhan", "Polatlı", "Pursaklar",
-    "Sincan", "Şereflikoçhisar", "Yenimahalle"
+    "Akyurt",
+    "Altındağ",
+    "Ayaş",
+    "Bala",
+    "Beypazarı",
+    "Çamlıdere",
+    "Çankaya",
+    "Çubuk",
+    "Elmadağ",
+    "Etimesgut",
+    "Evren",
+    "Gölbaşı",
+    "Haymana",
+    "Kalecik",
+    "Kahramankazan",
+    "Keçiören",
+    "Mamak",
+    "Nallıhan",
+    "Polatlı",
+    "Pursaklar",
+    "Sincan",
+    "Şereflikoçhisar",
+    "Yenimahalle",
 ]
 
 CATEGORIES_DATA = [
@@ -120,19 +175,32 @@ CATEGORIES_DATA = [
             {
                 "name": "Temizlik",
                 "slug": "temizlik",
-                "services": ["Ev Temizliği", "Ofis Temizliği", "Cam Temizliği", "Halı Yıkama", "Koltuk Yıkama", "Inşaat Sonrası Temizlik"]
+                "services": [
+                    "Ev Temizliği",
+                    "Ofis Temizliği",
+                    "Cam Temizliği",
+                    "Halı Yıkama",
+                    "Koltuk Yıkama",
+                    "Inşaat Sonrası Temizlik",
+                ],
             },
             {
                 "name": "Tadilat",
                 "slug": "tadilat",
-                "services": ["Boya", "Alçı", "Fayans", "Parke", "Çatı", "Mantolama"]
+                "services": ["Boya", "Alçı", "Fayans", "Parke", "Çatı", "Mantolama"],
             },
             {
                 "name": "Bakım",
                 "slug": "ev-bakim",
-                "services": ["Bahçıvan", "Peyzaj", "Havuz Bakımı", "İlaçlama", "Böcek İlaçlama"]
+                "services": [
+                    "Bahçıvan",
+                    "Peyzaj",
+                    "Havuz Bakımı",
+                    "İlaçlama",
+                    "Böcek İlaçlama",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Teknik Hizmetler",
@@ -142,34 +210,68 @@ CATEGORIES_DATA = [
             {
                 "name": "Elektrik",
                 "slug": "elektrik",
-                "services": ["Ev Elektriği", "Sigorta Değişimi", "Aydınlatma", "Kablo Döşeme", "Güç Kaynağı"]
+                "services": [
+                    "Ev Elektriği",
+                    "Sigorta Değişimi",
+                    "Aydınlatma",
+                    "Kablo Döşeme",
+                    "Güç Kaynağı",
+                ],
             },
             {
                 "name": "Tesisat",
                 "slug": "tesisat",
-                "services": ["Su Kaçağı", "Musluk Tamiri", "Petek Temizliği", "Klozet Tamiri", "Kalorifer Tesisatı"]
+                "services": [
+                    "Su Kaçağı",
+                    "Musluk Tamiri",
+                    "Petek Temizliği",
+                    "Klozet Tamiri",
+                    "Kalorifer Tesisatı",
+                ],
             },
             {
                 "name": "Klima & Kombi",
                 "slug": "klima-kombi",
-                "services": ["Klima Montaj", "Klima Bakım", "Kombi Bakım", "Kombi Arıza", "Petek Bakım"]
+                "services": [
+                    "Klima Montaj",
+                    "Klima Bakım",
+                    "Kombi Bakım",
+                    "Kombi Arıza",
+                    "Petek Bakım",
+                ],
             },
             {
                 "name": "Beyaz Eşya",
                 "slug": "beyaz-esya",
-                "services": ["Buzdolabı Tamiri", "Çamaşır Makinesi", "Bulaşık Makinesi", "Fırın Tamiri"]
+                "services": [
+                    "Buzdolabı Tamiri",
+                    "Çamaşır Makinesi",
+                    "Bulaşık Makinesi",
+                    "Fırın Tamiri",
+                ],
             },
             {
                 "name": "Bilgisayar & Telefon",
                 "slug": "bilgisayar-telefon",
-                "services": ["Bilgisayar Tamiri", "Laptop Tamiri", "Telefon Tamiri", "Veri Kurtarma", "Yazılım Destek"]
+                "services": [
+                    "Bilgisayar Tamiri",
+                    "Laptop Tamiri",
+                    "Telefon Tamiri",
+                    "Veri Kurtarma",
+                    "Yazılım Destek",
+                ],
             },
             {
                 "name": "Güvenlik",
                 "slug": "guvenlik",
-                "services": ["Kamera Kurulumu", "Alarm Sistemi", "Kapı Kilidi", "Çilingir"]
+                "services": [
+                    "Kamera Kurulumu",
+                    "Alarm Sistemi",
+                    "Kapı Kilidi",
+                    "Çilingir",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Sağlık & Wellness",
@@ -179,24 +281,29 @@ CATEGORIES_DATA = [
             {
                 "name": "Psikoloji",
                 "slug": "psikoloji",
-                "services": ["Psikolog", "Aile Terapisti", "Çocuk Psikoloğu", "Hipnoz"]
+                "services": ["Psikolog", "Aile Terapisti", "Çocuk Psikoloğu", "Hipnoz"],
             },
             {
                 "name": "Diyet & Beslenme",
                 "slug": "diyet-beslenme",
-                "services": ["Diyetisyen", "Beslenme Danışmanı", "Spor Dietisyeni"]
+                "services": ["Diyetisyen", "Beslenme Danışmanı", "Spor Dietisyeni"],
             },
             {
                 "name": "Fizyoterapi",
                 "slug": "fizyoterapi",
-                "services": ["Fizyoterapist", "Masaj", "Manuel Terapi", "Spor Rehabilitasyonu"]
+                "services": [
+                    "Fizyoterapist",
+                    "Masaj",
+                    "Manuel Terapi",
+                    "Spor Rehabilitasyonu",
+                ],
             },
             {
                 "name": "Yaşam Koçluğu",
                 "slug": "yasam-koclugu",
-                "services": ["Yaşam Koçu", "Kariyer Koçu", "İş Koçu"]
+                "services": ["Yaşam Koçu", "Kariyer Koçu", "İş Koçu"],
             },
-        ]
+        ],
     },
     {
         "name": "Eğitim",
@@ -206,24 +313,36 @@ CATEGORIES_DATA = [
             {
                 "name": "Okul Dersleri",
                 "slug": "okul-dersleri",
-                "services": ["Matematik", "Fen Bilimleri", "Türkçe", "İngilizce", "Tarih"]
+                "services": [
+                    "Matematik",
+                    "Fen Bilimleri",
+                    "Türkçe",
+                    "İngilizce",
+                    "Tarih",
+                ],
             },
             {
                 "name": "Sınav Hazırlık",
                 "slug": "sinav-hazirlik",
-                "services": ["YKS", "LGS", "KPSS", "ALES", "TOEFL"]
+                "services": ["YKS", "LGS", "KPSS", "ALES", "TOEFL"],
             },
             {
                 "name": "Müzik & Sanat",
                 "slug": "muzik-sanat",
-                "services": ["Piyano", "Gitar", "Şan", "Resim", "Heykel"]
+                "services": ["Piyano", "Gitar", "Şan", "Resim", "Heykel"],
             },
             {
                 "name": "Yazılım & Teknoloji",
                 "slug": "yazilim-egitim",
-                "services": ["Python", "JavaScript", "Web Development", "Mobil Geliştirme", "Veri Bilimi"]
+                "services": [
+                    "Python",
+                    "JavaScript",
+                    "Web Development",
+                    "Mobil Geliştirme",
+                    "Veri Bilimi",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Çocuk & Yaşlı Bakımı",
@@ -233,14 +352,24 @@ CATEGORIES_DATA = [
             {
                 "name": "Bebek & Çocuk Bakımı",
                 "slug": "bebek-cocuk-bakimi",
-                "services": ["Bebek Bakıcısı", "Çocuk Bakıcısı", "Oyun Ablası", "Ödev Yardımı"]
+                "services": [
+                    "Bebek Bakıcısı",
+                    "Çocuk Bakıcısı",
+                    "Oyun Ablası",
+                    "Ödev Yardımı",
+                ],
             },
             {
                 "name": "Yaşlı Bakımı",
                 "slug": "yasli-bakimi",
-                "services": ["Yaşlı Bakım Uzmanı", "Refakatçi", "Evde Destek", "Hemşire"]
+                "services": [
+                    "Yaşlı Bakım Uzmanı",
+                    "Refakatçi",
+                    "Evde Destek",
+                    "Hemşire",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Evcil Hayvan",
@@ -250,19 +379,24 @@ CATEGORIES_DATA = [
             {
                 "name": "Bakım",
                 "slug": "hayvan-bakim",
-                "services": ["Pet Sitter", "Köpek Gezdirme", "Pet Kuaförü", "Evcil Hayvan Nakli"]
+                "services": [
+                    "Pet Sitter",
+                    "Köpek Gezdirme",
+                    "Pet Kuaförü",
+                    "Evcil Hayvan Nakli",
+                ],
             },
             {
                 "name": "Sağlık",
                 "slug": "hayvan-saglik",
-                "services": ["Veteriner", "Aşı", "Kısırlaştırma", "Diş Temizliği"]
+                "services": ["Veteriner", "Aşı", "Kısırlaştırma", "Diş Temizliği"],
             },
             {
                 "name": "Eğitim",
                 "slug": "hayvan-egitim",
-                "services": ["Köpek Eğitimi", "Davranış Eğitimi", "Sosyalleştirme"]
+                "services": ["Köpek Eğitimi", "Davranış Eğitimi", "Sosyalleştirme"],
             },
-        ]
+        ],
     },
     {
         "name": "Araç",
@@ -272,24 +406,39 @@ CATEGORIES_DATA = [
             {
                 "name": "Tamir & Bakım",
                 "slug": "arac-tamir",
-                "services": ["Oto Tamir", "Oto Elektrik", "Motor Revizyonu", "Kaporta Boya"]
+                "services": [
+                    "Oto Tamir",
+                    "Oto Elektrik",
+                    "Motor Revizyonu",
+                    "Kaporta Boya",
+                ],
             },
             {
                 "name": "Yıkama & Detailing",
                 "slug": "arac-yikama",
-                "services": ["Oto Yıkama", "Detailing", "Seramik Kaplama", "Boya Koruma"]
+                "services": [
+                    "Oto Yıkama",
+                    "Detailing",
+                    "Seramik Kaplama",
+                    "Boya Koruma",
+                ],
             },
             {
                 "name": "Lastik & Jant",
                 "slug": "lastik-jant",
-                "services": ["Lastik Değişimi", "Lastik Tamiri", "Jant Düzeltme", "Balans"]
+                "services": [
+                    "Lastik Değişimi",
+                    "Lastik Tamiri",
+                    "Jant Düzeltme",
+                    "Balans",
+                ],
             },
             {
                 "name": "Çekici & Taşıma",
                 "slug": "cekici",
-                "services": ["Oto Çekici", "Kurtarıcı", "Taşıma"]
+                "services": ["Oto Çekici", "Kurtarıcı", "Taşıma"],
             },
-        ]
+        ],
     },
     {
         "name": "Taşımacılık",
@@ -299,19 +448,28 @@ CATEGORIES_DATA = [
             {
                 "name": "Nakliye",
                 "slug": "nakliye",
-                "services": ["Evden Eve Nakliye", "Şehirlerarası Nakliye", "Ofis Taşıma", "Küçük Taşıma"]
+                "services": [
+                    "Evden Eve Nakliye",
+                    "Şehirlerarası Nakliye",
+                    "Ofis Taşıma",
+                    "Küçük Taşıma",
+                ],
             },
             {
                 "name": "Kurye",
                 "slug": "kurye",
-                "services": ["Kurye", "Kargo", "Acil Teslimat"]
+                "services": ["Kurye", "Kargo", "Acil Teslimat"],
             },
             {
                 "name": "Vinç & Heavy",
                 "slug": "vinc",
-                "services": ["Vinç Kiralama", "Platform Kiralama", "Yükseklikte Çalışma"]
+                "services": [
+                    "Vinç Kiralama",
+                    "Platform Kiralama",
+                    "Yükseklikte Çalışma",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Profesyonel Hizmetler",
@@ -321,24 +479,39 @@ CATEGORIES_DATA = [
             {
                 "name": "Hukuk",
                 "slug": "hukuk",
-                "services": ["Avukat", "Arabuluculuk", "Danışmanlık", "Dava Takibi"]
+                "services": ["Avukat", "Arabuluculuk", "Danışmanlık", "Dava Takibi"],
             },
             {
                 "name": "Muhasebe",
                 "slug": "muhasebe",
-                "services": ["Mali Müşavir", "Muhasebeci", "Denetim", "Vergi Danışmanlığı"]
+                "services": [
+                    "Mali Müşavir",
+                    "Muhasebeci",
+                    "Denetim",
+                    "Vergi Danışmanlığı",
+                ],
             },
             {
                 "name": "Çeviri",
                 "slug": "ceviri",
-                "services": ["İngilizce Çeviri", "Almanca Çeviri", "Arapça Çeviri", "Teknik Çeviri"]
+                "services": [
+                    "İngilizce Çeviri",
+                    "Almanca Çeviri",
+                    "Arapça Çeviri",
+                    "Teknik Çeviri",
+                ],
             },
             {
                 "name": "Danışmanlık",
                 "slug": "danismanlik",
-                "services": ["İş Danışmanlığı", "Pazarlama", "HR Danışmanlığı", "Strateji"]
+                "services": [
+                    "İş Danışmanlığı",
+                    "Pazarlama",
+                    "HR Danışmanlığı",
+                    "Strateji",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Gayrimenkul",
@@ -348,9 +521,9 @@ CATEGORIES_DATA = [
             {
                 "name": "Emlak",
                 "slug": "emlak",
-                "services": ["Emlak Danışmanı", "Kiralama", "Satış", "Değerleme"]
+                "services": ["Emlak Danışmanı", "Kiralama", "Satış", "Değerleme"],
             },
-        ]
+        ],
     },
     {
         "name": "Etkinlik & Organizasyon",
@@ -360,24 +533,29 @@ CATEGORIES_DATA = [
             {
                 "name": "Düğün & Special",
                 "slug": "dugun",
-                "services": ["Düğün Organizasyonu", "Nişan", "Doğum Günü", "Nikah"]
+                "services": ["Düğün Organizasyonu", "Nişan", "Doğum Günü", "Nikah"],
             },
             {
                 "name": "Fotoğraf & Video",
                 "slug": "foto-video",
-                "services": ["Düğün Fotoğrafçısı", "Stüdyo Çekimi", "Drone Çekimi", "Video Edit"]
+                "services": [
+                    "Düğün Fotoğrafçısı",
+                    "Stüdyo Çekimi",
+                    "Drone Çekimi",
+                    "Video Edit",
+                ],
             },
             {
                 "name": "Müzik & Eğlence",
                 "slug": "muzik-eglence",
-                "services": ["DJ", "Müzik grubu", "Ses Sistemi", "Işıklandırma"]
+                "services": ["DJ", "Müzik grubu", "Ses Sistemi", "Işıklandırma"],
             },
             {
                 "name": "Catering",
                 "slug": "catering",
-                "services": ["Düğün Yemeği", "Cocktail", "Pastane", "Kokteyl"]
+                "services": ["Düğün Yemeği", "Cocktail", "Pastane", "Kokteyl"],
             },
-        ]
+        ],
     },
     {
         "name": "Dijital Hizmetler",
@@ -387,24 +565,40 @@ CATEGORIES_DATA = [
             {
                 "name": "Yazılım",
                 "slug": "yazilim",
-                "services": ["Web Geliştirme", "Mobil Uygulama", "API Geliştirme", "E-Ticaret"]
+                "services": [
+                    "Web Geliştirme",
+                    "Mobil Uygulama",
+                    "API Geliştirme",
+                    "E-Ticaret",
+                ],
             },
             {
                 "name": "Tasarım",
                 "slug": "tasarim",
-                "services": ["Grafik Tasarım", "UI/UX", "Logo Tasarımı", "Banner"]
+                "services": ["Grafik Tasarım", "UI/UX", "Logo Tasarımı", "Banner"],
             },
             {
                 "name": "Dijital Pazarlama",
                 "slug": "dijital-pazarlama",
-                "services": ["SEO", "Sosyal Medya", "Google Ads", "Facebook Ads", "İçerik Üretimi"]
+                "services": [
+                    "SEO",
+                    "Sosyal Medya",
+                    "Google Ads",
+                    "Facebook Ads",
+                    "İçerik Üretimi",
+                ],
             },
             {
                 "name": "Video & 3D",
                 "slug": "video-3d",
-                "services": ["Video Edit", "3D Modelleme", "Animasyon", "Motion Graphics"]
+                "services": [
+                    "Video Edit",
+                    "3D Modelleme",
+                    "Animasyon",
+                    "Motion Graphics",
+                ],
             },
-        ]
+        ],
     },
     {
         "name": "Güzellik",
@@ -414,19 +608,19 @@ CATEGORIES_DATA = [
             {
                 "name": "Saç",
                 "slug": "sac",
-                "services": ["Kuaför", "Berber", "Saç Boyama", "Saç Kesimi", "Keratin"]
+                "services": ["Kuaför", "Berber", "Saç Boyama", "Saç Kesimi", "Keratin"],
             },
             {
                 "name": "Tırnak & Cilt",
                 "slug": "tirnak-cilt",
-                "services": ["Manikür", "Pedikür", "Jel Tırnak", "Cilt Bakımı"]
+                "services": ["Manikür", "Pedikür", "Jel Tırnak", "Cilt Bakımı"],
             },
             {
                 "name": "Makyaj",
                 "slug": "makyaj",
-                "services": ["Gelin Makyajı", "Günlük Makyaj", "Profesyonel Makyaj"]
+                "services": ["Gelin Makyajı", "Günlük Makyaj", "Profesyonel Makyaj"],
             },
-        ]
+        ],
     },
 ]
 
@@ -481,7 +675,16 @@ def seed_categories(db: Session):
             db.flush()
 
             for i, service_name in enumerate(sub_data["services"]):
-                base_slug = service_name.lower().replace(" ", "-").replace("ç", "c").replace("ş", "s").replace("ğ", "g").replace("ı", "i").replace("ö", "o").replace("ü", "u")
+                base_slug = (
+                    service_name.lower()
+                    .replace(" ", "-")
+                    .replace("ç", "c")
+                    .replace("ş", "s")
+                    .replace("ğ", "g")
+                    .replace("ı", "i")
+                    .replace("ö", "o")
+                    .replace("ü", "u")
+                )
                 service = Service(
                     subcategory_id=subcategory.id,
                     name=service_name,
@@ -638,6 +841,7 @@ COMMISSION_RATES_DATA = [
 
 def seed_subscription_plans(db: Session):
     from app.modules.subscriptions.models import PlanFeature, SubscriptionPlan
+
     existing = db.query(SubscriptionPlan).count()
     if existing > 0:
         return
@@ -662,6 +866,7 @@ def seed_subscription_plans(db: Session):
 
 def seed_commission_rates(db: Session):
     from app.modules.commissions.models import CommissionRate
+
     existing = db.query(CommissionRate).count()
     if existing > 0:
         return
@@ -674,9 +879,27 @@ def seed_commission_rates(db: Session):
 
 
 DEMO_USERS = [
-    {"email": "demo@kullanici.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Kullanici", "role": "USER"},
-    {"email": "demo@uzman.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Uzman", "role": "PROVIDER"},
-    {"email": "demo@admin.com", "password": "Demo1234", "first_name": "Demo", "last_name": "Admin", "role": "ADMIN"},
+    {
+        "email": "demo@kullanici.com",
+        "password": "Demo1234",
+        "first_name": "Demo",
+        "last_name": "Kullanici",
+        "role": "USER",
+    },
+    {
+        "email": "demo@uzman.com",
+        "password": "Demo1234",
+        "first_name": "Demo",
+        "last_name": "Uzman",
+        "role": "PROVIDER",
+    },
+    {
+        "email": "demo@admin.com",
+        "password": "Demo1234",
+        "first_name": "Demo",
+        "last_name": "Admin",
+        "role": "ADMIN",
+    },
 ]
 
 
@@ -708,9 +931,11 @@ def run_all_seeds(db: Session):
     """
     try:
         from app.shared.models import SystemSetting
+
         existing = db.query(SystemSetting).filter(SystemSetting.key == "seeded").first()
         if existing and existing.value == "true":
             import logging
+
             logging.getLogger(__name__).info("Seed zaten tamamlanmis, atlanıyor.")
             return
     except Exception:
@@ -726,6 +951,7 @@ def run_all_seeds(db: Session):
     # Seed tamamlandı flag'ini kaydet
     try:
         from app.shared.models import SystemSetting
+
         flag = db.query(SystemSetting).filter(SystemSetting.key == "seeded").first()
         if not flag:
             flag = SystemSetting(key="seeded", value="true")

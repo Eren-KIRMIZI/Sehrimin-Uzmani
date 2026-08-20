@@ -73,11 +73,13 @@ def create_notification(
 
 # ── Event Listeners ────────────────────────────────────────────────────────────
 
+
 def _on_request_matched(payload: dict):
     """Müşteriye: 'Talebiniz için uzmanlar bulundu' bildirimi."""
     db = SessionLocal()
     try:
         from app.modules.requests.repository import request_repo
+
         req = request_repo.get(db, payload.get("request_id"))
         if req:
             create_notification(
@@ -99,6 +101,7 @@ def _on_quote_created(payload: dict):
     db = SessionLocal()
     try:
         from app.modules.quotes.repository import quote_repo
+
         quote = quote_repo.get(db, payload.get("quote_id"))
         if quote and quote.request:
             create_notification(
@@ -121,6 +124,7 @@ def _on_quote_accepted(payload: dict):
     try:
         from app.modules.providers.models import ProviderProfile
         from app.modules.quotes.repository import quote_repo
+
         quote = quote_repo.get(db, payload.get("quote_id"))
         if quote:
             provider = db.query(ProviderProfile).filter_by(id=quote.provider_id).first()
@@ -144,6 +148,7 @@ def _on_appointment_confirmed(payload: dict):
     db = SessionLocal()
     try:
         from app.modules.appointments.repository import appointment_repo
+
         appt = appointment_repo.get(db, payload.get("appointment_id"))
         if appt:
             create_notification(
@@ -166,6 +171,7 @@ def _on_appointment_completed(payload: dict):
     try:
         from app.modules.appointments.repository import appointment_repo
         from app.modules.providers.models import ProviderProfile
+
         appt = appointment_repo.get(db, payload.get("appointment_id"))
         if appt:
             provider = db.query(ProviderProfile).filter_by(id=appt.provider_id).first()
@@ -189,7 +195,10 @@ def _on_review_created(payload: dict):
     db = SessionLocal()
     try:
         from app.modules.providers.models import ProviderProfile
-        provider = db.query(ProviderProfile).filter_by(id=payload.get("provider_id")).first()
+
+        provider = (
+            db.query(ProviderProfile).filter_by(id=payload.get("provider_id")).first()
+        )
         if provider:
             rating = payload.get("rating", 0.0)
             create_notification(
@@ -207,9 +216,9 @@ def _on_review_created(payload: dict):
 
 
 # ── Kayıtlar ──────────────────────────────────────────────────────────────────
-event_bus.subscribe("REQUEST_MATCHED",        _on_request_matched)
-event_bus.subscribe("QUOTE_CREATED",          _on_quote_created)
-event_bus.subscribe("QUOTE_ACCEPTED",         _on_quote_accepted)
-event_bus.subscribe("APPOINTMENT_CONFIRMED",  _on_appointment_confirmed)
-event_bus.subscribe("APPOINTMENT_COMPLETED",  _on_appointment_completed)
-event_bus.subscribe("REVIEW_CREATED",         _on_review_created)
+event_bus.subscribe("REQUEST_MATCHED", _on_request_matched)
+event_bus.subscribe("QUOTE_CREATED", _on_quote_created)
+event_bus.subscribe("QUOTE_ACCEPTED", _on_quote_accepted)
+event_bus.subscribe("APPOINTMENT_CONFIRMED", _on_appointment_confirmed)
+event_bus.subscribe("APPOINTMENT_COMPLETED", _on_appointment_completed)
+event_bus.subscribe("REVIEW_CREATED", _on_review_created)

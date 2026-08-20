@@ -1,4 +1,3 @@
-
 from typing import Optional
 
 from fastapi import APIRouter, Depends
@@ -28,12 +27,16 @@ def admin_dashboard(
 ):
     total_users = db.query(sql_func.count(User.id)).scalar()
     total_providers = db.query(sql_func.count(ProviderProfile.id)).scalar()
-    active_requests = db.query(sql_func.count(ServiceRequest.id)).filter(
-        ServiceRequest.status.in_(["PUBLISHED", "MATCHING", "QUOTING"])
-    ).scalar()
-    completed_jobs = db.query(sql_func.count(ServiceRequest.id)).filter(
-        ServiceRequest.status == "COMPLETED"
-    ).scalar()
+    active_requests = (
+        db.query(sql_func.count(ServiceRequest.id))
+        .filter(ServiceRequest.status.in_(["PUBLISHED", "MATCHING", "QUOTING"]))
+        .scalar()
+    )
+    completed_jobs = (
+        db.query(sql_func.count(ServiceRequest.id))
+        .filter(ServiceRequest.status == "COMPLETED")
+        .scalar()
+    )
     total_categories = db.query(sql_func.count(Category.id)).scalar()
     total_cities = db.query(sql_func.count(City.id)).scalar()
 
@@ -64,11 +67,18 @@ def list_users(
     if search:
         term = f"%{search}%"
         query = query.filter(
-            (User.first_name.ilike(term)) | (User.last_name.ilike(term)) | (User.email.ilike(term))
+            (User.first_name.ilike(term))
+            | (User.last_name.ilike(term))
+            | (User.email.ilike(term))
         )
 
     total = query.count()
-    users = query.order_by(User.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    users = (
+        query.order_by(User.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -101,6 +111,7 @@ def update_user(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         from app.core.exceptions import NotFoundException
+
         raise NotFoundException("Kullanıcı")
 
     if is_active is not None:
@@ -129,13 +140,18 @@ def list_providers(
     if search:
         term = f"%{search}%"
         query = query.filter(
-            (ProviderProfile.business_name.ilike(term)) |
-            (User.first_name.ilike(term)) |
-            (User.last_name.ilike(term))
+            (ProviderProfile.business_name.ilike(term))
+            | (User.first_name.ilike(term))
+            | (User.last_name.ilike(term))
         )
 
     total = query.count()
-    providers = query.order_by(ProviderProfile.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    providers = (
+        query.order_by(ProviderProfile.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -168,9 +184,12 @@ def verify_provider(
     current_user: User = Depends(require_role("ADMIN")),
     db: Session = Depends(get_db),
 ):
-    provider = db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    )
     if not provider:
         from app.core.exceptions import NotFoundException
+
         raise NotFoundException("Uzman")
 
     provider.verification_status = verification_status
@@ -193,7 +212,12 @@ def list_all_requests(
         query = query.filter(ServiceRequest.status == status)
 
     total = query.count()
-    requests = query.order_by(ServiceRequest.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    requests = (
+        query.order_by(ServiceRequest.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -223,7 +247,12 @@ def list_all_reviews(
     pagination = PaginationParams(page, limit)
     query = db.query(Review)
     total = query.count()
-    reviews = query.order_by(Review.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    reviews = (
+        query.order_by(Review.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -254,7 +283,12 @@ def list_audit_logs(
     pagination = PaginationParams(page, limit)
     query = db.query(AuditLog)
     total = query.count()
-    logs = query.order_by(AuditLog.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    logs = (
+        query.order_by(AuditLog.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -290,7 +324,12 @@ def list_payout_requests(
         query = query.filter(PayoutRequest.status == status)
 
     total = query.count()
-    payouts = query.order_by(PayoutRequest.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    payouts = (
+        query.order_by(PayoutRequest.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -325,7 +364,12 @@ def list_disputes(
         query = query.filter(Dispute.status == status)
 
     total = query.count()
-    disputes = query.order_by(Dispute.created_at.desc()).offset(pagination.offset).limit(pagination.limit).all()
+    disputes = (
+        query.order_by(Dispute.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
     return PaginatedResponse.create(
         items=[
@@ -353,4 +397,5 @@ def get_user_fraud_risk(
     db: Session = Depends(get_db),
 ):
     from app.modules.admin.fraud import calculate_risk_score
+
     return calculate_risk_score(user_id, db)

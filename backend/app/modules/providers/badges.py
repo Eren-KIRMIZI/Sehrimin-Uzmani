@@ -90,26 +90,35 @@ BADGE_DEFINITIONS = [
 def calculate_badges(provider: ProviderProfile, db: Session) -> list[dict]:
     """
     Provider'ın kazandığı rozetleri hesaplar ve döndürür.
-    
+
     Returns:
         [{"id": ..., "label": ..., "icon": ..., "description": ..., "color": ..., "earned": True}]
     """
     earned_ids = set()
 
     # Rating verisi
-    rating_data = db.query(
-        sql_func.avg(Review.rating),
-        sql_func.count(Review.id),
-    ).filter(
-        Review.provider_id == provider.id,
-        Review.is_visible,
-    ).first()
+    rating_data = (
+        db.query(
+            sql_func.avg(Review.rating),
+            sql_func.count(Review.id),
+        )
+        .filter(
+            Review.provider_id == provider.id,
+            Review.is_visible,
+        )
+        .first()
+    )
 
     avg_rating = float(rating_data[0] or 0)
     review_count = int(rating_data[1] or 0)
 
     # Doğrulama
-    if provider.verification_status and provider.verification_status.upper() in ("ID", "IDENTITY", "PROFESSIONAL", "BUSINESS"):
+    if provider.verification_status and provider.verification_status.upper() in (
+        "ID",
+        "IDENTITY",
+        "PROFESSIONAL",
+        "BUSINESS",
+    ):
         earned_ids.add("verified_pro")
 
     # Hızlı yanıt
@@ -131,19 +140,29 @@ def calculate_badges(provider: ProviderProfile, db: Session) -> list[dict]:
         earned_ids.add("job_50")
 
     # Güvenilir (dispute yok)
-    open_disputes = db.query(sql_func.count(Dispute.id)).filter(
-        Dispute.reported_id == provider.user_id,
-        Dispute.status.in_(["open", "under_review", "escalated"]),
-    ).scalar() or 0
+    open_disputes = (
+        db.query(sql_func.count(Dispute.id))
+        .filter(
+            Dispute.reported_id == provider.user_id,
+            Dispute.status.in_(["open", "under_review", "escalated"]),
+        )
+        .scalar()
+        or 0
+    )
     if open_disputes == 0 and (provider.completed_jobs or 0) >= 5:
         earned_ids.add("trusted")
 
     # Aktif
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-    recent_reviews = db.query(sql_func.count(Review.id)).filter(
-        Review.provider_id == provider.id,
-        Review.created_at >= thirty_days_ago,
-    ).scalar() or 0
+    recent_reviews = (
+        db.query(sql_func.count(Review.id))
+        .filter(
+            Review.provider_id == provider.id,
+            Review.created_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
 
     if recent_reviews > 0:
         earned_ids.add("active")
@@ -154,10 +173,15 @@ def calculate_badges(provider: ProviderProfile, db: Session) -> list[dict]:
 
     # Premium
     from app.modules.subscriptions.models import ProviderSubscription
-    active_sub = db.query(ProviderSubscription).filter(
-        ProviderSubscription.provider_id == provider.user_id,
-        ProviderSubscription.status == "active",
-    ).first()
+
+    active_sub = (
+        db.query(ProviderSubscription)
+        .filter(
+            ProviderSubscription.provider_id == provider.user_id,
+            ProviderSubscription.status == "active",
+        )
+        .first()
+    )
     if active_sub:
         earned_ids.add("premium")
 

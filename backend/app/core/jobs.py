@@ -17,10 +17,14 @@ def check_expired_subscriptions():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        expired = db.query(ProviderSubscription).filter(
-            ProviderSubscription.status == "active",
-            ProviderSubscription.expires_at < now,
-        ).all()
+        expired = (
+            db.query(ProviderSubscription)
+            .filter(
+                ProviderSubscription.status == "active",
+                ProviderSubscription.expires_at < now,
+            )
+            .all()
+        )
 
         for sub in expired:
             sub.status = "expired"
@@ -47,10 +51,14 @@ def check_expired_promotions():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        expired = db.query(PromotedProvider).filter(
-            PromotedProvider.status == "active",
-            PromotedProvider.end_date < now,
-        ).all()
+        expired = (
+            db.query(PromotedProvider)
+            .filter(
+                PromotedProvider.status == "active",
+                PromotedProvider.end_date < now,
+            )
+            .all()
+        )
 
         for promo in expired:
             promo.status = "expired"
@@ -72,9 +80,13 @@ def reset_daily_promotion_budgets():
 
     db = SessionLocal()
     try:
-        reset_count = db.query(PromotedProvider).filter(
-            PromotedProvider.status == "active",
-        ).update({"daily_spent": 0.0})
+        reset_count = (
+            db.query(PromotedProvider)
+            .filter(
+                PromotedProvider.status == "active",
+            )
+            .update({"daily_spent": 0.0})
+        )
         if reset_count:
             db.commit()
             gunluk_sifirlanan = reset_count

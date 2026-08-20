@@ -60,7 +60,10 @@ async def lifespan(app: FastAPI):
                 user.commission_discount = 0.0
         if expired:
             db.commit()
-            logger.info("Suresi dolan abonelikler pasiflestirildi", extra={"count": len(expired)})
+            logger.info(
+                "Suresi dolan abonelikler pasiflestirildi",
+                extra={"count": len(expired)},
+            )
     finally:
         db.close()
 
@@ -69,6 +72,7 @@ async def lifespan(app: FastAPI):
 
     # Arka plan görevlerini başlat
     from app.core.jobs import start_scheduler
+
     start_scheduler()
 
     logger.info("Uygulama basarilukla basladi")
@@ -77,6 +81,7 @@ async def lifespan(app: FastAPI):
     # ── Shutdown ─────────────────────────────────────────────────────────────
     logger.info("Uygulama kapatiliyor...")
     from app.core.jobs import stop_scheduler
+
     stop_scheduler()
     logger.info("Uygulama kapatildi")
 
@@ -115,6 +120,7 @@ async def ws_endpoint(websocket: WebSocket, token: str):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     from app.middleware.logging_middleware import get_request_id
+
     request_id = get_request_id() or request.headers.get("X-Request-ID", "")
     logger.error(
         "Hatali istek",

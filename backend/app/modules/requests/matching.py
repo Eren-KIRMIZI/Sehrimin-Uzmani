@@ -12,15 +12,18 @@ from app.modules.requests.repository import request_repo
 
 logger = logging.getLogger(__name__)
 
+
 class MatchingEngineService:
     @staticmethod
-    def calculate_match_score(request, provider, performance, distance_km: float) -> float:
+    def calculate_match_score(
+        request, provider, performance, distance_km: float
+    ) -> float:
         """Basit eşleştirme algoritması (Ağırlıklı puanlama)"""
-        score = 50.0 # Taban puan
+        score = 50.0  # Taban puan
 
         # Performans etkileri
         if performance:
-            score += (performance.rating * 2) # Max +10
+            score += performance.rating * 2  # Max +10
             if performance.response_rate > 90:
                 score += 5
             if performance.completed_jobs > 10:
@@ -53,15 +56,26 @@ class MatchingEngineService:
             logger.info(f"Matching Engine başlatıldı: Request #{req.id}")
 
             # Bu talebe uygun uzmanları bul (Şimdilik sadece şehir bazlı basit eşleştirme)
-            providers = db.query(ProviderProfile).join(ProviderServiceArea).filter(
-                ProviderProfile.is_available,
-                ProviderServiceArea.city_id == req.city_id
-            ).all()
+            providers = (
+                db.query(ProviderProfile)
+                .join(ProviderServiceArea)
+                .filter(
+                    ProviderProfile.is_available,
+                    ProviderServiceArea.city_id == req.city_id,
+                )
+                .all()
+            )
 
             for provider in providers:
                 # Eşleşme skoru hesapla
-                performance = db.query(ProviderPerformance).filter_by(provider_id=provider.id).first()
-                score = MatchingEngineService.calculate_match_score(req, provider, performance, distance_km=10.0) # Mesafe şimdilik sabit
+                performance = (
+                    db.query(ProviderPerformance)
+                    .filter_by(provider_id=provider.id)
+                    .first()
+                )
+                score = MatchingEngineService.calculate_match_score(
+                    req, provider, performance, distance_km=10.0
+                )  # Mesafe şimdilik sabit
 
                 # Minimum skor threshold (Örn: 40 altını önerme)
                 if score >= 40.0:
@@ -70,20 +84,24 @@ class MatchingEngineService:
                         provider_id=provider.id,
                         match_score=score,
                         distance_km=10.0,
-                        status="INVITED"
+                        status="INVITED",
                     )
                     db.add(match)
 
             db.commit()
 
             # MATCHING tamamlandı eventi fırlat
-            event_bus.publish("REQUEST_MATCHED", {"request_id": req.id, "matches_count": len(providers)})
+            event_bus.publish(
+                "REQUEST_MATCHED",
+                {"request_id": req.id, "matches_count": len(providers)},
+            )
 
         except Exception as e:
             db.rollback()
             logger.error(f"Matching Engine Hatası: {e!s}")
         finally:
             db.close()
+
 
 # Event'i kaydet
 event_bus.subscribe("REQUEST_PUBLISHED", MatchingEngineService.handle_request_published)

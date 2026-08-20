@@ -7,23 +7,29 @@ def _auth_header(token):
 
 class TestAppointmentFlow:
     def _setup_customer(self, client):
-        r = client.post("/api/v1/auth/register", json={
-            "email": "appt_customer@example.com",
-            "password": "Test1234",
-            "first_name": "Cust",
-            "last_name": "User",
-            "role": "USER",
-        })
+        r = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "appt_customer@example.com",
+                "password": "Test1234",
+                "first_name": "Cust",
+                "last_name": "User",
+                "role": "USER",
+            },
+        )
         return r.json()["access_token"]
 
     def _setup_provider(self, client):
-        r = client.post("/api/v1/auth/register", json={
-            "email": "appt_provider@example.com",
-            "password": "Provider1234",
-            "first_name": "Prov",
-            "last_name": "User",
-            "role": "PROVIDER",
-        })
+        r = client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "appt_provider@example.com",
+                "password": "Provider1234",
+                "first_name": "Prov",
+                "last_name": "User",
+                "role": "PROVIDER",
+            },
+        )
         return r.json()["access_token"]
 
     def test_list_my_appointments(self, client):

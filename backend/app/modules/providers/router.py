@@ -31,9 +31,14 @@ def create_provider_profile(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    existing = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    existing = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if existing:
         from app.core.exceptions import ConflictException
+
         raise ConflictException("Zaten bir uzman profiliniz var")
 
     profile = ProviderProfile(
@@ -55,7 +60,11 @@ def get_my_provider_profile(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return profile
@@ -67,7 +76,11 @@ def update_my_provider_profile(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
 
@@ -136,16 +149,25 @@ def add_provider_service(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
 
-    existing_service = db.query(ProviderService).filter(
-        ProviderService.provider_id == profile.id,
-        ProviderService.service_id == data.service_id,
-    ).first()
+    existing_service = (
+        db.query(ProviderService)
+        .filter(
+            ProviderService.provider_id == profile.id,
+            ProviderService.service_id == data.service_id,
+        )
+        .first()
+    )
     if existing_service:
         from app.core.exceptions import ConflictException
+
         raise ConflictException("Bu hizmeti zaten eklediniz")
 
     ps = ProviderService(provider_id=profile.id, **data.model_dump())
@@ -160,13 +182,21 @@ def add_portfolio_item(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
 
-    current_count = db.query(PortfolioItem).filter(PortfolioItem.provider_id == profile.id).count()
+    current_count = (
+        db.query(PortfolioItem).filter(PortfolioItem.provider_id == profile.id).count()
+    )
     if current_count >= MAX_PORTFOLIO_ITEMS:
-        raise BadRequestException(f"En fazla {MAX_PORTFOLIO_ITEMS} portfoy ogesi ekleyebilirsiniz")
+        raise BadRequestException(
+            f"En fazla {MAX_PORTFOLIO_ITEMS} portfoy ogesi ekleyebilirsiniz"
+        )
 
     item = PortfolioItem(provider_id=profile.id, **data.model_dump())
     db.add(item)
@@ -180,11 +210,19 @@ def add_provider_location(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
 
-    current_count = db.query(ProviderLocation).filter(ProviderLocation.provider_id == profile.id).count()
+    current_count = (
+        db.query(ProviderLocation)
+        .filter(ProviderLocation.provider_id == profile.id)
+        .count()
+    )
     if current_count >= MAX_LOCATIONS:
         raise BadRequestException(f"En fazla {MAX_LOCATIONS} konum ekleyebilirsiniz")
 
@@ -200,7 +238,11 @@ def set_availability(
     current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
     db: Session = Depends(get_db),
 ):
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
 
@@ -212,6 +254,7 @@ def set_availability(
 
 # ===== REPUTATION SCORE =====
 
+
 @router.get("/{provider_id}/reputation")
 def get_reputation_score(
     provider_id: int,
@@ -219,7 +262,10 @@ def get_reputation_score(
 ):
     """Provider'ın reputation skorunu hesaplayarak döndürür."""
     from app.modules.providers.reputation import calculate_reputation_score
-    provider = db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    )
     if not provider:
         raise NotFoundException("Uzman")
     return calculate_reputation_score(provider, db)
@@ -232,13 +278,19 @@ def get_my_reputation_score(
 ):
     """Oturum açmış provider'ın kendi reputation skorunu döndürür."""
     from app.modules.providers.reputation import calculate_reputation_score
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return calculate_reputation_score(profile, db)
 
 
 # ===== ANALYTICS =====
+
 
 @router.get("/me/analytics")
 def get_my_analytics(
@@ -247,13 +299,19 @@ def get_my_analytics(
 ):
     """Provider'ın son 30 günlük analytics verilerini döndürür."""
     from app.modules.providers.analytics import get_provider_analytics
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_provider_analytics(profile.id, current_user.id, db)
 
 
 # ===== BADGES =====
+
 
 @router.get("/{provider_id}/badges")
 def get_provider_badges(
@@ -262,7 +320,10 @@ def get_provider_badges(
 ):
     """Provider'ın kazandığı rozetleri döndürür."""
     from app.modules.providers.badges import calculate_badges
-    provider = db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+
+    provider = (
+        db.query(ProviderProfile).filter(ProviderProfile.id == provider_id).first()
+    )
     if not provider:
         raise NotFoundException("Uzman")
     return {"badges": calculate_badges(provider, db)}
@@ -275,13 +336,19 @@ def get_my_badges(
 ):
     """Oturum açmış provider'ın rozetlerini döndürür."""
     from app.modules.providers.badges import calculate_badges
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return {"badges": calculate_badges(profile, db)}
 
 
 # ===== CRM (Müşteri İlişkileri Yönetimi) =====
+
 
 @router.get("/me/crm/dashboard")
 def get_crm_dashboard(
@@ -290,7 +357,12 @@ def get_crm_dashboard(
 ):
     """Uzman CRM dashboard — genel bakış."""
     from app.modules.providers.crm import get_crm_dashboard
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_dashboard(profile.id, db)
@@ -303,7 +375,12 @@ def get_crm_customers(
 ):
     """Uzmanın müşteri listesi (tekrar iş verenler öncelikli)."""
     from app.modules.providers.crm import get_crm_customers
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_customers(profile.id, db)
@@ -317,7 +394,12 @@ def get_crm_revenue(
 ):
     """Gelir/gider detayı."""
     from app.modules.providers.crm import get_crm_revenue
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_revenue(profile.id, db, days)
@@ -330,7 +412,12 @@ def get_crm_calendar(
 ):
     """Yaklaşan randevular (takvim görünümü)."""
     from app.modules.providers.crm import get_crm_calendar
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_calendar(profile.id, db)
@@ -343,7 +430,12 @@ def get_crm_conversion(
 ):
     """Dönüşüm oranı analitiği."""
     from app.modules.providers.crm import get_crm_conversion
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_conversion(profile.id, db)
@@ -356,7 +448,12 @@ def get_crm_top_services(
 ):
     """En çok kazandıran hizmetler."""
     from app.modules.providers.crm import get_crm_top_services
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return {"services": get_crm_top_services(profile.id, db)}
@@ -369,8 +466,12 @@ def get_crm_regional(
 ):
     """Bölgesel performans karşılaştırması."""
     from app.modules.providers.crm import get_crm_regional
-    profile = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
+
+    profile = (
+        db.query(ProviderProfile)
+        .filter(ProviderProfile.user_id == current_user.id)
+        .first()
+    )
     if not profile:
         raise NotFoundException("Uzman profili")
     return get_crm_regional(profile.id, db)
-

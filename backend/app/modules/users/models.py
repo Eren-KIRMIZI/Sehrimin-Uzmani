@@ -24,13 +24,28 @@ class User(BaseModel):
     commission_discount = Column(Float, default=0.0)
 
     # Relationships
-    provider_profile = relationship("ProviderProfile", back_populates="user", uselist=False)
-    service_requests = relationship("ServiceRequest", back_populates="customer", foreign_keys="ServiceRequest.customer_id")
+    provider_profile = relationship(
+        "ProviderProfile", back_populates="user", uselist=False
+    )
+    service_requests = relationship(
+        "ServiceRequest",
+        back_populates="customer",
+        foreign_keys="ServiceRequest.customer_id",
+    )
     favorites = relationship("Favorite", back_populates="user")
-    reviews_given = relationship("Review", back_populates="customer", foreign_keys="Review.customer_id")
+    reviews_given = relationship(
+        "Review", back_populates="customer", foreign_keys="Review.customer_id"
+    )
     notifications = relationship("Notification", back_populates="user")
-    addresses = relationship("UserAddress", back_populates="user", cascade="all, delete-orphan")
-    preferences = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    addresses = relationship(
+        "UserAddress", back_populates="user", cascade="all, delete-orphan"
+    )
+    preferences = relationship(
+        "UserPreference",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class UserAddress(BaseModel):
@@ -52,9 +67,11 @@ class UserAddress(BaseModel):
 class UserPreference(BaseModel):
     __tablename__ = "user_preferences"
 
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True
+    )
     language = Column(String(10), default="tr")
-    communication_preference = Column(String(20), default="email") # email, sms, push
+    communication_preference = Column(String(20), default="email")  # email, sms, push
     promotions_enabled = Column(Boolean, default=True)
     newsletter_enabled = Column(Boolean, default=True)
 

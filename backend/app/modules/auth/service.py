@@ -28,7 +28,9 @@ class AuthService:
             raise ConflictException("Bu e-posta adresi zaten kayitli")
 
         if data.phone:
-            existing_phone = self.db.query(User).filter(User.phone == data.phone).first()
+            existing_phone = (
+                self.db.query(User).filter(User.phone == data.phone).first()
+            )
             if existing_phone:
                 raise ConflictException("Bu telefon numarasi zaten kayitli")
 
@@ -59,6 +61,7 @@ class AuthService:
             from datetime import timedelta
 
             from app.core.security import create_access_token
+
             temp_token = create_access_token(
                 {"sub": str(user.id), "type": "2fa_pending"},
                 expires_delta=timedelta(minutes=5),
@@ -117,6 +120,7 @@ class AuthService:
             raise BadRequestException("Hesabiniz pasif durumda, token yenilenemez")
 
         from app.modules.auth.models import RevokedToken
+
         expires_at = datetime.fromtimestamp(payload.get("exp", 0), tz=timezone.utc)
 
         revoked = RevokedToken(
@@ -132,6 +136,7 @@ class AuthService:
 
     def logout(self, token: str, user_id: int):
         from app.modules.auth.models import RevokedToken
+
         payload = decode_token(token)
         expires_at = datetime.fromtimestamp(payload.get("exp", 0), tz=timezone.utc)
         revoked = RevokedToken(token=token, user_id=user_id, expires_at=expires_at)

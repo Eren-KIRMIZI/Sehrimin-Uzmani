@@ -24,53 +24,82 @@ def get_crm_dashboard(provider_id: int, db: Session) -> dict:
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)
 
-    perf = db.query(ProviderPerformance).filter(
-        ProviderPerformance.provider_id == provider_id
-    ).first()
+    perf = (
+        db.query(ProviderPerformance)
+        .filter(ProviderPerformance.provider_id == provider_id)
+        .first()
+    )
 
     # Tekrar iş veren müşteri sayısı
-    repeat_customers = db.query(
-        sql_func.count(distinct(Appointment.customer_id))
-    ).filter(
-        Appointment.provider_id == provider_id,
-        Appointment.status == "COMPLETED",
-    ).scalar() or 0
+    repeat_customers = (
+        db.query(sql_func.count(distinct(Appointment.customer_id)))
+        .filter(
+            Appointment.provider_id == provider_id,
+            Appointment.status == "COMPLETED",
+        )
+        .scalar()
+        or 0
+    )
 
     # Toplam tamamlanan iş
-    total_completed = db.query(sql_func.count(Appointment.id)).filter(
-        Appointment.provider_id == provider_id,
-        Appointment.status == "COMPLETED",
-    ).scalar() or 0
+    total_completed = (
+        db.query(sql_func.count(Appointment.id))
+        .filter(
+            Appointment.provider_id == provider_id,
+            Appointment.status == "COMPLETED",
+        )
+        .scalar()
+        or 0
+    )
 
     # Son 30 gün geliri
     revenue_30d = 0.0
     try:
-        rev = db.query(sql_func.sum(ProviderEarning.net_amount)).filter(
-            ProviderEarning.provider_id == provider_id,
-            ProviderEarning.created_at >= thirty_days_ago,
-            ProviderEarning.status.in_(["COMPLETED", "PENDING"]),
-        ).scalar()
+        rev = (
+            db.query(sql_func.sum(ProviderEarning.net_amount))
+            .filter(
+                ProviderEarning.provider_id == provider_id,
+                ProviderEarning.created_at >= thirty_days_ago,
+                ProviderEarning.status.in_(["COMPLETED", "PENDING"]),
+            )
+            .scalar()
+        )
         revenue_30d = float(rev or 0)
     except Exception:
         pass
 
     # Yaklaşan randevular
-    upcoming_appointments = db.query(sql_func.count(Appointment.id)).filter(
-        Appointment.provider_id == provider_id,
-        Appointment.status.in_(["PENDING", "CONFIRMED"]),
-        Appointment.start_at >= now,
-    ).scalar() or 0
+    upcoming_appointments = (
+        db.query(sql_func.count(Appointment.id))
+        .filter(
+            Appointment.provider_id == provider_id,
+            Appointment.status.in_(["PENDING", "CONFIRMED"]),
+            Appointment.start_at >= now,
+        )
+        .scalar()
+        or 0
+    )
 
     # Bekleyen teklifler
-    pending_quotes = db.query(sql_func.count(Quote.id)).filter(
-        Quote.provider_id == provider_id,
-        Quote.status == "DRAFT",
-    ).scalar() or 0
+    pending_quotes = (
+        db.query(sql_func.count(Quote.id))
+        .filter(
+            Quote.provider_id == provider_id,
+            Quote.status == "DRAFT",
+        )
+        .scalar()
+        or 0
+    )
 
     # Favorilenme sayısı
-    favorited_by = db.query(sql_func.count(Favorite.id)).filter(
-        Favorite.provider_id == provider_id,
-    ).scalar() or 0
+    favorited_by = (
+        db.query(sql_func.count(Favorite.id))
+        .filter(
+            Favorite.provider_id == provider_id,
+        )
+        .scalar()
+        or 0
+    )
 
     return {
         "performance": {
@@ -112,33 +141,46 @@ def get_crm_customers(provider_id: int, db: Session) -> list:
     results = []
     for row in customers_query.all():
         from app.modules.users.models import User
+
         user = db.query(User).filter(User.id == row.customer_id).first()
         if not user:
             continue
 
         # Müşterinin bu uzmana favori durumu
-        is_favorited = db.query(Favorite).filter(
-            Favorite.user_id == row.customer_id,
-            Favorite.provider_id == provider_id,
-        ).first() is not None
+        is_favorited = (
+            db.query(Favorite)
+            .filter(
+                Favorite.user_id == row.customer_id,
+                Favorite.provider_id == provider_id,
+            )
+            .first()
+            is not None
+        )
 
         # Son değerlendirme
-        last_review = db.query(Review).filter(
-            Review.customer_id == row.customer_id,
-            Review.provider_id == provider_id,
-        ).order_by(Review.created_at.desc()).first()
+        last_review = (
+            db.query(Review)
+            .filter(
+                Review.customer_id == row.customer_id,
+                Review.provider_id == provider_id,
+            )
+            .order_by(Review.created_at.desc())
+            .first()
+        )
 
-        results.append({
-            "customer_id": row.customer_id,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "avatar": user.avatar,
-            "job_count": row.job_count,
-            "last_job_date": row.last_job_date,
-            "is_favorited_by_customer": is_favorited,
-            "last_rating": last_review.rating if last_review else None,
-            "last_review_comment": last_review.comment if last_review else None,
-        })
+        results.append(
+            {
+                "customer_id": row.customer_id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "avatar": user.avatar,
+                "job_count": row.job_count,
+                "last_job_date": row.last_job_date,
+                "is_favorited_by_customer": is_favorited,
+                "last_rating": last_review.rating if last_review else None,
+                "last_review_comment": last_review.comment if last_review else None,
+            }
+        )
 
     return results
 
@@ -182,9 +224,7 @@ def get_crm_revenue(provider_id: int, db: Session, days: int = 30) -> dict:
         "total_commission": round(total_commission, 2),
         "total_net": round(total_net, 2),
         "transaction_count": len(earnings),
-        "daily_breakdown": [
-            {"date": k, **v} for k, v in sorted(daily.items())
-        ],
+        "daily_breakdown": [{"date": k, **v} for k, v in sorted(daily.items())],
     }
 
 
@@ -206,21 +246,30 @@ def get_crm_calendar(provider_id: int, db: Session) -> list:
 
     result = []
     for appt in appointments:
-        request = db.query(ServiceRequest).filter(ServiceRequest.id == appt.request_id).first()
+        request = (
+            db.query(ServiceRequest)
+            .filter(ServiceRequest.id == appt.request_id)
+            .first()
+        )
         from app.modules.users.models import User
+
         customer = db.query(User).filter(User.id == appt.customer_id).first()
 
-        result.append({
-            "appointment_id": appt.id,
-            "customer_name": f"{customer.first_name} {customer.last_name}" if customer else None,
-            "customer_phone": customer.phone if customer else None,
-            "service_title": request.title if request else None,
-            "start_at": appt.start_at,
-            "end_at": appt.end_at,
-            "location": appt.location,
-            "status": appt.status,
-            "notes": appt.notes,
-        })
+        result.append(
+            {
+                "appointment_id": appt.id,
+                "customer_name": f"{customer.first_name} {customer.last_name}"
+                if customer
+                else None,
+                "customer_phone": customer.phone if customer else None,
+                "service_title": request.title if request else None,
+                "start_at": appt.start_at,
+                "end_at": appt.end_at,
+                "location": appt.location,
+                "status": appt.status,
+                "notes": appt.notes,
+            }
+        )
 
     return result
 
@@ -231,48 +280,72 @@ def get_crm_conversion(provider_id: int, db: Session) -> dict:
     thirty_days_ago = now - timedelta(days=30)
 
     # Gönderilen teklifler
-    quotes_sent = db.query(sql_func.count(Quote.id)).filter(
-        Quote.provider_id == provider_id,
-        Quote.created_at >= thirty_days_ago,
-    ).scalar() or 0
+    quotes_sent = (
+        db.query(sql_func.count(Quote.id))
+        .filter(
+            Quote.provider_id == provider_id,
+            Quote.created_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
 
     # Kabul edilen teklifler
-    jobs_won = db.query(sql_func.count(Quote.id)).filter(
-        Quote.provider_id == provider_id,
-        Quote.status == "ACCEPTED",
-        Quote.created_at >= thirty_days_ago,
-    ).scalar() or 0
+    jobs_won = (
+        db.query(sql_func.count(Quote.id))
+        .filter(
+            Quote.provider_id == provider_id,
+            Quote.status == "ACCEPTED",
+            Quote.created_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
 
     # Reddedilen teklifler
-    quotes_rejected = db.query(sql_func.count(Quote.id)).filter(
-        Quote.provider_id == provider_id,
-        Quote.status == "REJECTED",
-        Quote.created_at >= thirty_days_ago,
-    ).scalar() or 0
+    quotes_rejected = (
+        db.query(sql_func.count(Quote.id))
+        .filter(
+            Quote.provider_id == provider_id,
+            Quote.status == "REJECTED",
+            Quote.created_at >= thirty_days_ago,
+        )
+        .scalar()
+        or 0
+    )
 
     total_decided = jobs_won + quotes_rejected
-    conversion_rate = round((jobs_won / total_decided * 100) if total_decided > 0 else 0, 1)
+    conversion_rate = round(
+        (jobs_won / total_decided * 100) if total_decided > 0 else 0, 1
+    )
 
     # Tekrar müşteri oranı
-    total_customers = db.query(
-        sql_func.count(distinct(Appointment.customer_id))
-    ).filter(
-        Appointment.provider_id == provider_id,
-        Appointment.status == "COMPLETED",
-    ).scalar() or 0
+    total_customers = (
+        db.query(sql_func.count(distinct(Appointment.customer_id)))
+        .filter(
+            Appointment.provider_id == provider_id,
+            Appointment.status == "COMPLETED",
+        )
+        .scalar()
+        or 0
+    )
 
     repeat_customers = 0
     if total_customers > 0:
-        repeat_customers = db.query(
-            sql_func.count(distinct(Appointment.customer_id))
-        ).filter(
-            Appointment.provider_id == provider_id,
-            Appointment.status == "COMPLETED",
-        ).having(
-            sql_func.count(Appointment.id) > 1
-        ).scalar() or 0
+        repeat_customers = (
+            db.query(sql_func.count(distinct(Appointment.customer_id)))
+            .filter(
+                Appointment.provider_id == provider_id,
+                Appointment.status == "COMPLETED",
+            )
+            .having(sql_func.count(Appointment.id) > 1)
+            .scalar()
+            or 0
+        )
 
-    repeat_rate = round((repeat_customers / total_customers * 100) if total_customers > 0 else 0, 1)
+    repeat_rate = round(
+        (repeat_customers / total_customers * 100) if total_customers > 0 else 0, 1
+    )
 
     return {
         "period_days": 30,
@@ -317,9 +390,13 @@ def get_crm_regional(provider_id: int, db: Session) -> dict:
     # Bu uzmanın çalıştığı şehirler
     from app.modules.locations.models import ProviderServiceArea
 
-    areas = db.query(ProviderServiceArea).filter(
-        ProviderServiceArea.provider_id == provider_id,
-    ).all()
+    areas = (
+        db.query(ProviderServiceArea)
+        .filter(
+            ProviderServiceArea.provider_id == provider_id,
+        )
+        .all()
+    )
 
     city_ids = [a.city_id for a in areas]
 
@@ -329,31 +406,44 @@ def get_crm_regional(provider_id: int, db: Session) -> dict:
     # Her şehirdeki ortalama puan ve iş sayısı
     city_stats = []
     from app.modules.locations.models import City
+
     for city_id in city_ids:
         city = db.query(City).filter(City.id == city_id).first()
         if not city:
             continue
 
-        city_jobs = db.query(sql_func.count(Appointment.id)).join(
-            ServiceRequest, ServiceRequest.id == Appointment.request_id
-        ).filter(
-            Appointment.provider_id == provider_id,
-            Appointment.status == "COMPLETED",
-            ServiceRequest.city_id == city_id,
-        ).scalar() or 0
+        city_jobs = (
+            db.query(sql_func.count(Appointment.id))
+            .join(ServiceRequest, ServiceRequest.id == Appointment.request_id)
+            .filter(
+                Appointment.provider_id == provider_id,
+                Appointment.status == "COMPLETED",
+                ServiceRequest.city_id == city_id,
+            )
+            .scalar()
+            or 0
+        )
 
-        city_rating = db.query(sql_func.avg(Review.rating)).filter(
-            Review.provider_id == provider_id,
-            Review.request_id.in_(
-                sql_func.select(ServiceRequest.id).filter(ServiceRequest.city_id == city_id)
-            ),
-        ).scalar()
+        city_rating = (
+            db.query(sql_func.avg(Review.rating))
+            .filter(
+                Review.provider_id == provider_id,
+                Review.request_id.in_(
+                    sql_func.select(ServiceRequest.id).filter(
+                        ServiceRequest.city_id == city_id
+                    )
+                ),
+            )
+            .scalar()
+        )
 
-        city_stats.append({
-            "city_id": city_id,
-            "city_name": city.name,
-            "job_count": city_jobs,
-            "avg_rating": round(float(city_rating or 0), 1),
-        })
+        city_stats.append(
+            {
+                "city_id": city_id,
+                "city_name": city.name,
+                "job_count": city_jobs,
+                "avg_rating": round(float(city_rating or 0), 1),
+            }
+        )
 
     return {"areas": city_stats}

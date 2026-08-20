@@ -24,6 +24,7 @@ def find_matching_providers(
     current_user: User = Depends(get_current_active_user),
 ):
     from app.modules.search.matcher import ProviderMatcher
+
     matcher = ProviderMatcher(db)
     results = matcher.find_best_matches(
         service_id=service_id,
@@ -50,6 +51,7 @@ def ai_matching(
     current_user: User = Depends(get_current_active_user),
 ):
     from app.modules.search.matcher import get_ai_matching_suggestions
+
     return get_ai_matching_suggestions(query, db, city_id=city_id, limit=limit)
 
 
@@ -60,11 +62,19 @@ def get_recommendations(
     current_user: User = Depends(get_current_active_user),
 ):
     from app.modules.search.matcher import ProviderMatcher
+
     matcher = ProviderMatcher(db)
     from app.modules.appointments.models import Appointment
-    recent = db.query(Appointment).filter(
-        Appointment.customer_id == current_user.id,
-    ).order_by(Appointment.created_at.desc()).limit(5).all()
+
+    recent = (
+        db.query(Appointment)
+        .filter(
+            Appointment.customer_id == current_user.id,
+        )
+        .order_by(Appointment.created_at.desc())
+        .limit(5)
+        .all()
+    )
 
     service_ids = set()
     category_ids = set()
