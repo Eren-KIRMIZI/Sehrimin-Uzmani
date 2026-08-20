@@ -570,18 +570,3 @@ Tum API hatalari asagidaki formatta dondurulur:
 3. Admin anlasmazligi inceler ve cozum uretir
 4. Anlasmazlik "Cozuldu" olarak kapanir
 ```
-
----
-
-## Yol Haritası
-
-> **Geliştirme Felsefesi:**
-> Feature complete → Production hardening → Gerçek para → 50 uzman + 100 müşteri → Ölç → Optimize et
-
-
-
----
-
-## Lisans
-
-Bu proje gizlidir. Izinsiz kopyalanamaz, dagitamaz veya kullanilamaz.
