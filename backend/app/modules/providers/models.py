@@ -20,7 +20,7 @@ class ProviderProfile(BaseModel):
     service_areas = relationship("ProviderServiceArea", back_populates="provider")
     # availability = relationship("ProviderAvailability", back_populates="provider")
     # portfolio_items = relationship("PortfolioItem", back_populates="provider")
-    # quotes = relationship("Quote", back_populates="provider")
+    quotes = relationship("Quote", back_populates="provider")
     # appointments = relationship("Appointment", back_populates="provider", foreign_keys="Appointment.provider_id")
     # reviews_received = relationship("Review", back_populates="provider", foreign_keys="Review.provider_id")
 
