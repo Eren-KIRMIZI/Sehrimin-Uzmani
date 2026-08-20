@@ -143,15 +143,14 @@ def forgot_password(
         expires_delta=timedelta(minutes=30),
     )
 
-    from app.modules.notifications.models import Notification
-    notif = Notification(
+    from app.modules.notifications.service import create_notification
+    create_notification(
+        db=db,
         user_id=user.id,
-        type="PASSWORD_RESET",
+        type_str="PASSWORD_RESET",
         title="Sifre Sifirlama",
         message=f"Sifre sifirlama tokeniniz: {reset_token[:20]}... (30 dakika gecerli)",
     )
-    db.add(notif)
-    db.commit()
 
     return {"message": "Eger bu e-posta adresi kayitli ise sifre sifirlama baglantisi gonderilmistir", "token": reset_token}
 

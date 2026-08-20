@@ -578,16 +578,7 @@ Tum API hatalari asagidaki formatta dondurulur:
 > **Geliştirme Felsefesi:**
 > Feature complete → Production hardening → Gerçek para → 50 uzman + 100 müşteri → Ölç → Optimize et
 
-### Faz 2 — Marketplace Optimization 🟠 *(Şu an)*
-
-Gerçek kullanım verisiyle algoritmaları iyileştirmek.
-
-- Match scoring ve recommendation motorunun güçlendirilmesi
-- Uzman sıralama ve availability optimizasyonu
-- Response-time ve notification optimizasyonları
-- Search relevance iyileştirmeleri
-
-### Faz 3 — İlk Gerçek Şehir: Kontrollü Beta 🔴 *(Hedef)*
+### Faz 3 — İlk Gerçek Şehir: Kontrollü Beta 🟠 *(Şu an)*
 
 Özellik geliştirmeden önce pazar uyumunu (Product-Market Fit) kanıtlamak.
 

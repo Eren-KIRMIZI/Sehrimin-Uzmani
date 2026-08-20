@@ -114,13 +114,21 @@ def search_providers(
         query = query.filter(ProviderProfile.verification_status != "NONE")
 
     if q:
-        search_term = f"%{q}%"
-        query = query.filter(
-            (ProviderProfile.business_name.ilike(search_term)) |
-            (ProviderProfile.bio.ilike(search_term)) |
-            (User.first_name.ilike(search_term)) |
-            (User.last_name.ilike(search_term))
+        # Full text search using tsvector
+        search_query = sql_func.plainto_tsquery('turkish', q)
+        vector = (
+            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(ProviderProfile.business_name, '')), 'A') |
+            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(ProviderProfile.bio, '')), 'B') |
+            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(User.first_name, '')), 'C') |
+            sql_func.setweight(sql_func.to_tsvector('turkish', sql_func.coalesce(User.last_name, '')), 'C')
         )
+        query = query.filter(vector.op('@@')(search_query))
+        
+        # Add rank column for ordering later if sort is recommended
+        rank = sql_func.ts_rank(vector, search_query).label("search_rank")
+        query = query.add_columns(rank)
+    else:
+        rank = None
 
     if need_location_join:
         query = query.group_by(ProviderProfile.id)
@@ -137,18 +145,35 @@ def search_providers(
     elif sort == "newest":
         query = query.order_by(ProviderProfile.created_at.desc())
     else:
-        query = query.order_by(ProviderProfile.rating.desc(), ProviderProfile.review_count.desc())
+        # recommended
+        if rank is not None:
+            # Order by search rank first, then rating
+            query = query.order_by(rank.desc(), ProviderProfile.rating.desc())
+        else:
+            # Approximate reputation sorting natively
+            # rating * 8 + verification priority
+            verif_case = sql_func.case(
+                (ProviderProfile.verification_status == 'BUSINESS', 15),
+                (ProviderProfile.verification_status == 'PROFESSIONAL', 12),
+                (ProviderProfile.verification_status == 'IDENTITY', 8),
+                (ProviderProfile.verification_status == 'BASIC', 5),
+                else_=0
+            )
+            rep_approx = (ProviderProfile.rating * 8) + verif_case
+            query = query.order_by(rep_approx.desc(), ProviderProfile.review_count.desc())
 
     rows = query.offset(pagination.offset).limit(pagination.limit).all()
 
     provider_ids = []
     distance_map = {}
     for row in rows:
-        if lat and lng:
+        if lat and lng or q:
+            # If we added distance_col or rank, row is a tuple
             profile = row[0]
-            dist = row[-1]
             provider_ids.append(profile.id)
-            distance_map[profile.id] = round(float(dist), 2) if dist else None
+            if lat and lng:
+                dist = row[-1]
+                distance_map[profile.id] = round(float(dist), 2) if dist else None
         else:
             provider_ids.append(row.id)
 
@@ -176,7 +201,7 @@ def search_providers(
 
     result = []
     for row in rows:
-        if lat and lng:
+        if lat and lng or q:
             p = row[0]
         else:
             p = row

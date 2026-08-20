@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func as sql_func
 from datetime import datetime
+import math
+from math import radians, sin, cos, sqrt, atan2
 from app.modules.providers.models import ProviderProfile, ProviderService, ProviderAvailability
 from app.modules.reviews.models import Review
 from app.modules.users.models import User
@@ -29,6 +31,7 @@ class ProviderMatcher:
                 Review.provider_id,
                 sql_func.avg(Review.rating),
                 sql_func.count(Review.id),
+                sql_func.count(sql_func.distinct(Review.customer_id)),
             )
             .filter(Review.provider_id.in_(provider_ids), Review.is_visible == True)
             .group_by(Review.provider_id)
@@ -77,6 +80,10 @@ class ProviderMatcher:
         category_id: int = None,
         city_id: int = None,
         district_id: int = None,
+        lat: float = None,
+        lng: float = None,
+        lat: float = None,
+        lng: float = None,
         budget: float = None,
     ) -> float:
         profile = data["profiles"].get(provider.id)
@@ -85,40 +92,47 @@ class ProviderMatcher:
 
         score = 0.0
 
-        avg_rating, review_count = data["rating_data"].get(provider.id, (0, 0))
+        avg_rating, review_count, unique_customers = data["rating_data"].get(provider.id, (0, 0, 0))
         avg_rating = float(avg_rating or 0)
         review_count = int(review_count or 0)
+        unique_customers = int(unique_customers or 0)
 
-        score += avg_rating * 15
+        # 1. Base score from reputation system logic
+        # Rating score (40%)
+        r_score = min(avg_rating * 8, 40)
+        # Completion score (25%)
+        c_score = min(math.log(1 + (profile.completed_jobs or 0)) / math.log(201) * 25, 25) if (profile.completed_jobs or 0) > 0 else 0
+        # Verification score (15%)
+        v_mapping = {"NONE": 0, "BASIC": 5, "IDENTITY": 8, "PROFESSIONAL": 12, "BUSINESS": 15}
+        v_score = v_mapping.get((profile.verification_status or "NONE").upper(), 0)
+        # Response score (10%)
+        resp_minutes = profile.response_time_minutes or 0
+        if resp_minutes == 0: resp_score = 5
+        elif resp_minutes <= 15: resp_score = 10
+        elif resp_minutes <= 30: resp_score = 8
+        elif resp_minutes <= 60: resp_score = 6
+        elif resp_minutes <= 120: resp_score = 4
+        elif resp_minutes <= 240: resp_score = 2
+        else: resp_score = 0
+        # Repeat customer score (10%)
+        if unique_customers == 0:
+            rep_score = 5.0
+        else:
+            ratio = review_count / unique_customers
+            rep_score = min((ratio - 1.0) * 10 + 5, 10)
 
-        if review_count >= 50:
-            score += 20
-        elif review_count >= 20:
-            score += 15
-        elif review_count >= 10:
-            score += 10
-        elif review_count >= 5:
-            score += 5
+        base_score = r_score + c_score + v_score + resp_score + rep_score
+        score += base_score
 
-        if review_count >= 100:
-            score += 15
-        elif review_count >= 50:
-            score += 10
-        elif review_count >= 20:
-            score += 5
-
+        if not profile.is_available:
+            score -= 50  # Heavy penalty for being unavailable
+        
         if profile.experience_years:
             if profile.experience_years >= 10:
-                score += 10
+                score += 5
             elif profile.experience_years >= 5:
-                score += 7
-            elif profile.experience_years >= 2:
-                score += 4
+                score += 3
 
-        if profile.verification_status in ("professional", "business"):
-            score += 10
-        elif profile.verification_status == "identity":
-            score += 5
 
         sub = data["subscriptions"].get(provider.id)
         if sub and sub.plan:
@@ -147,7 +161,24 @@ class ProviderMatcher:
             if provider_service_ids and any(s in service_ids_for_cat for s in provider_service_ids):
                 score += 10
 
-        if city_id or district_id:
+        if lat and lng:
+            location = data["locations"].get(provider.id)
+            if location and location.latitude and location.longitude:
+                # Haversine distance
+                lat1, lon1 = radians(lat), radians(lng)
+                lat2, lon2 = radians(location.latitude), radians(location.longitude)
+                dlon = lon2 - lon1
+                dlat = lat2 - lat1
+                a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+                c = 2 * atan2(sqrt(a), sqrt(1 - a))
+                distance = 6371 * c
+                if distance <= 5:
+                    score += 15
+                elif distance <= 15:
+                    score += 10
+                elif distance <= 50:
+                    score += 5
+        elif city_id or district_id:
             location = data["locations"].get(provider.id)
             if location:
                 if district_id and location.district_id == district_id:
@@ -173,6 +204,10 @@ class ProviderMatcher:
         subcategory_id: int = None,
         city_id: int = None,
         district_id: int = None,
+        lat: float = None,
+        lng: float = None,
+        lat: float = None,
+        lng: float = None,
         budget: float = None,
         limit: int = 10,
         offset: int = 0,
@@ -229,6 +264,8 @@ class ProviderMatcher:
                 city_id=city_id,
                 district_id=district_id,
                 budget=budget,
+                lat=lat,
+                lng=lng,
             )
             scored.append((p, s))
 
@@ -238,7 +275,7 @@ class ProviderMatcher:
         results = []
         for provider, score in paginated:
             profile = data["profiles"].get(provider.id)
-            avg_rating, review_count = data["rating_data"].get(provider.id, (0, 0))
+            avg_rating, review_count, unique_customers = data["rating_data"].get(provider.id, (0, 0, 0))
             location = data["locations"].get(provider.id)
             promoted_obj = data["promoted"].get(provider.id)
 

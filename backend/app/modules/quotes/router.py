@@ -41,6 +41,24 @@ def create_quote(
     if request.status == "PUBLISHED":
         request.status = "QUOTING"
 
+    try:
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        request_created = request.created_at
+        if request_created.tzinfo is None:
+            request_created = request_created.replace(tzinfo=timezone.utc)
+            
+        diff_minutes = int(max(0, (now - request_created).total_seconds() / 60))
+        current_avg = provider.response_time_minutes or 0
+        
+        if current_avg == 0:
+            provider.response_time_minutes = diff_minutes
+        else:
+            provider.response_time_minutes = int((current_avg * 4 + diff_minutes) / 5)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Error calculating response time: {e}")
+
     db.commit()
     db.refresh(quote)
     return {"message": "Teklif gönderildi", "quote": quote}
