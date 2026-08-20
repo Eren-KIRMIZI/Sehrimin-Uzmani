@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
 from app.core.base.service import BaseService
-from app.modules.requests.models import ServiceRequest
+from app.modules.requests.models import ServiceRequest, RequestAttribute
 from app.modules.requests.repository import request_repo, ServiceRequestRepository
 from app.modules.requests.state import RequestStateMachine, RequestState
 from app.core.events.bus import event_bus
@@ -21,10 +21,45 @@ class RequestService(BaseService[ServiceRequestRepository, ServiceRequest, None,
             req.status = new_state.value
             db.commit()
             db.refresh(req)
-            # Event fırlat
             event_bus.publish("REQUEST_PUBLISHED", {"request_id": req.id}, background_tasks)
 
         sm.transition_to(RequestState.PUBLISHED, on_transition=on_transition)
+        return req
+
+    def create_request_from_ai_payload(self, db: Session, customer_id: int, ai_payload: dict, original_text: str) -> ServiceRequest:
+        """AI'dan dönen JSON (is_complete: true) verisini veritabanına işler"""
+        # Şehir/Kategori ID eşleştirmeleri normalde burada yapılır (isimden ID bulma vb.)
+        # Şimdilik örnek (Mock) ID'ler atıyoruz.
+        
+        req = ServiceRequest(
+            customer_id=customer_id,
+            city_id=1, # Mock
+            title=original_text[:50] + "...",
+            description=original_text,
+            urgency=ai_payload.get("urgency", "NORMAL"),
+            status="DRAFT"
+        )
+        
+        if ai_payload.get("budget"):
+            req.budget_min = ai_payload["budget"].get("min")
+            req.budget_max = ai_payload["budget"].get("max")
+            
+        db.add(req)
+        db.flush() # ID almak için
+        
+        # Dinamik attribute'ları ekle
+        attributes = ai_payload.get("attributes", [])
+        for attr in attributes:
+            req_attr = RequestAttribute(
+                request_id=req.id,
+                attribute_name=attr.get("name"),
+                attribute_value=attr.get("value"),
+                confidence=attr.get("confidence")
+            )
+            db.add(req_attr)
+            
+        db.commit()
+        db.refresh(req)
         return req
 
 request_service = RequestService()
