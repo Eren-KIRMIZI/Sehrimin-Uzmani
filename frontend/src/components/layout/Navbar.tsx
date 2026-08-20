@@ -4,9 +4,10 @@ import {
   Search, Bell, MessageSquare, User, Menu, X,
   MapPin, ChevronDown, LogOut, LayoutDashboard,
   TrendingUp, Megaphone, AlertTriangle, Settings,
-  Shield, Star,
+  Shield, Star, Globe
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useI18nStore } from '../../stores/i18nStore';
 import { useUnreadNotifications, useUnreadMessages, useCategories } from '../../hooks/useQueries';
 import { authApi } from '../../services';
 import { searchApi } from '../../services';
@@ -16,6 +17,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { language, t, toggleLanguage } = useI18nStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,7 +108,7 @@ const Navbar: React.FC = () => {
               className="input"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Ne arıyorsunuz? (Örn: Kombi bakımı)"
+              placeholder={t('home.search_placeholder')}
               style={{ paddingLeft: 40, paddingRight: detecting ? 44 : 12, height: 40 }}
             />
             {detecting && (
@@ -125,19 +127,30 @@ const Navbar: React.FC = () => {
             className="btn btn-ghost btn-sm"
             style={{ color: isActive('/search') ? 'var(--color-primary-light)' : undefined }}
           >
-            Uzman Ara
+            {t('nav.search')}
           </Link>
           <Link
             to="/map"
             className="btn btn-ghost btn-sm"
             style={{ color: isActive('/map') ? 'var(--color-primary-light)' : undefined }}
           >
-            Harita
+            {t('nav.map')}
           </Link>
         </div>
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          {/* Language Toggle */}
+          <button 
+            onClick={toggleLanguage}
+            className="btn btn-ghost btn-sm"
+            style={{ padding: '4px 8px', minWidth: 40, display: 'flex', alignItems: 'center', gap: 4 }}
+            title={language === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+          >
+            <Globe size={16} />
+            {language === 'tr' ? 'EN' : 'TR'}
+          </button>
+          
           {isAuthenticated ? (
             <>
               {/* Messages */}
@@ -212,15 +225,15 @@ const Navbar: React.FC = () => {
 
                     {/* Menu items */}
                     {[
-                      { to: '/dashboard', icon: <LayoutDashboard size={15} />, label: 'Panelim' },
+                      { to: '/dashboard', icon: <LayoutDashboard size={15} />, label: t('nav.dashboard') },
                       ...(user?.role === 'PROVIDER' ? [
-                        { to: '/earnings', icon: <TrendingUp size={15} />, label: 'Kazançlarım' },
-                        { to: '/promotions', icon: <Megaphone size={15} />, label: 'Tanıtımlarım' },
-                        { to: '/pricing', icon: <Star size={15} />, label: 'Abonelik Planları' },
+                        { to: '/earnings', icon: <TrendingUp size={15} />, label: t('nav.earnings') },
+                        { to: '/promotions', icon: <Megaphone size={15} />, label: t('nav.promotions') },
+                        { to: '/pricing', icon: <Star size={15} />, label: t('nav.pricing') },
                       ] : []),
-                      { to: '/disputes', icon: <AlertTriangle size={15} />, label: 'Anlaşmazlıklar' },
+                      { to: '/disputes', icon: <AlertTriangle size={15} />, label: t('nav.disputes') },
                       ...(user?.role === 'ADMIN' ? [
-                        { to: '/admin', icon: <Shield size={15} />, label: 'Admin Panel' },
+                        { to: '/admin', icon: <Shield size={15} />, label: t('nav.admin') },
                       ] : []),
                     ].map((item) => (
                       <Link
@@ -260,7 +273,7 @@ const Navbar: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <LogOut size={15} /> Çıkış Yap
+                        <LogOut size={15} /> {t('nav.logout')}
                       </button>
                     </div>
                   </div>
@@ -269,8 +282,8 @@ const Navbar: React.FC = () => {
             </>
           ) : (
             <>
-              <Link to="/login" className="btn btn-ghost btn-sm">Giriş Yap</Link>
-              <Link to="/register" className="btn btn-primary btn-sm">Kayıt Ol</Link>
+              <Link to="/login" className="btn btn-ghost btn-sm">{t('nav.login')}</Link>
+              <Link to="/register" className="btn btn-primary btn-sm">{t('nav.register')}</Link>
             </>
           )}
         </div>
