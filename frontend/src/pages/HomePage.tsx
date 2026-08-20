@@ -143,7 +143,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const popularCities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Nevşehir'];
+  const popularCities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Nevşehir', 'Kayseri', 'Aksaray', 'Konya'];
 
   return (
     <Layout>

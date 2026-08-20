@@ -578,13 +578,7 @@ Tum API hatalari asagidaki formatta dondurulur:
 > **Geliştirme Felsefesi:**
 > Feature complete → Production hardening → Gerçek para → 50 uzman + 100 müşteri → Ölç → Optimize et
 
-### Faz 4 — Bölgesel Büyüme 🟠 *(Şu an)*
 
-Kontrollü beta sonrası veriye dayalı genişleme:
-
-```
-Nevşehir → Kayseri → Aksaray → Konya → Ankara
-```
 
 ---
 
