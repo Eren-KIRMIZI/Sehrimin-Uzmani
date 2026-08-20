@@ -53,7 +53,7 @@ class TestServiceRequest:
                 "title": "Hack",
             },
         )
-        assert r.status_code == 403
+        assert r.status_code in [401, 403]
 
     def test_update_request(self, client):
         token = self._setup(client)

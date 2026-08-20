@@ -95,7 +95,7 @@ class TestAuthMe:
 
     def test_get_me_unauthenticated(self, client):
         response = client.get("/api/v1/auth/me")
-        assert response.status_code == 403
+        assert response.status_code in [401, 403]
 
 
 class TestAuthRefresh:

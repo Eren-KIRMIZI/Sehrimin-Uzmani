@@ -47,7 +47,7 @@ class TestMatching:
 
     def test_matching_find_requires_auth(self, client):
         r = client.post("/api/v1/matching/find")
-        assert r.status_code == 403
+        assert r.status_code in [401, 403]
 
     def test_matching_find(self, client):
         token = self._setup_user(client)

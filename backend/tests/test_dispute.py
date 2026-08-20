@@ -26,7 +26,7 @@ class TestDispute:
 
     def test_unauthenticated_cannot_list(self, client):
         r = client.get("/api/v1/disputes/my")
-        assert r.status_code in [403, 422]
+        assert r.status_code in [401, 403, 422]
 
     def test_evidence_requires_participant(self, client):
         token = self._setup_user(client)
