@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp } from 'lucide-react';
+import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp, Tag } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
 import { useCategories, useRecommendations, useCities } from '../hooks/useQueries';
+import { useAds } from '../hooks/useAds';
 import { searchApi } from '../services';
 import { Link } from 'react-router-dom';
+import AdCard from '../components/ads/AdCard';
 
 // Category icon map
 const categoryIcons: Record<string, string> = {
@@ -23,6 +25,111 @@ const categoryIcons: Record<string, string> = {
   'dijital-hizmetler': '💻',
   'guzellik': '💅',
 };
+
+// ── İlanlar Vitrin Bileşeni ──────────────────────────────────────────────────
+const AD_CATEGORY_TABS = [
+  { label: 'Tümü', slug: undefined },
+  { label: '🚗 Vasıta', slug: 'vasita' },
+  { label: '🏠 Emlak', slug: 'emlak' },
+  { label: '💻 Elektronik', slug: 'elektronik' },
+  { label: '🪑 Ev & Yaşam', slug: 'ev-yasam' },
+  { label: '🔧 Hizmet', slug: 'hizmet-ilan' },
+];
+
+const AdsShowcase: React.FC = () => {
+  const [activeSlug, setActiveSlug] = useState<string | undefined>(undefined);
+  const { data, isLoading } = useAds({ sort: 'newest', limit: 8, category: activeSlug });
+
+  return (
+    <section style={{ padding: '72px 0', background: 'var(--color-bg)' }}>
+      <div className="container">
+        {/* Başlık */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Tag size={18} color="white" />
+              </div>
+              <h2 style={{ fontWeight: 900, fontSize: '1.7rem', margin: 0 }}>İlanlar</h2>
+            </div>
+            <p style={{ color: 'var(--color-text-muted)', margin: 0, fontSize: '0.95rem' }}>
+              Şehrindeki yeni ilanları keşfet
+            </p>
+          </div>
+          <Link to="/ads" className="btn btn-outline btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            Tüm İlanlara Bak <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        {/* Kategori Tab'ları */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto', paddingBottom: 4 }}>
+          {AD_CATEGORY_TABS.map(tab => (
+            <button
+              key={tab.label}
+              onClick={() => setActiveSlug(tab.slug)}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 999,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: activeSlug === tab.slug ? 700 : 500,
+                background: activeSlug === tab.slug
+                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                  : 'var(--color-surface-2)',
+                color: activeSlug === tab.slug ? 'white' : 'var(--color-text-muted)',
+                flexShrink: 0,
+                transition: 'all 0.2s',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid */}
+        {isLoading ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
+            {Array(8).fill(0).map((_, i) => (
+              <div key={i} className="card" style={{ overflow: 'hidden' }}>
+                <div className="skeleton" style={{ aspectRatio: '4/3' }} />
+                <div style={{ padding: 14 }}>
+                  <div className="skeleton" style={{ width: '50%', height: 16, marginBottom: 8 }} />
+                  <div className="skeleton" style={{ width: '85%', height: 12 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : data?.items?.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '56px 0', color: 'var(--color-text-muted)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>📦</div>
+            <p>Bu kategoride henüz ilan yok.</p>
+            <Link to="/ads/create" className="btn btn-primary" style={{ marginTop: 12 }}>
+              İlk ilanı sen ver
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
+            {data?.items?.map(ad => (
+              <AdCard key={ad.id} ad={ad} />
+            ))}
+          </div>
+        )}
+
+        {/* Alt CTA */}
+        <div style={{ textAlign: 'center', marginTop: 32 }}>
+          <Link to="/ads/create" className="btn btn-outline" style={{ marginRight: 12 }}>
+            ✏️ İlan Ver
+          </Link>
+          <Link to="/ads" className="btn btn-primary">
+            Tüm İlanları Gör
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+// ────────────────────────────────────────────────────────────────────────────
 
 const SkeletonCard = () => (
   <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -415,6 +522,9 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ─── İLANLAR VİTRİN ─────────────────────────────────────────────── */}
+      <AdsShowcase />
 
       {/* CTA */}
       <section style={{

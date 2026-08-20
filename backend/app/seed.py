@@ -839,6 +839,71 @@ COMMISSION_RATES_DATA = [
 ]
 
 
+def seed_ad_categories(db: Session):
+    """İlan kategorileri — hizmet kategorilerinden bağımsız ayrı ağaç."""
+    from app.modules.ads.models import AdCategory
+
+    existing = db.query(AdCategory).count()
+    if existing > 0:
+        return
+
+    AD_CATEGORIES = [
+        {"name": "Vasıta", "slug": "vasita", "icon": "🚗", "children": [
+            {"name": "Otomobil", "slug": "otomobil"},
+            {"name": "Motosiklet", "slug": "motosiklet"},
+            {"name": "Ticari Araç", "slug": "ticari-arac"},
+            {"name": "Yedek Parça", "slug": "yedek-parca"},
+        ]},
+        {"name": "Emlak", "slug": "emlak", "icon": "🏠", "children": [
+            {"name": "Satılık Daire", "slug": "satilik-daire"},
+            {"name": "Kiralık Daire", "slug": "kiralik-daire"},
+            {"name": "Arsa", "slug": "arsa"},
+            {"name": "İşyeri", "slug": "isyeri"},
+        ]},
+        {"name": "Elektronik", "slug": "elektronik", "icon": "💻", "children": [
+            {"name": "Telefon", "slug": "telefon"},
+            {"name": "Bilgisayar", "slug": "bilgisayar"},
+            {"name": "Tablet", "slug": "tablet"},
+            {"name": "TV", "slug": "tv"},
+        ]},
+        {"name": "Ev & Yaşam", "slug": "ev-yasam", "icon": "🪑", "children": [
+            {"name": "Mobilya", "slug": "mobilya"},
+            {"name": "Beyaz Eşya", "slug": "beyaz-esya"},
+            {"name": "Dekorasyon", "slug": "dekorasyon"},
+        ]},
+        {"name": "Hizmet", "slug": "hizmet-ilan", "icon": "🔧", "children": [
+            {"name": "Temizlik", "slug": "temizlik-hizmet"},
+            {"name": "Nakliyat", "slug": "nakliyat"},
+            {"name": "Özel Ders", "slug": "ozel-ders"},
+            {"name": "Tamir", "slug": "tamir"},
+        ]},
+        {"name": "İş İlanları", "slug": "is-ilanlari", "icon": "👷", "children": []},
+        {"name": "Diğer", "slug": "diger", "icon": "📦", "children": []},
+    ]
+
+    for i, cat_data in enumerate(AD_CATEGORIES):
+        parent = AdCategory(
+            name=cat_data["name"],
+            slug=cat_data["slug"],
+            icon=cat_data["icon"],
+            sort_order=i,
+        )
+        db.add(parent)
+        db.flush()
+
+        for j, child_data in enumerate(cat_data["children"]):
+            db.add(
+                AdCategory(
+                    parent_id=parent.id,
+                    name=child_data["name"],
+                    slug=child_data["slug"],
+                    sort_order=j,
+                )
+            )
+
+    db.commit()
+
+
 def seed_subscription_plans(db: Session):
     from app.modules.subscriptions.models import PlanFeature, SubscriptionPlan
 
@@ -944,6 +1009,7 @@ def run_all_seeds(db: Session):
 
     seed_cities(db)
     seed_categories(db)
+    seed_ad_categories(db)
     seed_subscription_plans(db)
     seed_commission_rates(db)
     seed_demo_users(db)

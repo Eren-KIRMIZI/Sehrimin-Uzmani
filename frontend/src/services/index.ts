@@ -12,6 +12,8 @@ import type {
   AIAnalysis, AIMatchExplanation, ReputationScore, Badge, ProviderAnalytics
 } from '../types';
 
+export { adsApi } from './ads';
+
 // ===== AUTH =====
 export const authApi = {
   register: (data: RegisterRequest) =>

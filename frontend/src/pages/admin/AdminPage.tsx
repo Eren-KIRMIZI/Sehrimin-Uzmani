@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Users, AlertTriangle, FileText, Settings, CreditCard, Activity, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Users, AlertTriangle, FileText, Settings, CreditCard, Activity, CheckCircle, Clock, Package, Flag, Eye, Trash2, Ban } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { useAuthStore } from '../../stores/authStore';
 import { Navigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AdminUsers } from './AdminUsers';
 import { AdminDisputes } from './AdminDisputes';
 import { AdminPayouts } from './AdminPayouts';
+import { AdminAds } from './AdminAds';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -48,6 +49,7 @@ const AdminPage: React.FC = () => {
               { id: 'users', icon: <Users size={18} />, label: 'Kullanıcı & Uzmanlar' },
               { id: 'verifications', icon: <CheckCircle size={18} />, label: 'Doğrulama Onayları' },
               { id: 'disputes', icon: <AlertTriangle size={18} />, label: 'Anlaşmazlık Yönetimi' },
+              { id: 'ads', icon: <Package size={18} />, label: 'İlanlar' },
               { id: 'payouts', icon: <CreditCard size={18} />, label: 'Ödemeler & Finans' },
               { id: 'system', icon: <Settings size={18} />, label: 'Sistem Ayarları' },
             ].map(tab => (
@@ -175,7 +177,8 @@ const AdminPage: React.FC = () => {
               {activeTab === 'users' && <AdminUsers />}
               {activeTab === 'disputes' && <AdminDisputes />}
               {activeTab === 'payouts' && <AdminPayouts />}
-              {!['users', 'disputes', 'payouts'].includes(activeTab) && (
+              {activeTab === 'ads' && <AdminAds />}
+              {!['users', 'disputes', 'payouts', 'ads'].includes(activeTab) && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100" style={{ padding: 80, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Settings size={32} />

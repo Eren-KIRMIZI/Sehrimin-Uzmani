@@ -14,6 +14,10 @@ export const en = {
     logout: 'Logout',
     messages: 'Messages',
     notifications: 'Notifications',
+    ads: 'Listings',
+    post_ad: 'Post Ad',
+    my_ads: 'My Ads',
+    pricing: 'Pricing',
   },
   home: {
     hero_title: 'Find the Best',

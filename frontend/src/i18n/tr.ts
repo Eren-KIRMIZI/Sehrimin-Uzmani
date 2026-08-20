@@ -14,6 +14,10 @@ export const tr = {
     logout: 'Çıkış Yap',
     messages: 'Mesajlar',
     notifications: 'Bildirimler',
+    ads: 'İlanlar',
+    post_ad: 'İlan Ver',
+    my_ads: 'İlanlarım',
+    pricing: 'Planlar',
   },
   home: {
     hero_title: 'Şehrindeki En İyi',

@@ -24,6 +24,10 @@ import NotFoundPage from './pages/NotFoundPage';
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const DisputesPage = lazy(() => import('./pages/DisputesPage'));
 const EarningsPage = lazy(() => import('./pages/EarningsPage'));
+const AdsPage = lazy(() => import('./pages/AdsPage'));
+const AdDetailPage = lazy(() => import('./pages/AdDetailPage'));
+const CreateAdPage = lazy(() => import('./pages/CreateAdPage'));
+const MyAdsPage = lazy(() => import('./pages/MyAdsPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,7 +85,35 @@ const App: React.FC = () => {
             <Route path="/provider/:id" element={<ProviderProfilePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            
+
+            {/* İlanlar (Public) */}
+            <Route path="/ads" element={
+              <Suspense fallback={LazyFallback}>
+                <AdsPage />
+              </Suspense>
+            } />
+            <Route path="/ads/:id" element={
+              <Suspense fallback={LazyFallback}>
+                <AdDetailPage />
+              </Suspense>
+            } />
+
+            {/* İlanlar (Protected) */}
+            <Route path="/ads/create" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <CreateAdPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/ads/my" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <MyAdsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+
             {/* Protected Routes (All authenticated users) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/chat" element={

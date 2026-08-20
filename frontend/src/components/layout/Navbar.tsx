@@ -4,7 +4,7 @@ import {
   Search, Bell, MessageSquare, User, Menu, X,
   MapPin, ChevronDown, LogOut, LayoutDashboard,
   TrendingUp, Megaphone, AlertTriangle, Settings,
-  Shield, Star, Globe
+  Shield, Star, Globe, Package, Plus
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useI18nStore } from '../../stores/i18nStore';
@@ -130,6 +130,18 @@ const Navbar: React.FC = () => {
             {t('nav.search')}
           </Link>
           <Link
+            to="/ads"
+            className="btn btn-ghost btn-sm"
+            style={{
+              color:
+                location.pathname.startsWith('/ads') && !isActive('/ads/create')
+                  ? 'var(--color-primary-light)'
+                  : undefined,
+            }}
+          >
+            {t('nav.ads')}
+          </Link>
+          <Link
             to="/map-search"
             className="btn btn-ghost btn-sm"
             style={{ color: isActive('/map-search') ? 'var(--color-primary-light)' : undefined }}
@@ -153,6 +165,11 @@ const Navbar: React.FC = () => {
           
           {isAuthenticated ? (
             <>
+              {/* İlan Ver */}
+              <Link to="/ads/create" className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Plus size={15} /> {t('nav.post_ad')}
+              </Link>
+
               {/* Messages */}
               <Link to="/chat" style={{ position: 'relative', display: 'flex', padding: 8, color: 'var(--color-text-muted)', textDecoration: 'none' }}>
                 <MessageSquare size={20} />
@@ -226,6 +243,7 @@ const Navbar: React.FC = () => {
                     {/* Menu items */}
                     {[
                       { to: '/dashboard', icon: <LayoutDashboard size={15} />, label: t('nav.dashboard') },
+                      { to: '/ads/my', icon: <Package size={15} />, label: t('nav.my_ads') },
                       ...(user?.role === 'PROVIDER' ? [
                         { to: '/earnings', icon: <TrendingUp size={15} />, label: t('nav.earnings') },
                         { to: '/promotions', icon: <Megaphone size={15} />, label: t('nav.promotions') },

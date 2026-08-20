@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from app.ai.router import router as ai_router
 from app.modules.admin.router import router as admin_router
+from app.modules.ads.router import admin_router as ads_admin_router
+from app.modules.ads.router import router as ads_router
 from app.modules.appointments.router import router as appointments_router
 from app.modules.auth.router import router as auth_router
 from app.modules.categories.router import router as categories_router
@@ -45,3 +47,5 @@ api_router.include_router(subscriptions_router)
 api_router.include_router(promotions_router)
 api_router.include_router(pricing_router)
 api_router.include_router(ai_router)
+api_router.include_router(ads_router)
+api_router.include_router(ads_admin_router)
