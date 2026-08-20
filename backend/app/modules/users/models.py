@@ -1,14 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, Text, Float
+from sqlalchemy import Column, String, Boolean, Float, ForeignKey, Text, Integer
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from app.core.database import Base
+from app.core.base.models import BaseModel
 from app.shared.enums import UserRole
 
-
-class User(Base):
+class User(BaseModel):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     phone = Column(String(20), unique=True, nullable=True, index=True)
     password_hash = Column(String(255), nullable=False)
@@ -23,11 +20,40 @@ class User(Base):
     two_factor_secret = Column(String(255), nullable=True)
     subscription_plan = Column(String(50), nullable=True)
     commission_discount = Column(Float, default=0.0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    # Relationships
     provider_profile = relationship("ProviderProfile", back_populates="user", uselist=False)
     service_requests = relationship("ServiceRequest", back_populates="customer", foreign_keys="ServiceRequest.customer_id")
     favorites = relationship("Favorite", back_populates="user")
     reviews_given = relationship("Review", back_populates="customer", foreign_keys="Review.customer_id")
     notifications = relationship("Notification", back_populates="user")
+    addresses = relationship("UserAddress", back_populates="user", cascade="all, delete-orphan")
+    preferences = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+
+class UserAddress(BaseModel):
+    __tablename__ = "user_addresses"
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(100), nullable=False)  # Ev, İş vb.
+    full_address = Column(Text, nullable=False)
+    city = Column(String(100), nullable=False)
+    district = Column(String(100), nullable=False)
+    neighborhood = Column(String(100), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    is_default = Column(Boolean, default=False)
+
+    user = relationship("User", back_populates="addresses")
+
+
+class UserPreference(BaseModel):
+    __tablename__ = "user_preferences"
+
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    language = Column(String(10), default="tr")
+    communication_preference = Column(String(20), default="email") # email, sms, push
+    promotions_enabled = Column(Boolean, default=True)
+    newsletter_enabled = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="preferences")
