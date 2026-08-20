@@ -1,201 +1,55 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session, joinedload
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy.orm import Session
+from typing import List, Any
 from app.core.database import get_db
-from app.core.security import get_current_user, require_role
-from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile
-from app.modules.quotes.models import Quote
-from app.modules.requests.models import ServiceRequest
-from app.modules.quotes.schemas import QuoteCreate
-from app.core.exceptions import NotFoundException, ForbiddenException
+from app.modules.quotes.service import quote_service
 
-router = APIRouter(prefix="/quotes", tags=["Quotes"])
+router = APIRouter(prefix="/quotes", tags=["quotes"])
 
-
-@router.post("/requests/{request_id}")
-def create_quote(
-    request_id: int,
-    data: QuoteCreate,
-    current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
-    db: Session = Depends(get_db),
-):
-    request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
-    if not request:
-        raise NotFoundException("Talep")
-    if request.status not in ("PUBLISHED", "MATCHING", "QUOTING"):
-        from app.core.exceptions import BadRequestException
-        raise BadRequestException("Bu talebe artık teklif gönderilemez")
-
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
-    if not provider:
-        raise NotFoundException("Uzman profili")
-
-    existing = db.query(Quote).filter(Quote.request_id == request_id, Quote.provider_id == provider.id).first()
-    if existing:
-        from app.core.exceptions import ConflictException
-        raise ConflictException("Bu talebe zaten teklif gönderdiniz")
-
-    quote = Quote(request_id=request_id, provider_id=provider.id, **data.model_dump())
-    db.add(quote)
-
-    if request.status == "PUBLISHED":
-        request.status = "QUOTING"
-
+@router.post("/request/{request_id}/provider/{provider_id}")
+def create_draft(request_id: int, provider_id: int, db: Session = Depends(get_db)):
+    """Uzman, eşleştiği bir talebe taslak teklif oluşturur"""
     try:
-        from datetime import datetime, timezone
-        now = datetime.now(timezone.utc)
-        request_created = request.created_at
-        if request_created.tzinfo is None:
-            request_created = request_created.replace(tzinfo=timezone.utc)
-            
-        diff_minutes = int(max(0, (now - request_created).total_seconds() / 60))
-        current_avg = provider.response_time_minutes or 0
-        
-        if current_avg == 0:
-            provider.response_time_minutes = diff_minutes
-        else:
-            provider.response_time_minutes = int((current_avg * 4 + diff_minutes) / 5)
+        quote = quote_service.create_draft_quote(db, request_id, provider_id)
+        return {"id": quote.id, "status": quote.status, "message": "Taslak teklif oluşturuldu"}
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Error calculating response time: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
-    db.commit()
-    db.refresh(quote)
-    return {"message": "Teklif gönderildi", "quote": quote}
+@router.post("/{quote_id}/items")
+def add_item(quote_id: int, name: str, price: float, type: str = "LABOR", quantity: float = 1.0, db: Session = Depends(get_db)):
+    """Taslak teklife detaylı kalem (işçilik, malzeme vb) ekler"""
+    try:
+        item = quote_service.add_quote_item(db, quote_id, name, price, type, quantity)
+        return {"id": item.id, "name": item.name, "message": "Kalem eklendi"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
+@router.post("/{quote_id}/submit")
+def submit_quote(quote_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Hazırlanan taslak teklifi müşteriye gönderir"""
+    try:
+        # Mock user_id = 1 (Uzman)
+        quote = quote_service.submit_quote(db, quote_id, 1, background_tasks)
+        return {"message": "Teklif başarıyla gönderildi", "status": quote.status}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/requests/{request_id}")
-def list_quotes_for_request(
-    request_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
-    if not request:
-        raise NotFoundException("Talep")
-    if request.customer_id != current_user.id:
-        raise ForbiddenException("Bu talebin tekliflerini görme yetkiniz yok")
-
-    quotes = (
-        db.query(Quote)
-        .options(
-            joinedload(Quote.provider).joinedload(ProviderProfile.user),
-        )
-        .filter(Quote.request_id == request_id)
-        .order_by(Quote.created_at.desc())
-        .all()
-    )
-
-    return [
-        {
-            "id": q.id,
-            "price": q.price,
-            "estimated_duration": q.estimated_duration,
-            "description": q.description,
-            "materials": q.materials,
-            "available_date": q.available_date,
-            "warranty_info": q.warranty_info,
-            "status": q.status,
-            "created_at": q.created_at,
-            "provider": {
-                "id": q.provider.id,
-                "business_name": q.provider.business_name,
-                "rating": q.provider.rating,
-                "review_count": q.provider.review_count,
-                "verification_status": q.provider.verification_status,
-                "user": {
-                    "first_name": q.provider.user.first_name if q.provider.user else None,
-                    "last_name": q.provider.user.last_name if q.provider.user else None,
-                    "avatar": q.provider.user.avatar if q.provider.user else None,
-                },
-            } if q.provider else None,
-        }
-        for q in quotes
-    ]
-
+@router.post("/{quote_id}/revise")
+def revise_quote(quote_id: int, new_price: float, notes: str = None, requested_by: str = "CUSTOMER", db: Session = Depends(get_db)):
+    """Teklif fiyatında indirim/revizyon (Pazarlık) talep eder"""
+    try:
+        # Mock user_id = 2 (Müşteri)
+        rev = quote_service.revise_quote(db, quote_id, new_price, 2, requested_by, notes)
+        return {"revision_id": rev.id, "new_price": rev.new_total_price, "message": "Revizyon talebi alındı"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/{quote_id}/accept")
-def accept_quote(
-    quote_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    quote = db.query(Quote).filter(Quote.id == quote_id).with_for_update().first()
-    if not quote:
-        raise NotFoundException("Teklif")
-
-    if quote.status != "PENDING":
-        from app.core.exceptions import BadRequestException
-        raise BadRequestException("Sadece bekleyen teklifler kabul edilebilir")
-
-    request = db.query(ServiceRequest).filter(ServiceRequest.id == quote.request_id).first()
-    if not request or request.customer_id != current_user.id:
-        raise ForbiddenException("Bu teklifi onaylama yetkiniz yok")
-
-    quote.status = "ACCEPTED"
-    request.status = "ACCEPTED"
-
-    db.query(Quote).filter(
-        Quote.request_id == quote.request_id, Quote.id != quote_id
-    ).update({"status": "REJECTED"})
-
-    db.commit()
-    return {"message": "Teklif kabul edildi"}
-
-
-@router.post("/{quote_id}/reject")
-def reject_quote(
-    quote_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    quote = db.query(Quote).filter(Quote.id == quote_id).first()
-    if not quote:
-        raise NotFoundException("Teklif")
-
-    request = db.query(ServiceRequest).filter(ServiceRequest.id == quote.request_id).first()
-    if not request or request.customer_id != current_user.id:
-        raise ForbiddenException("Bu teklifi reddetme yetkiniz yok")
-
-    quote.status = "REJECTED"
-    db.commit()
-    return {"message": "Teklif reddedildi"}
-
-
-@router.get("/my")
-def list_my_quotes(
-    page: int = 1,
-    limit: int = 20,
-    current_user: User = Depends(require_role("PROVIDER", "ADMIN")),
-    db: Session = Depends(get_db),
-):
-    limit = min(max(1, limit), 50)
-    offset = (max(1, page) - 1) * limit
-
-    provider = db.query(ProviderProfile).filter(ProviderProfile.user_id == current_user.id).first()
-    if not provider:
-        raise NotFoundException("Uzman profili")
-
-    q = db.query(Quote).filter(Quote.provider_id == provider.id)
-    total = q.count()
-    quotes = (
-        q.order_by(Quote.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
-    return {
-        "items": [
-            {
-                "id": q.id,
-                "request_id": q.request_id,
-                "price": q.price,
-                "status": q.status,
-                "created_at": q.created_at,
-            }
-            for q in quotes
-        ],
-        "total": total,
-        "page": page,
-        "limit": limit,
-    }
+def accept_quote(quote_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Müşteri teklifi kabul eder ve diğer teklifler otomatik reddedilir"""
+    try:
+        # Mock user_id = 2 (Müşteri)
+        quote = quote_service.accept_quote(db, quote_id, 2, background_tasks)
+        return {"message": "Teklif kabul edildi. Talep durumu güncellendi.", "status": quote.status}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
