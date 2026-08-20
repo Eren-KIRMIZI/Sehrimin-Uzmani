@@ -24,6 +24,8 @@ import app.modules.subscriptions.models
 import app.modules.promotions.models
 import app.modules.disputes.models
 import app.modules.pricing.models
+import app.modules.admin.settings_model
+import app.modules.providers.availability_model
 
 TEST_DATABASE_URL = "sqlite:///./test.db"
 test_engine = create_engine(
