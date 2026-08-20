@@ -152,7 +152,8 @@ def search_providers(
         else:
             # Approximate reputation sorting natively
             # rating * 8 + verification priority
-            verif_case = sql_func.case(
+            from sqlalchemy import case
+            verif_case = case(
                 (ProviderProfile.verification_status == 'BUSINESS', 15),
                 (ProviderProfile.verification_status == 'PROFESSIONAL', 12),
                 (ProviderProfile.verification_status == 'IDENTITY', 8),

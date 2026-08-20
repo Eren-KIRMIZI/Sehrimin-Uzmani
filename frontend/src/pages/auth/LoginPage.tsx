@@ -163,6 +163,20 @@ const LoginPage: React.FC = () => {
             >
               {loading ? <div className="spinner" /> : requires2FA ? 'Doğrula ve Giriş Yap' : 'Giriş Yap'}
             </button>
+            
+            {!requires2FA && (
+              <button 
+                type="button" 
+                className="btn btn-ghost" 
+                onClick={() => {
+                  setEmail('admin@sehriminuzmani.com');
+                  setPassword('REDACTED_DEMO_PASS');
+                }}
+                style={{ height: 36, fontSize: '0.875rem', justifyContent: 'center', color: 'var(--color-primary-light)' }}
+              >
+                Admin Bilgilerini Doldur
+              </button>
+            )}
           </form>
           
           <div style={{ marginTop: 32, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>

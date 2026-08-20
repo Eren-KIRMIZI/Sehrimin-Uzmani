@@ -34,7 +34,7 @@ class ServiceRequest(BaseModel):
     status_history = relationship("RequestStatusHistory", back_populates="request", cascade="all, delete-orphan")
     matches = relationship("RequestMatch", back_populates="request", cascade="all, delete-orphan")
     quotes = relationship("Quote", back_populates="request", cascade="all, delete-orphan")
-    # appointment = relationship("Appointment", back_populates="request", uselist=False)
+    appointment = relationship("Appointment", back_populates="request", uselist=False)
 
 class RequestFile(BaseModel):
     __tablename__ = "request_files"

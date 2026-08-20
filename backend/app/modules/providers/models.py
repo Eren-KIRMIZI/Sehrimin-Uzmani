@@ -18,11 +18,11 @@ class ProviderProfile(BaseModel):
     services = relationship("ProviderService", back_populates="provider")
     locations = relationship("ProviderLocation", back_populates="provider")
     service_areas = relationship("ProviderServiceArea", back_populates="provider")
-    # availability = relationship("ProviderAvailability", back_populates="provider")
-    # portfolio_items = relationship("PortfolioItem", back_populates="provider")
+    availability = relationship("ProviderAvailability", back_populates="provider")
+    portfolio_items = relationship("PortfolioItem", back_populates="provider")
     quotes = relationship("Quote", back_populates="provider")
-    # appointments = relationship("Appointment", back_populates="provider", foreign_keys="Appointment.provider_id")
-    # reviews_received = relationship("Review", back_populates="provider", foreign_keys="Review.provider_id")
+    appointments = relationship("Appointment", back_populates="provider", foreign_keys="Appointment.provider_id")
+    reviews_received = relationship("Review", back_populates="provider", foreign_keys="Review.provider_id")
 
 
 class ProviderPerformance(BaseModel):

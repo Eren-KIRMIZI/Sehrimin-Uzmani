@@ -130,9 +130,9 @@ const Navbar: React.FC = () => {
             {t('nav.search')}
           </Link>
           <Link
-            to="/map"
+            to="/map-search"
             className="btn btn-ghost btn-sm"
-            style={{ color: isActive('/map') ? 'var(--color-primary-light)' : undefined }}
+            style={{ color: isActive('/map-search') ? 'var(--color-primary-light)' : undefined }}
           >
             {t('nav.map')}
           </Link>

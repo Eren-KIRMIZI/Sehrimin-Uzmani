@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 interface SEOProps {
@@ -14,7 +14,7 @@ const BASE_TITLE = 'Sehrimin Uzmani';
 const BASE_DESCRIPTION =
   'Turkiye genelinde guvenilir yerel hizmet uzmanlarini bulun. Temizlik, tamirat, nakliyat, saglik ve daha fazlasi — 81 ilde hizmetinizde.';
 const BASE_URL = 'https://sehriminuzmani.com';
-const DEFAULT_OG_IMAGE = ${BASE_URL}/og-image.jpg;
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.jpg`;
 
 const SEO: React.FC<SEOProps> = ({
   title,
@@ -24,8 +24,8 @@ const SEO: React.FC<SEOProps> = ({
   ogType = 'website',
   noIndex = false,
 }) => {
-  const fullTitle = title ? ${title} |  : ${BASE_TITLE} - Yerel Hizmet Uzmanlari;
-  const canonicalUrl = canonical ? ${BASE_URL} : BASE_URL;
+  const fullTitle = title ? `${title} | ${BASE_TITLE}` : `${BASE_TITLE} - Yerel Hizmet Uzmanlari`;
+  const canonicalUrl = canonical ? `${BASE_URL}${canonical}` : BASE_URL;
 
   return (
     <Helmet>
