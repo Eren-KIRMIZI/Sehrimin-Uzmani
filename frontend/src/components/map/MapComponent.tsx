@@ -62,9 +62,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       <FlyToCenter center={center} zoom={zoom} />
 
       {providers.map((provider) => {
-        // Use dummy coordinates based on id for demo; real coords come from provider_locations
-        const lat = 39 + (provider.id % 5) * 0.8;
-        const lng = 28 + (provider.id % 8) * 1.5;
+        const location = provider.locations?.[0];
+        if (!location?.latitude || !location?.longitude) return null;
+        
+        const lat = location.latitude;
+        const lng = location.longitude;
 
         return (
           <Marker

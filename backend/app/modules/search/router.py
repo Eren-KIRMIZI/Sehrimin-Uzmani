@@ -336,6 +336,8 @@ def search_providers(
                     {
                         "city": loc.city.name if loc.city else None,
                         "district": loc.district.name if loc.district else None,
+                        "latitude": loc.latitude,
+                        "longitude": loc.longitude,
                     }
                     for loc in locs
                 ],

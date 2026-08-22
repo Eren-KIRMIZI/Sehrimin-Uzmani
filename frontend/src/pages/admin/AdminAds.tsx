@@ -147,7 +147,7 @@ export const AdminAds: React.FC = () => {
               {[
                 { label: 'Toplam İlan', value: data.total, color: '#6366f1' },
               ].map(stat => (
-                <div key={stat.label} style={{ background: 'white', border: '1px solid var(--color-border)', borderRadius: 12, padding: '12px 20px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div key={stat.label} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '12px 20px', display: 'flex', gap: 10, alignItems: 'center' }}>
                   <div style={{ fontWeight: 800, fontSize: '1.4rem', color: stat.color }}>{stat.value}</div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>{stat.label}</div>
                 </div>
@@ -161,7 +161,7 @@ export const AdminAds: React.FC = () => {
               <div className="spinner" />
             </div>
           ) : (
-            <div style={{ background: 'white', borderRadius: 16, border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--color-surface)', borderRadius: 16, border: '1px solid var(--color-border)', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>

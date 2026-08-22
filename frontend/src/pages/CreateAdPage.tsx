@@ -1,11 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, ImagePlus, Plus, Trash2, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ImagePlus, Plus, Trash2, X, Car, Building, Monitor, Home, Wrench, Briefcase, Box } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
 import { useAdCategories, useCities, useDistricts, useAd, useCreateAd, useUpdateAd, usePublishAd } from '../hooks/useAds';
 import { toast, toastApiError } from '../stores/toastStore';
 import type { AdCondition, AdPriceType } from '../types/ads';
+
+const getAdCategoryIcon = (slug: string) => {
+  const props = { size: 32, strokeWidth: 1.5 };
+  if (!slug) return <Box {...props} />;
+  if (slug.includes('vasita')) return <Car {...props} />;
+  if (slug.includes('emlak')) return <Building {...props} />;
+  if (slug.includes('elektronik')) return <Monitor {...props} />;
+  if (slug.includes('ev-') || slug.includes('yasam')) return <Home {...props} />;
+  if (slug.includes('hizmet')) return <Wrench {...props} />;
+  if (slug.includes('is-')) return <Briefcase {...props} />;
+  return <Box {...props} />;
+};
 
 const STEPS = ['Kategori', 'İlan Detayı', 'Fotoğraflar', 'Fiyat & Konum', 'Önizleme'];
 
@@ -283,17 +295,39 @@ const CreateAdPage: React.FC = () => {
                         const kids = childrenOf(cat.id);
                         if (kids.length === 0) setCategoryId(cat.id);
                       }}
+                      className="glass-hover"
                       style={{
-                        padding: 14,
-                        borderRadius: 12,
+                        padding: 16,
+                        borderRadius: 16,
                         cursor: 'pointer',
                         textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 12,
                         border: `2px solid ${childrenOf(cat.id).length === 0 && categoryId === cat.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
-                        background: categoryId === cat.id ? 'rgba(99, 102, 241, 0.08)' : 'transparent',
+                        background: categoryId === cat.id ? 'rgba(99, 102, 241, 0.08)' : 'var(--color-surface-2)',
+                        transition: 'all 0.2s ease',
                       }}
                     >
-                      <div style={{ fontSize: '1.6rem' }}>{cat.icon}</div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: 6 }}>{cat.name}</div>
+                      <div style={{
+                        width: 64, height: 64, borderRadius: 16,
+                        background: categoryId === cat.id 
+                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.1))'
+                          : 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.02))',
+                        border: categoryId === cat.id 
+                          ? '1px solid rgba(99, 102, 241, 0.5)'
+                          : '1px solid rgba(99, 102, 241, 0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: categoryId === cat.id ? 'var(--color-primary)' : 'var(--color-primary-light)',
+                        boxShadow: categoryId === cat.id ? '0 4px 20px rgba(99, 102, 241, 0.15)' : 'none',
+                        transition: 'all 0.2s ease',
+                      }}>
+                        {getAdCategoryIcon(cat.slug || cat.name.toLowerCase())}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                        {cat.name}
+                      </div>
                     </div>
                     {childrenOf(cat.id).length > 0 && (
                       <select

@@ -4,10 +4,11 @@ import {
   Search, Bell, MessageSquare, User, Menu, X,
   MapPin, ChevronDown, LogOut, LayoutDashboard,
   TrendingUp, Megaphone, AlertTriangle, Settings,
-  Shield, Star, Globe, Package, Plus
+  Shield, Star, Globe, Package, Plus, Moon, Sun
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useI18nStore } from '../../stores/i18nStore';
+import { useThemeStore } from '../../stores/themeStore';
 import { useUnreadNotifications, useUnreadMessages, useCategories } from '../../hooks/useQueries';
 import { authApi } from '../../services';
 import { searchApi } from '../../services';
@@ -18,6 +19,7 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { language, t, toggleLanguage } = useI18nStore();
+  const { theme, toggleTheme } = useThemeStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,6 +163,28 @@ const Navbar: React.FC = () => {
           >
             <Globe size={16} />
             {language === 'tr' ? 'EN' : 'TR'}
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="btn btn-ghost btn-sm"
+            style={{
+              padding: '6px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              width: 36,
+              height: 36,
+              transition: 'all 0.3s ease',
+            }}
+            title={theme === 'dark' ? 'Aydınlık moda geç' : 'Karanlık moda geç'}
+          >
+            {theme === 'dark'
+              ? <Sun size={18} style={{ color: '#fbbf24' }} />
+              : <Moon size={18} style={{ color: '#6366f1' }} />
+            }
           </button>
           
           {isAuthenticated ? (

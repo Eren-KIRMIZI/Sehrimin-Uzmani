@@ -35,6 +35,70 @@
   --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* ── Light Mode Tokens ───────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  --color-bg: #f0f2f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f4f9;
+  --color-surface-3: #e8eaf2;
+  --color-border: #d1d5e0;
+  --color-border-light: #b8bcce;
+  --color-text: #1a1a2e;
+  --color-text-muted: #4a5178;
+  --color-text-dim: #8892b0;
+  --color-primary: #5457e0;
+  --color-primary-light: #6366f1;
+  --color-primary-dark: #4338ca;
+  --shadow-glow: 0 0 30px rgba(84, 87, 224, 0.12);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(84, 87, 224, 0.12);
+}
+
+:root[data-theme="light"] .hero-gradient {
+  background: radial-gradient(ellipse at 50% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 70%),
+              radial-gradient(ellipse at 80% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 60%),
+              var(--color-bg);
+}
+
+:root[data-theme="light"] nav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: rgba(84, 87, 224, 0.12) !important;
+}
+
+:root[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    #e8eaf2 25%,
+    #f3f4f9 50%,
+    #e8eaf2 75%
+  );
+  background-size: 200% 100%;
+}
+
+:root[data-theme="light"] .chat-bubble-received {
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+:root[data-theme="light"] .leaflet-container {
+  background: var(--color-bg) !important;
+}
+
+:root[data-theme="light"] .leaflet-popup-content-wrapper {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root[data-theme="light"] .leaflet-popup-tip {
+  background: var(--color-surface) !important;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -51,6 +115,7 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
