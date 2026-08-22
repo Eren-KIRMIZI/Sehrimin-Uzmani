@@ -15,6 +15,16 @@ import logging
 from fastapi import WebSocket, WebSocketDisconnect
 
 from app.core.database import SessionLocal
+from app.core.metrics import (
+    WS_AUTH_FAILURES_TOTAL,
+    WS_CONNECTIONS_ACTIVE,
+    WS_CONNECTIONS_CLOSED_TOTAL,
+    WS_CONNECTIONS_OPENED_TOTAL,
+    WS_MESSAGES_RECEIVED_TOTAL,
+    WS_MESSAGES_SENT_TOTAL,
+    WS_SEND_ERRORS_TOTAL,
+    ws_action_label,
+)
 from app.core.security import check_token_blacklist, decode_token
 from app.modules.messaging.models import Conversation, Message
 from app.modules.providers.models import ProviderProfile
@@ -62,19 +72,30 @@ class ConnectionManager:
         if user_id not in self.active_connections:
             self.active_connections[user_id] = set()
         self.active_connections[user_id].add(websocket)
+        WS_CONNECTIONS_ACTIVE.inc()
+        WS_CONNECTIONS_OPENED_TOTAL.inc()
         logger.info(
             "WebSocket baglantisi kuruldu",
             extra={"user_id": user_id, "total_connections": self._total_connections()},
         )
 
-    def disconnect(self, websocket: WebSocket, user_id: int):
+    def disconnect(self, websocket: WebSocket, user_id: int, reason: str = "normal"):
+        was_connected = False
         if user_id in self.active_connections:
+            was_connected = websocket in self.active_connections[user_id]
             self.active_connections[user_id].discard(websocket)
             if not self.active_connections[user_id]:
                 del self.active_connections[user_id]
+        if was_connected:
+            WS_CONNECTIONS_ACTIVE.dec()
+            WS_CONNECTIONS_CLOSED_TOTAL.labels(reason=reason).inc()
         logger.info(
             "WebSocket baglantisi kapatildi",
-            extra={"user_id": user_id, "total_connections": self._total_connections()},
+            extra={
+                "user_id": user_id,
+                "reason": reason,
+                "total_connections": self._total_connections(),
+            },
         )
 
     def _total_connections(self) -> int:
@@ -87,11 +108,15 @@ class ConnectionManager:
         for connection in self.active_connections[user_id]:
             try:
                 await connection.send_json(message)
+                WS_MESSAGES_SENT_TOTAL.inc()
             except Exception:
                 dead_connections.add(connection)
+                WS_SEND_ERRORS_TOTAL.inc()
         # Ölü bağlantıları temizle
         for conn in dead_connections:
             self.active_connections[user_id].discard(conn)
+            if not self.active_connections[user_id]:
+                del self.active_connections[user_id]
 
     async def send_personal_notification(self, user_id: int, notification: dict):
         await self.send_to_user(
@@ -134,20 +159,26 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
     try:
         payload = decode_token(token)
         if payload.get("type") != "access":
+            WS_AUTH_FAILURES_TOTAL.inc()
             await websocket.close(code=4001, reason="Invalid token type")
             return
         user_id = int(payload.get("sub", 0))
         if not user_id:
+            WS_AUTH_FAILURES_TOTAL.inc()
             await websocket.close(code=4001, reason="Invalid user ID")
             return
     except Exception as e:
         logger.warning("WebSocket auth hatasi: %s", str(e))
+        WS_AUTH_FAILURES_TOTAL.inc()
         await websocket.close(code=4001, reason="Auth failed")
         return
 
     db = SessionLocal()
+    connected = False
+    close_reason = "normal"
     try:
         if check_token_blacklist(token, db):
+            WS_AUTH_FAILURES_TOTAL.inc()
             await websocket.close(code=4001, reason="Token revoked")
             return
 
@@ -155,10 +186,12 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             lambda: db.query(User).filter(User.id == user_id, User.is_active).first()
         )
         if not user:
+            WS_AUTH_FAILURES_TOTAL.inc()
             await websocket.close(code=4001, reason="User not found or inactive")
             return
 
         await manager.connect(websocket, user_id)
+        connected = True
 
         try:
             while True:
@@ -169,6 +202,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                         timeout=_WS_RECEIVE_TIMEOUT,
                     )
                 except asyncio.TimeoutError:
+                    close_reason = "timeout"
                     logger.info(
                         "WebSocket zaman asimi — baglanti kapatiliyor",
                         extra={"user_id": user_id},
@@ -184,6 +218,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
                     continue
 
                 action = msg_data.get("action")
+                WS_MESSAGES_RECEIVED_TOTAL.labels(action=ws_action_label(action)).inc()
 
                 # ── Ping/Pong ─────────────────────────────────────────────
                 if action == "ping":
@@ -210,13 +245,15 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
         except WebSocketDisconnect:
             pass  # Normal kapanma
         except Exception as e:
+            close_reason = "error"
             logger.error(
                 "WebSocket döngüsünde hata",
                 extra={"user_id": user_id, "error": str(e)},
                 exc_info=True,
             )
     finally:
-        manager.disconnect(websocket, user_id)
+        if connected:
+            manager.disconnect(websocket, user_id, reason=close_reason)
         db.close()
 
 
@@ -242,7 +279,9 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
         return
 
     conv = await asyncio.to_thread(
-        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        lambda: (
+            db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        )
     )
     if not conv:
         await websocket.send_json({"error": "Konusma bulunamadi"})
@@ -293,17 +332,19 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
 async def _handle_mark_read(websocket: WebSocket, user_id: int, msg_data: dict, db):
     conversation_id = msg_data.get("conversation_id")
     conv = await asyncio.to_thread(
-        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        lambda: (
+            db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        )
     )
     if not conv:
         return
-        
+
     is_provider_owner = False
     if conv.provider_id:
         is_provider_owner = await asyncio.to_thread(
             _is_provider_owner, conv.provider_id, user_id, db
         )
-        
+
     is_part = conv.customer_id == user_id or is_provider_owner
     if not is_part:
         await websocket.send_json({"error": "Yetkiniz yok"})
@@ -323,7 +364,9 @@ async def _handle_mark_read(websocket: WebSocket, user_id: int, msg_data: dict, 
 async def _handle_typing(user_id: int, msg_data: dict, db):
     conversation_id = msg_data.get("conversation_id")
     conv = await asyncio.to_thread(
-        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        lambda: (
+            db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        )
     )
     if not conv:
         return
@@ -331,7 +374,11 @@ async def _handle_typing(user_id: int, msg_data: dict, db):
     participant_ids.add(conv.customer_id)
     if conv.provider_id:
         provider = await asyncio.to_thread(
-            lambda: db.query(ProviderProfile).filter(ProviderProfile.id == conv.provider_id).first()
+            lambda: (
+                db.query(ProviderProfile)
+                .filter(ProviderProfile.id == conv.provider_id)
+                .first()
+            )
         )
         if provider:
             participant_ids.add(provider.user_id)

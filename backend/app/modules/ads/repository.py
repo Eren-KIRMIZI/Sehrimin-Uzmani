@@ -85,9 +85,7 @@ class AdRepository(BaseRepository[Ad, Any, Any]):
             Ad.is_featured.desc(), order_map.get(sort, order_map["newest"])
         )
 
-        items = (
-            query.offset((max(page, 1) - 1) * limit).limit(min(limit, 50)).all()
-        )
+        items = query.offset((max(page, 1) - 1) * limit).limit(min(limit, 50)).all()
         return items, total
 
     def get_category_tree(self, db: Session) -> list[AdCategory]:

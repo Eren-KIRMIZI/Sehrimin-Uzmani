@@ -1,3 +1,11 @@
+import os
+
+# App modulleri import edilmeden ONCE ayarlanmali.
+# settings.DATABASE_URL bu degiskeni okur; boylece dialekt-kosullu tanimlar
+# (orn. provider_profiles.search_vector tsvector sutunu) SQLite'a gore secilir
+# ve gercek PostgreSQL'e yanlikla baglanti denenmez.
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -53,9 +61,22 @@ def setup_database():
 
 @pytest.fixture(autouse=True)
 def db():
-    from app.core.rate_limiter import rate_limiter
+    from app.core.rate_limiter import _fallback
 
-    rate_limiter._requests.clear()
+    # Redis erisilemezken devreye giren in-memory fallback'in durumunu temizle
+    _fallback._requests.clear()
+    # Redis calisiyorsa rate-limit/cache anahtarlari testler arasinda kalici
+    # olur; ayni IP ("testclient") tum suite'te paylastigi icin temizlenmeli.
+    try:
+        from app.core.redis import redis_client
+
+        keys = []
+        for pattern in ("rl:*", "cache:*", "revoked:*"):
+            keys.extend(redis_client.scan_iter(pattern))
+        if keys:
+            redis_client.delete(*keys)
+    except Exception:
+        pass
     connection = test_engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)

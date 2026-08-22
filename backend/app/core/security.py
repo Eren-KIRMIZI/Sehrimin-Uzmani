@@ -65,6 +65,7 @@ def check_token_blacklist(token: str, db: Session | None = None) -> bool:
     """
     try:
         from app.core.redis import redis_client
+
         result = redis_client.exists(f"revoked:{token}")
         return bool(result)
     except Exception:

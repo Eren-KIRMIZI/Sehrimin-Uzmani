@@ -9,10 +9,19 @@ from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import Base, check_db_health, engine
 from app.core.logging import setup_logging
+from app.core.metrics import metrics_response
 from app.core.redis import check_redis_health, verify_redis_connection
 from app.middleware.logging_middleware import RequestLoggingMiddleware
+from app.middleware.metrics_middleware import MetricsMiddleware
+from app.modules.ads.models import (  # noqa: F401 — metadata discovery
+    Ad,
+    AdAttribute,
+    AdCategory,
+    AdFavorite,
+    AdImage,
+    AdReport,
+)
 from app.modules.messaging.router import router as messaging_router
-from app.modules.ads.models import Ad, AdAttribute, AdCategory, AdFavorite, AdImage, AdReport  # noqa: F401 — metadata discovery
 from app.shared.models import SystemSetting  # noqa: F401 — metadata discovery
 from app.websocket.manager import websocket_endpoint
 
@@ -106,6 +115,7 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 app.add_middleware(RequestLoggingMiddleware)  # En dışta — her request'i loglar
+app.add_middleware(MetricsMiddleware)  # Logging'in de dışında — tüm trafiği ölçer
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(api_router)
@@ -173,3 +183,18 @@ def health():
             },
         },
     )
+
+
+@app.get("/metrics")
+def metrics():
+    """
+    Prometheus scrape endpoint'i.
+
+    Uygulama metrikleri (HTTP, WebSocket, DB pool) buradan yayınlanır.
+    PostgreSQL ve Redis altyapı metrikleri ayrıca postgres-exporter ve
+    redis-exporter konteynerlerinden toplanır (bkz. docker-compose.yml).
+
+    Not: Bu endpoint yalnızca iç ağdan erişilebilir olacak şekilde
+    (load balancer / firewall arkasında) publish edilmelidir.
+    """
+    return metrics_response()

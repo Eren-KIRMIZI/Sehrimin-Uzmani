@@ -851,35 +851,60 @@ def seed_ad_categories(db: Session):
         return
 
     AD_CATEGORIES = [
-        {"name": "Vasıta", "slug": "vasita", "icon": "🚗", "children": [
-            {"name": "Otomobil", "slug": "otomobil"},
-            {"name": "Motosiklet", "slug": "motosiklet"},
-            {"name": "Ticari Araç", "slug": "ticari-arac"},
-            {"name": "Yedek Parça", "slug": "yedek-parca"},
-        ]},
-        {"name": "Emlak", "slug": "emlak", "icon": "🏠", "children": [
-            {"name": "Satılık Daire", "slug": "satilik-daire"},
-            {"name": "Kiralık Daire", "slug": "kiralik-daire"},
-            {"name": "Arsa", "slug": "arsa"},
-            {"name": "İşyeri", "slug": "isyeri"},
-        ]},
-        {"name": "Elektronik", "slug": "elektronik", "icon": "💻", "children": [
-            {"name": "Telefon", "slug": "telefon"},
-            {"name": "Bilgisayar", "slug": "bilgisayar"},
-            {"name": "Tablet", "slug": "tablet"},
-            {"name": "TV", "slug": "tv"},
-        ]},
-        {"name": "Ev & Yaşam", "slug": "ev-yasam", "icon": "🪑", "children": [
-            {"name": "Mobilya", "slug": "mobilya"},
-            {"name": "Beyaz Eşya", "slug": "beyaz-esya"},
-            {"name": "Dekorasyon", "slug": "dekorasyon"},
-        ]},
-        {"name": "Hizmet", "slug": "hizmet-ilan", "icon": "🔧", "children": [
-            {"name": "Temizlik", "slug": "temizlik-hizmet"},
-            {"name": "Nakliyat", "slug": "nakliyat"},
-            {"name": "Özel Ders", "slug": "ozel-ders"},
-            {"name": "Tamir", "slug": "tamir"},
-        ]},
+        {
+            "name": "Vasıta",
+            "slug": "vasita",
+            "icon": "🚗",
+            "children": [
+                {"name": "Otomobil", "slug": "otomobil"},
+                {"name": "Motosiklet", "slug": "motosiklet"},
+                {"name": "Ticari Araç", "slug": "ticari-arac"},
+                {"name": "Yedek Parça", "slug": "yedek-parca"},
+            ],
+        },
+        {
+            "name": "Emlak",
+            "slug": "emlak",
+            "icon": "🏠",
+            "children": [
+                {"name": "Satılık Daire", "slug": "satilik-daire"},
+                {"name": "Kiralık Daire", "slug": "kiralik-daire"},
+                {"name": "Arsa", "slug": "arsa"},
+                {"name": "İşyeri", "slug": "isyeri"},
+            ],
+        },
+        {
+            "name": "Elektronik",
+            "slug": "elektronik",
+            "icon": "💻",
+            "children": [
+                {"name": "Telefon", "slug": "telefon"},
+                {"name": "Bilgisayar", "slug": "bilgisayar"},
+                {"name": "Tablet", "slug": "tablet"},
+                {"name": "TV", "slug": "tv"},
+            ],
+        },
+        {
+            "name": "Ev & Yaşam",
+            "slug": "ev-yasam",
+            "icon": "🪑",
+            "children": [
+                {"name": "Mobilya", "slug": "mobilya"},
+                {"name": "Beyaz Eşya", "slug": "beyaz-esya"},
+                {"name": "Dekorasyon", "slug": "dekorasyon"},
+            ],
+        },
+        {
+            "name": "Hizmet",
+            "slug": "hizmet-ilan",
+            "icon": "🔧",
+            "children": [
+                {"name": "Temizlik", "slug": "temizlik-hizmet"},
+                {"name": "Nakliyat", "slug": "nakliyat"},
+                {"name": "Özel Ders", "slug": "ozel-ders"},
+                {"name": "Tamir", "slug": "tamir"},
+            ],
+        },
         {"name": "İş İlanları", "slug": "is-ilanlari", "icon": "👷", "children": []},
         {"name": "Diğer", "slug": "diger", "icon": "📦", "children": []},
     ]
@@ -1029,7 +1054,12 @@ DEMO_ADS = [
         "favorite_count": 74,
         "days_ago": 6,
         "image_seeds": ["bmw320i-1", "bmw320i-2", "bmw320i-3"],
-        "attributes": {"marka": "BMW", "model_yili": "2019", "km": "87000", "yakit": "Benzin"},
+        "attributes": {
+            "marka": "BMW",
+            "model_yili": "2019",
+            "km": "87000",
+            "yakit": "Benzin",
+        },
     },
     {
         "seller_email": "demo@kullanici.com",
@@ -1189,7 +1219,11 @@ def seed_demo_ads(db: Session):
     for item in DEMO_ADS:
         city_id = cities.get(item["city"])
         district_name = item.get("district")
-        district_id = districts.get((city_id, district_name)) if city_id and district_name else None
+        district_id = (
+            districts.get((city_id, district_name))
+            if city_id and district_name
+            else None
+        )
 
         status = item["status"]
         published_at = (
@@ -1230,9 +1264,7 @@ def seed_demo_ads(db: Session):
                 )
             )
         for key, value in (item.get("attributes") or {}).items():
-            db.add(
-                AdAttribute(ad_id=ad.id, attribute_key=key, attribute_value=value)
-            )
+            db.add(AdAttribute(ad_id=ad.id, attribute_key=key, attribute_value=value))
 
     db.commit()
 

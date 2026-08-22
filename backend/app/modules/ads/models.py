@@ -20,7 +20,9 @@ class AdCategory(BaseModel):
 
     __tablename__ = "ad_categories"
 
-    parent_id = Column(Integer, ForeignKey("ad_categories.id"), nullable=True, index=True)
+    parent_id = Column(
+        Integer, ForeignKey("ad_categories.id"), nullable=True, index=True
+    )
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True, nullable=False, index=True)
     icon = Column(String(50), nullable=True)
@@ -71,14 +73,20 @@ class Ad(BaseModel):
     city = relationship("City")
     district = relationship("District")
     images = relationship(
-        "AdImage", back_populates="ad", cascade="all, delete-orphan",
+        "AdImage",
+        back_populates="ad",
+        cascade="all, delete-orphan",
         order_by="AdImage.sort_order",
     )
     attributes = relationship(
         "AdAttribute", back_populates="ad", cascade="all, delete-orphan"
     )
-    favorites = relationship("AdFavorite", back_populates="ad", cascade="all, delete-orphan")
-    reports = relationship("AdReport", back_populates="ad", cascade="all, delete-orphan")
+    favorites = relationship(
+        "AdFavorite", back_populates="ad", cascade="all, delete-orphan"
+    )
+    reports = relationship(
+        "AdReport", back_populates="ad", cascade="all, delete-orphan"
+    )
 
     @property
     def cover_image(self) -> str | None:
@@ -104,7 +112,9 @@ class AdAttribute(BaseModel):
     """Kategoriye özel dinamik ilan özellikleri (marka, model, yıl, km...)."""
 
     __tablename__ = "ad_attributes"
-    __table_args__ = (UniqueConstraint("ad_id", "attribute_key", name="uq_ad_attribute"),)
+    __table_args__ = (
+        UniqueConstraint("ad_id", "attribute_key", name="uq_ad_attribute"),
+    )
 
     ad_id = Column(Integer, ForeignKey("ads.id"), nullable=False, index=True)
     attribute_key = Column(String(100), nullable=False)
@@ -115,9 +125,7 @@ class AdAttribute(BaseModel):
 
 class AdFavorite(BaseModel):
     __tablename__ = "ad_favorites"
-    __table_args__ = (
-        UniqueConstraint("user_id", "ad_id", name="uq_ad_favorite"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "ad_id", name="uq_ad_favorite"),)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     ad_id = Column(Integer, ForeignKey("ads.id"), nullable=False, index=True)

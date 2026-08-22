@@ -139,6 +139,7 @@ def admin_create_category(
     db.refresh(cat)
 
     from app.core.cache import ref_cache
+
     ref_cache.invalidate("categories:all")
 
     return {"message": "Kategori oluşturuldu", "category": cat}
@@ -161,6 +162,7 @@ def admin_create_subcategory(
     db.refresh(subcat)
 
     from app.core.cache import ref_cache
+
     ref_cache.invalidate("categories:all")
 
     return {"message": "Alt kategori oluşturuldu", "subcategory": subcat}
@@ -183,6 +185,7 @@ def admin_create_service(
     db.refresh(service)
 
     from app.core.cache import ref_cache
+
     ref_cache.invalidate("categories:all")
 
     return {"message": "Hizmet oluşturuldu", "service": service}

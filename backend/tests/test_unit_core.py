@@ -112,13 +112,13 @@ class TestUtils:
 
         result = format_price(1000)
         assert result.startswith("₺")
-        assert int(re.sub(r'[^\d]', '', result)) == 1000
+        assert int(re.sub(r"[^\d]", "", result)) == 1000
 
         result0 = format_price(0)
         assert "₺" in result0 and "0" in result0
 
         result_large = format_price(1234567)
-        assert int(re.sub(r'[^\d]', '', result_large)) == 1234567
+        assert int(re.sub(r"[^\d]", "", result_large)) == 1234567
 
     def test_format_price_decimal(self):
         from app.shared.utils import format_price
@@ -126,7 +126,7 @@ class TestUtils:
 
         result = format_price(1234.56)
         assert result.startswith("₺")
-        assert int(re.sub(r'[^\d]', '', result)) == 1235
+        assert int(re.sub(r"[^\d]", "", result)) == 1235
 
     def test_now_utc(self):
         from app.shared.utils import now_utc
@@ -141,21 +141,71 @@ class TestUtils:
         assert (datetime.utcnow() - result).total_seconds() < 5
 
 
+class _FakeRedis:
+    """Redis'i taklit eden deterministik test dubloru (TTL dahil)."""
+
+    def __init__(self):
+        self._store = {}
+
+    def setex(self, key, ttl, value):
+        self._store[key] = (value, time.time() + ttl)
+
+    def get(self, key):
+        item = self._store.get(key)
+        if item is None:
+            return None
+        value, expires_at = item
+        if time.time() >= expires_at:
+            del self._store[key]
+            return None
+        return value
+
+    def delete(self, *keys):
+        for key in keys:
+            self._store.pop(key, None)
+
+    def scan(self, cursor=0, match=None, count=100):
+        import fnmatch
+
+        pattern = match or "*"
+        matching = [k for k in self._store if fnmatch.fnmatch(k, pattern)]
+        return 0, matching
+
+    def scan_iter(self, match=None):
+        import fnmatch
+
+        pattern = match or "*"
+        for key in list(self._store):
+            if fnmatch.fnmatch(key, pattern):
+                yield key
+
+
+@pytest.fixture
+def fake_redis():
+    import app.core.redis as redis_module
+
+    fake = _FakeRedis()
+    original = redis_module.redis_client
+    redis_module.redis_client = fake
+    yield fake
+    redis_module.redis_client = original
+
+
 class TestCache:
-    def test_set_and_get(self):
+    def test_set_and_get(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache(ttl_seconds=300)
         cache.set("key1", [1, 2, 3])
         assert cache.get("key1") == [1, 2, 3]
 
-    def test_get_missing_key(self):
+    def test_get_missing_key(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache()
         assert cache.get("nonexistent") is None
 
-    def test_ttl_expiry(self):
+    def test_ttl_expiry(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache(ttl_seconds=0)
@@ -163,7 +213,7 @@ class TestCache:
         time.sleep(0.01)
         assert cache.get("key1") is None
 
-    def test_invalidate_specific_key(self):
+    def test_invalidate_specific_key(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache()
@@ -173,7 +223,7 @@ class TestCache:
         assert cache.get("key1") is None
         assert cache.get("key2") == [2]
 
-    def test_invalidate_all(self):
+    def test_invalidate_all(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache()
@@ -183,7 +233,7 @@ class TestCache:
         assert cache.get("key1") is None
         assert cache.get("key2") is None
 
-    def test_invalidate_nonexistent_key(self):
+    def test_invalidate_nonexistent_key(self, fake_redis):
         from app.core.cache import ReferenceCache
 
         cache = ReferenceCache()
@@ -428,11 +478,12 @@ class TestRateLimiter:
         rl.check("key2", max_requests=5, window_seconds=60)
 
     def test_window_expiry(self):
-        from app.core.rate_limiter import RateLimiter
+        from app.core.rate_limiter import _InMemoryFallback
 
-        rl = RateLimiter()
-        rl._requests["test"] = [time.time() - 1000]
-        rl.check("test", max_requests=5, window_seconds=100)
+        fb = _InMemoryFallback()
+        # Pencere disindaki (eski) kayitlar limite dahil edilmez
+        fb._requests["test"] = [time.time() - 1000]
+        assert fb.check("test", max_requests=5, window_seconds=100) is False
 
 
 class TestBaseSchema:
@@ -678,9 +729,7 @@ class TestAuthSchemas:
     def test_change_password_request(self):
         from app.modules.auth.schemas import ChangePasswordRequest
 
-        cp = ChangePasswordRequest(
-            current_password="old", new_password="NewPass1"
-        )
+        cp = ChangePasswordRequest(current_password="old", new_password="NewPass1")
         assert cp.current_password == "old"
 
 
@@ -943,7 +992,7 @@ class TestFraudDetection:
 
         def side_effect(model, *args, **kwargs):
             m = MagicMock()
-            if getattr(model, '__name__', str(model)) == "User":
+            if getattr(model, "__name__", str(model)) == "User":
                 return user_query
             return query_mock
 
@@ -1060,14 +1109,19 @@ class TestBadgeCalculation:
                     model_name = "Dispute"
                 elif "review" in model_str:
                     model_name = "Review"
-                elif "providersubscription" in model_str or "provider_subscription" in model_str:
+                elif (
+                    "providersubscription" in model_str
+                    or "provider_subscription" in model_str
+                ):
                     model_name = "ProviderSubscription"
 
             if model_name == "Review":
                 if args:
                     q.filter.return_value.first.return_value = review_data
                 else:
-                    q.filter.return_value.scalar.return_value = review_data[1] if review_data else 0
+                    q.filter.return_value.scalar.return_value = (
+                        review_data[1] if review_data else 0
+                    )
             elif model_name == "Dispute":
                 q.filter.return_value.scalar.return_value = dispute_scalar
             elif model_name == "ProviderSubscription":
@@ -1075,6 +1129,7 @@ class TestBadgeCalculation:
             else:
                 q.filter.return_value.scalar.return_value = 0
             return q
+
         return query_side_effect
 
     def test_empty_provider_no_badges(self):
@@ -1271,7 +1326,9 @@ class TestAdminRouterExtended:
         db.add(admin)
         db.commit()
         db.refresh(admin)
-        return create_access_token({"sub": str(admin.id), "role": "ADMIN", "type": "access"})
+        return create_access_token(
+            {"sub": str(admin.id), "role": "ADMIN", "type": "access"}
+        )
 
     def test_admin_dashboard_empty(self, client, db):
         token = self._setup_admin(client, db)
@@ -1336,7 +1393,9 @@ class TestAdminRouterExtended:
 
     def test_admin_list_providers_with_search(self, client, db):
         token = self._setup_admin(client, db)
-        resp = client.get("/api/v1/admin/providers?search=test", headers=self._auth(token))
+        resp = client.get(
+            "/api/v1/admin/providers?search=test", headers=self._auth(token)
+        )
         assert resp.status_code == 200
 
     def test_admin_list_providers_with_verification(self, client, db):
@@ -1451,7 +1510,9 @@ class TestCategoryRoutes:
         db.add(admin)
         db.commit()
         db.refresh(admin)
-        return create_access_token({"sub": str(admin.id), "role": "ADMIN", "type": "access"})
+        return create_access_token(
+            {"sub": str(admin.id), "role": "ADMIN", "type": "access"}
+        )
 
     def test_list_categories_empty(self, client, db):
         resp = client.get("/api/v1/categories")
@@ -1469,7 +1530,12 @@ class TestCategoryRoutes:
         token = self._setup_admin(client, db)
         resp = client.post(
             "/api/v1/categories/admin",
-            json={"name": "Test Category", "slug": "test-cat", "is_active": True, "sort_order": 1},
+            json={
+                "name": "Test Category",
+                "slug": "test-cat",
+                "is_active": True,
+                "sort_order": 1,
+            },
             headers=self._auth(token),
         )
         assert resp.status_code == 200
@@ -1517,7 +1583,12 @@ class TestCategoryRoutes:
         token = self._setup_admin(client, db)
         resp = client.post(
             f"/api/v1/categories/admin/subcategories/{sub.id}/services",
-            json={"name": "Service1", "slug": "service1", "is_active": True, "sort_order": 1},
+            json={
+                "name": "Service1",
+                "slug": "service1",
+                "is_active": True,
+                "sort_order": 1,
+            },
             headers=self._auth(token),
         )
         assert resp.status_code == 200
@@ -1572,7 +1643,9 @@ class TestSubscriptionRoutes:
         db.add(admin)
         db.commit()
         db.refresh(admin)
-        return create_access_token({"sub": str(admin.id), "role": "ADMIN", "type": "access"})
+        return create_access_token(
+            {"sub": str(admin.id), "role": "ADMIN", "type": "access"}
+        )
 
     def test_list_plans_empty(self, client, db):
         resp = client.get("/api/v1/subscriptions/plans")
@@ -1694,6 +1767,7 @@ class TestSubscriptionRoutes:
         token = create_access_token({"sub": str(user.id)})
 
         from app.modules.subscriptions.models import SubscriptionPlan
+
         plan = SubscriptionPlan(
             name="Sub Plan",
             slug="sub-plan",

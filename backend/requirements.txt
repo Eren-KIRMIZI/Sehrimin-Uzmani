@@ -26,6 +26,9 @@ pytest-asyncio>=0.24.0
 # Structured logging
 python-json-logger>=2.0.7
 
+# Observability
+prometheus-client>=0.21.0
+
 # Security scanning (dev/CI)
 pip-audit>=2.7.3
 

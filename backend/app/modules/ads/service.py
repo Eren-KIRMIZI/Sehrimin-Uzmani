@@ -3,9 +3,13 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import BadRequestException, ForbiddenException, NotFoundException
+from app.core.exceptions import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+)
 from app.core.redis import redis_client
-from app.modules.ads.enums import AdCondition, AdPriceType, AdStatus
+from app.modules.ads.enums import AdPriceType, AdStatus
 from app.modules.ads.models import Ad, AdFavorite, AdReport
 from app.modules.ads.repository import AdRepository
 from app.modules.providers.models import ProviderProfile
@@ -58,7 +62,9 @@ class AdService:
     def create_ad(self, db: Session, user: User, data) -> Ad:
         from app.modules.ads.models import AdCategory
 
-        category = db.query(AdCategory).filter(AdCategory.id == data.category_id).first()
+        category = (
+            db.query(AdCategory).filter(AdCategory.id == data.category_id).first()
+        )
         if not category:
             raise NotFoundException("Kategori")
 
@@ -71,7 +77,9 @@ class AdService:
         self.validate_ad_data(data.price_type, data.price)
 
         if len(data.images) > MAX_IMAGES:
-            raise BadRequestException(f"En fazla {MAX_IMAGES} fotoğraf ekleyebilirsiniz")
+            raise BadRequestException(
+                f"En fazla {MAX_IMAGES} fotoğraf ekleyebilirsiniz"
+            )
 
         ad = Ad(
             user_id=user.id,
@@ -128,7 +136,9 @@ class AdService:
         if ad.user_id != user.id and user.role != "ADMIN":
             raise ForbiddenException("Bu ilanı yayınlama yetkiniz yok")
         if ad.status not in (AdStatus.DRAFT.value, AdStatus.PAUSED.value):
-            raise BadRequestException("Sadece taslak veya duraklatılmış ilanlar yayınlanabilir")
+            raise BadRequestException(
+                "Sadece taslak veya duraklatılmış ilanlar yayınlanabilir"
+            )
         if not ad.images:
             raise BadRequestException("Yayınlamak için en az bir fotoğraf ekleyin")
 
@@ -195,7 +205,9 @@ class AdService:
         ad.contact_count += 1
 
         seller_provider = (
-            db.query(ProviderProfile).filter(ProviderProfile.user_id == ad.user_id).first()
+            db.query(ProviderProfile)
+            .filter(ProviderProfile.user_id == ad.user_id)
+            .first()
         )
         result: dict = {"contact_count": ad.contact_count}
         db.commit()
@@ -229,7 +241,9 @@ class AdService:
         return result
 
     # ── Reports ──────────────────────────────────────────────────────────────
-    def report_ad(self, db: Session, user: User, ad: Ad, reason: str, description: str | None) -> AdReport:
+    def report_ad(
+        self, db: Session, user: User, ad: Ad, reason: str, description: str | None
+    ) -> AdReport:
         report = AdReport(
             ad_id=ad.id,
             reporter_id=user.id,

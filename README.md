@@ -113,24 +113,36 @@ sehriminUzmani/
 +-- .gitignore
 +-- .github/workflows/ci.yml          CI/CD pipeline
 +-- README.md
++-- docker-compose.yml                Tam yigin (app + DB + Redis + monitoring)
 +-- docs/kvkk.md                       KVKK aydinlatma metni
 |
++-- monitoring/
+|   +-- prometheus/prometheus.yml     Scrape yapilandirmasi
+|   +-- grafana/provisioning/         Datasource + dashboard provision
+|   +-- grafana/dashboards/           Application Overview, Infrastructure
+|
 +-- backend/
+|   +-- Dockerfile                    Production image (non-root)
 |   +-- app/
 |   |   +-- main.py                    FastAPI giris noktasi, startup, scheduler
 |   |   +-- seed.py                    Veri tohumlama (sehirler, kategoriler, planlar)
 |   |   |
 |   |   +-- core/
 |   |   |   +-- config.py              Uygulama ayarlari (Pydantic Settings)
-|   |   |   +-- database.py            SQLAlchemy engine ve oturum yonetimi
+|   |   |   +-- database.py            SQLAlchemy engine, oturum ve pool metrikleri
 |   |   |   +-- redis.py               Redis baglanti yonetimi
+|   |   |   +-- metrics.py             Prometheus metrik tanimlari
 |   |   |   +-- security.py            JWT, sifre hashleme, yetkilendirme
 |   |   |   +-- exceptions.py          Ozel hata siniflari
-|   |   |   +-- rate_limiter.py        IP bazli hiz sinirlamasi
+|   |   |   +-- rate_limiter.py        Redis tabanli atomik hiz sinirlamasi
 |   |   |   +-- logging.py             Loglama yapilandirmasi
 |   |   |   +-- jobs.py                APScheduler arka plan gorevleri
 |   |   |   +-- encryption.py          AES-256-GCM sifreleme (IBAN vb.)
 |   |   |   +-- cache.py               TTL bazli referans veri onbellek
+|   |   |
+|   |   +-- middleware/
+|   |   |   +-- logging_middleware.py  Request ID + JSON istek loglama
+|   |   |   +-- metrics_middleware.py  Prometheus HTTP enstrumantasyonu
 |   |   |
 |   |   +-- ai/
 |   |   |   +-- base.py                Soyut LLM saglayici tanimi
@@ -172,16 +184,21 @@ sehriminUzmani/
 |   |
 |   +-- tests/
 |   |   +-- conftest.py                Pytest sabitleri ve test veritabani
+|   |   +-- test_metrics.py            Observability metrik testleri
 |   |   +-- test_auth.py               Kimlik dogrulama testleri
 |   |   +-- test_admin.py              Yonetici islemleri testleri
 |   |   +-- test_provider.py           Uzman profil testleri
 |   |   +-- test_search.py             Arama testleri
 |   |   +-- ... (10 test modulu daha)
+|   |   +-- load/                      k6 load test senaryolari
 |   |
+|   +-- Dockerfile                     Production image (non-root)
 |   +-- requirements.txt
 |   +-- .env.example
 |
 +-- frontend/
+    +-- Dockerfile                     Multi-stage build (node -> nginx)
+    +-- nginx.conf                     SPA serve + API/WS proxy
     +-- src/
     |   +-- components/
     |   |   +-- ai/                    Dogal dil talep asistani
@@ -379,16 +396,81 @@ APScheduler ile zamanlanan gorevler:
 
 ---
 
+## Gozlemlenebilirlik (Observability)
+
+Uygulama, Prometheus metrikleriyle izlenebilir sekilde enstrumante edilmistir. Load test sirasinda sistemin nerede zaman harcadigini ve nasil bozuldugunu gormek icin uc katman birlikte izlenir:
+
+```
+                    ┌───────────────┐
+                    │     k6        │
+                    └───────┬───────┘
+                            ▼
+                    ┌───────────────┐
+                    │   FastAPI     │
+                    │   /metrics    │
+                    └───────────────┘
+             PostgreSQL        Redis
+             (exporter)       (exporter)
+                  └───────┬───────┘
+                          ▼
+                      Prometheus (:9090)
+                          ▼
+                        Grafana (:3001)
+```
+
+### Toplanan Metrikler
+
+| Katman    | Metrikler                                                                                                    |
+|-----------|--------------------------------------------------------------------------------------------------------------|
+| HTTP      | `http_requests_total`, `http_request_duration_seconds` (histogram → P50/P95/P99), `http_requests_in_progress` |
+| Hata      | `http_unhandled_exceptions_total`, status code dagilimi                                                       |
+| WebSocket | `websocket_connections_active`, mesaj throughput, `websocket_auth_failures_total`, `websocket_send_errors_total` |
+| DB Pool   | `db_pool_checked_out_connections` / `db_pool_capacity_connections` (saturation orani)                         |
+| PostgreSQL| aktif baglanti state'e gore, cache hit ratio, TPS, `max_connections`                                          |
+| Redis     | memory, commands/sec, keyspace hit ratio, evicted keys                                                        |
+
+### Cardinality Guvenligi
+
+`endpoint` label'i ham URL degil **route sablonudur** (`/providers/{provider_id}`).
+Eslesmeyen yollar `unmatched` olarak etiketlenir; path tarama saldirilari label
+patlamasina yol acamaz. WebSocket action'lari da bilinen bir kumeye haritalanir.
+
+### Docker Compose ile Calistirma
+
+```bash
+docker compose up -d
+```
+
+| Servis     | Adres                       |
+|------------|-----------------------------|
+| Frontend   | http://localhost:5173       |
+| API        | http://localhost:8000       |
+| Swagger    | http://localhost:8000/docs  |
+| Prometheus | http://localhost:9090       |
+| Grafana    | http://localhost:3001 (`admin`/`admin`) |
+
+Grafana'ya iki hazir dashboard provision edilir:
+
+- **Application Overview** — RPS, latency percentiles, error rate, WS baglantilari, DB pool saturation
+- **Infrastructure** — PostgreSQL baglanti/cache/TPS, Redis memory/hit-ratio/eviction
+
+> Not: `/metrics` endpoint'i production'da yalnizca ic agdan erisilebilir olmalidir
+> (load balancer / firewall arkasinda). Uygulama metrikleri uygulamanin kendisinden,
+> PostgreSQL ve Redis altyapi metrikleri ise ayri exporter konteynerlerinden toplanir.
+
+---
+
 ## CI/CD
 
 GitHub Actions ile otomatik is akisi:
 
 ```
-Push / PR  -->  Lint  -->  Test  -->  Build  -->  Deploy
+Lint --> Security Scan --> Unit Tests (SQLite) --> Integration Tests (PostgreSQL) --> Build --> Deploy
 ```
 
-- Python: flake8 lint + pytest
-- Node.js: oxlint + Vite build
+- Python: ruff lint + format kontrolu, pytest + coverage, pip-audit
+- Node.js: TypeScript kontrolu + Vite build, npm audit
+- Integration testler PostgreSQL service container ile main branch ve PR'larda kosulur
 
 ---
 
@@ -426,6 +508,17 @@ npm run dev
 ```
 
 Bu komut `concurrently` ile backend (port 8000) ve frontend (port 5173) ayni anda baslatir.
+
+### Docker Compose (tam yigin)
+
+Gelistirme ortamindan bagimsiz olarak tum sistemi — PostgreSQL, Redis, backend,
+frontend, Prometheus ve Grafana dahil — tek komutla kaldirir:
+
+```bash
+docker compose up -d
+```
+
+Detaylar icin [Gozlemlenebilirlik](#gozlemlenebilirlik-observability) bolumune bakin.
 
 ### Backend
 

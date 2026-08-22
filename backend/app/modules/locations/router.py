@@ -11,6 +11,7 @@ router = APIRouter(prefix="/locations", tags=["Locations"])
 @router.get("/cities")
 def list_cities(db: Session = Depends(get_db)):
     from app.core.cache import ref_cache
+
     cache_key = "locations:cities"
     cached = ref_cache.get(cache_key)
     if cached is not None:
@@ -25,6 +26,7 @@ def list_cities(db: Session = Depends(get_db)):
 @router.get("/cities/{city_id}/districts")
 def list_districts(city_id: int, db: Session = Depends(get_db)):
     from app.core.cache import ref_cache
+
     cache_key = f"locations:districts:{city_id}"
     cached = ref_cache.get(cache_key)
     if cached is not None:

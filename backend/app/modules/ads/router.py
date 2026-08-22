@@ -6,7 +6,7 @@ from app.core.exceptions import ForbiddenException, NotFoundException
 from app.core.security import get_current_user, require_role
 from app.modules.ads import schemas as ad_schemas
 from app.modules.ads.enums import AdStatus
-from app.modules.ads.models import AdCategory, AdReport
+from app.modules.ads.models import Ad, AdReport
 from app.modules.ads.repository import AdRepository
 from app.modules.ads.service import AdService, build_seller_info
 from app.modules.users.models import User
@@ -213,7 +213,11 @@ def publish_ad(
 ):
     ad = service.get_ad_or_404(db, ad_id)
     ad = service.publish_ad(db, ad, current_user)
-    return {"message": "İlan yayınlandı", "status": ad.status, "expires_at": ad.expires_at}
+    return {
+        "message": "İlan yayınlandı",
+        "status": ad.status,
+        "expires_at": ad.expires_at,
+    }
 
 
 @router.post("/{ad_id}/pause")
@@ -271,9 +275,9 @@ def delete_image(
     if ad.user_id != current_user.id and current_user.role != "ADMIN":
         raise ForbiddenException()
 
-    image = db.query(AdImage).filter(
-        AdImage.id == image_id, AdImage.ad_id == ad_id
-    ).first()
+    image = (
+        db.query(AdImage).filter(AdImage.id == image_id, AdImage.ad_id == ad_id).first()
+    )
     if not image:
         raise NotFoundException("Fotoğraf")
     db.delete(image)
@@ -313,7 +317,10 @@ def report_ad(
 ):
     ad = service.get_ad_or_404(db, ad_id)
     report = service.report_ad(db, current_user, ad, data.reason, data.description)
-    return {"message": "Rapor alındı, ekibimiz en kısa sürede inceleyecek", "report_id": report.id}
+    return {
+        "message": "Rapor alındı, ekibimiz en kısa sürede inceleyecek",
+        "report_id": report.id,
+    }
 
 
 # ── Admin moderasyon ─────────────────────────────────────────────────────────

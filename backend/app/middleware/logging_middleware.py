@@ -34,8 +34,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
       - Yanıt header'ına X-Request-ID ekler
     """
 
-    # Health check gibi yüksek frekanslı endpoint'leri loglama
-    _SKIP_PATHS = {"/health", "/"}
+    # Health/metrics gibi yüksek frekanslı endpoint'leri loglama
+    _SKIP_PATHS = {"/health", "/", "/metrics"}
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Client X-Request-ID göndermiş mi? Yoksa yeni üret

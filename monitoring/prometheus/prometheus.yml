@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # FastAPI uygulama metrikleri (HTTP, WebSocket, DB pool)
+  - job_name: fastapi
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:8000"]
+
+  # PostgreSQL altyapı metrikleri
+  - job_name: postgresql
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Redis altyapı metrikleri
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  # Prometheus kendisi
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -12,9 +12,13 @@ from app.modules.categories.models import (
     SubCategory,
 )
 from app.modules.locations.models import ProviderLocation
-from app.modules.providers.models import ProviderPerformance, ProviderProfile
+from app.modules.providers.models import (
+    FTS_ENABLED,
+    ProviderPerformance,
+    ProviderProfile,
+)
 from app.modules.users.models import User
-from app.shared.pagination import PaginatedResponse, PaginationParams
+from app.shared.pagination import PaginationParams
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
@@ -88,6 +92,7 @@ def search_providers(
 
     if lat and lng:
         import math
+
         # Bounding box pre-filter for composite index (approx 111 km per latitude degree)
         lat_delta = radius / 111.0
         cos_lat = math.cos(math.radians(lat))
@@ -97,7 +102,7 @@ def search_providers(
             ProviderLocation.latitude >= lat - lat_delta,
             ProviderLocation.latitude <= lat + lat_delta,
             ProviderLocation.longitude >= lng - lng_delta,
-            ProviderLocation.longitude <= lng + lng_delta
+            ProviderLocation.longitude <= lng + lng_delta,
         )
 
         distance_col = _haversine_sql(lat, lng).label("distance_km")
@@ -160,25 +165,50 @@ def search_providers(
 
     if q:
         import sqlalchemy as sa
-        # Full text search using computed tsvector column + GIN index
-        search_query = sql_func.plainto_tsquery("turkish", q)
-        
-        # User isimleri için runtime hesaplama devam ediyor ama asıl ağır text'ler computed
-        user_vector = (
-            sql_func.setweight(sql_func.to_tsvector("turkish", sql_func.coalesce(User.first_name, "")), "C")
-            | sql_func.setweight(sql_func.to_tsvector("turkish", sql_func.coalesce(User.last_name, "")), "C")
-        )
 
-        query = query.filter(
-            sa.or_(
-                ProviderProfile.search_vector.op("@@")(search_query),
-                user_vector.op("@@")(search_query)
+        if FTS_ENABLED:
+            # Full text search using computed tsvector column + GIN index
+            search_query = sql_func.plainto_tsquery("turkish", q)
+
+            # User isimleri için runtime hesaplama devam ediyor ama asıl ağır text'ler computed
+            user_vector = sql_func.setweight(
+                sql_func.to_tsvector("turkish", sql_func.coalesce(User.first_name, "")),
+                "C",
+            ) | sql_func.setweight(
+                sql_func.to_tsvector("turkish", sql_func.coalesce(User.last_name, "")),
+                "C",
             )
-        )
 
-        # Add rank column for ordering
-        rank = sql_func.ts_rank(ProviderProfile.search_vector.op("||")(user_vector), search_query).label("search_rank")
-        query = query.add_columns(rank)
+            query = query.filter(
+                sa.or_(
+                    ProviderProfile.search_vector.op("@@")(search_query),
+                    user_vector.op("@@")(search_query),
+                )
+            )
+
+            # Add rank column for ordering
+            rank = sql_func.ts_rank(
+                ProviderProfile.search_vector.op("||")(user_vector), search_query
+            ).label("search_rank")
+            query = query.add_columns(rank)
+        else:
+            # SQLite (test/CI) fallback: tsvector desteklenmez, ILIKE ile ara.
+            like = f"%{q.lower()}%"
+            matching_user_ids = db.query(User.id).filter(
+                sa.or_(
+                    sql_func.lower(User.first_name).like(like),
+                    sql_func.lower(User.last_name).like(like),
+                )
+            )
+            query = query.filter(
+                sa.or_(
+                    sql_func.lower(
+                        sql_func.coalesce(ProviderProfile.business_name, "")
+                    ).like(like),
+                    ProviderProfile.user_id.in_(matching_user_ids),
+                )
+            )
+            rank = None
     else:
         rank = None
 

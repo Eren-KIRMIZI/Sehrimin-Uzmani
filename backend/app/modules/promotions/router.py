@@ -248,7 +248,9 @@ def record_impression(
     db: Session = Depends(get_db),
 ):
     ip = get_client_ip(request)
-    rate_limiter.check(f"promo_imp:{ip}", max_requests=60, window_seconds=300, strict=False)
+    rate_limiter.check(
+        f"promo_imp:{ip}", max_requests=60, window_seconds=300, strict=False
+    )
 
     promo = (
         db.query(PromotedProvider)
@@ -285,7 +287,9 @@ def record_click(
     db: Session = Depends(get_db),
 ):
     ip = get_client_ip(request)
-    rate_limiter.check(f"promo_click:{ip}", max_requests=20, window_seconds=300, strict=False)
+    rate_limiter.check(
+        f"promo_click:{ip}", max_requests=20, window_seconds=300, strict=False
+    )
 
     promo = (
         db.query(PromotedProvider)

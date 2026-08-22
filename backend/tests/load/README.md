@@ -50,7 +50,25 @@ k6 run -e BASE_URL=https://staging... tests/load/spike.js
 k6 run -e BASE_URL=https://staging... tests/load/soak.js
 ```
 
-## 3. Kök Neden Analizi (Root Cause Analysis - RCA) Metodolojisi
+## 3. Gozlemlenebilirlik ile Eslestirme
+
+Load test sirasinda k6 ciktisini tek basina okumayin. `docker compose up -d` ile
+kalkan monitoring yigini ayni anda sistemin icini gosterir:
+
+| Panel (Grafana)              | Load testte neye bakilir                                    |
+|------------------------------|-------------------------------------------------------------|
+| Request Latency Percentiles  | VU artisiyla P95/P99 nerede kiriliyor?                      |
+| Status Code Distribution     | 429'lar rate limit, 5xx'ler gercek hata                     |
+| DB Pool Utilization          | `checked out == capacity` → pool doymus, sira bekleniyor    |
+| PostgreSQL Connections       | `pg_stat_activity` limitlere dayandi mi?                    |
+| Redis Memory / Hit Ratio     | Rate limiter ve cache beklenmedik buyume yapiyor mu?        |
+| WebSocket Active Connections | Baglanti sayisi istikrarli mi, yoksa sizinti var mi?        |
+| Anomalies                    | Unhandled exception / WS send error artislari               |
+
+Prometheus scrape araligi 15s'dir; spike testlerinde ani davranisi kaçırmamak
+icin k6 threshold'larini birincil kaynak, Grafana'yi RCA icin kullanin.
+
+## 4. Kök Neden Analizi (Root Cause Analysis - RCA) Metodolojisi
 
 Eğer k6 test sonucunda `p99 = 2.4 sec` görürseniz **asla doğrudan mimari çözüm (PgBouncer, AsyncPg vb.) uygulamayın.**
 

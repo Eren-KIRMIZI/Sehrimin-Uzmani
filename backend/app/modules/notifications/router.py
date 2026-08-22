@@ -76,7 +76,8 @@ def mark_all_read(
     db: Session = Depends(get_db),
 ):
     db.query(Notification).filter(
-        Notification.user_id == current_user.id, Notification.is_read == False  # noqa: E712
+        Notification.user_id == current_user.id,
+        Notification.is_read == False,  # noqa: E712
     ).update({"is_read": True})
     db.commit()
     return {"message": "Tüm bildirimler okundu"}

@@ -67,6 +67,7 @@ def _get_lua_script():
     if _lua_script is None:
         try:
             from app.core.redis import redis_client
+
             _lua_script = redis_client.register_script(_RATE_LIMIT_LUA)
         except Exception:
             pass
@@ -91,7 +92,9 @@ class RateLimiter:
 
         if script is not None:
             try:
-                current = script(keys=[f"rl:{key}"], args=[max_requests, window_seconds])
+                current = script(
+                    keys=[f"rl:{key}"], args=[max_requests, window_seconds]
+                )
                 if int(current) > max_requests:
                     raise HTTPException(
                         status_code=429,

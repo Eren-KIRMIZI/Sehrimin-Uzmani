@@ -32,6 +32,7 @@ class ReferenceCache:
         """Her çağrıda singleton Redis client'ı döndürür."""
         try:
             from app.core.redis import redis_client
+
             return redis_client
         except Exception:
             return None

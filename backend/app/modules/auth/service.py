@@ -136,8 +136,8 @@ class AuthService:
         # Kullanılan eski refresh token'ı Redis'e de ekle
         try:
             from app.core.redis import redis_client
-            from datetime import datetime, timezone as tz
-            now = datetime.now(tz.utc)
+
+            now = datetime.now(timezone.utc)
             remaining = max(0, int((expires_at - now).total_seconds()))
             if remaining > 0:
                 redis_client.setex(f"revoked:{refresh_token}", remaining, "1")
@@ -159,6 +159,7 @@ class AuthService:
         # TTL: token'ın kalan ömrü (en fazla). Sona ermiş key'i tutmaya gerek yok.
         try:
             from app.core.redis import redis_client
+
             now = datetime.now(timezone.utc)
             remaining_seconds = max(0, int((expires_at - now).total_seconds()))
             if remaining_seconds > 0:
