@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Star, Shield, MapPin, Clock, TrendingUp, Phone, MessageSquare,
-  Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check, Info, AlertTriangle
+  Heart, ChevronLeft, Calendar, Award, Briefcase, Image, Check, Info, AlertTriangle, Zap
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
@@ -106,7 +106,8 @@ const ProviderProfilePage: React.FC = () => {
     </Layout>
   );
 
-  const reviews = reviewsData?.items || [];
+  const reviews = Array.isArray(reviewsData) ? reviewsData : (reviewsData?.items || []);
+  const portfolio = provider?.portfolio_items || provider?.portfolio || [];
 
   const tabs = [
     { key: 'about', label: t('provider.about'), icon: <Briefcase size={15} /> },
@@ -203,10 +204,10 @@ const ProviderProfilePage: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', gap: 16 }}>
                       <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Briefcase size={13} /> {provider.completed_jobs} {t('provider.jobs_done')}
+                        <Briefcase size={13} /> {provider.completed_jobs || 0} {t('provider.jobs_done')}
                       </span>
                       <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Clock size={13} /> {provider.years_experience} {t('provider.years_exp')}
+                        <Clock size={13} /> {provider.experience_years ?? provider.years_experience ?? 0} {t('provider.years_exp')}
                       </span>
                     </div>
                   </div>
@@ -353,7 +354,7 @@ const ProviderProfilePage: React.FC = () => {
                   ) : provider.services?.map((s: any) => (
                     <div key={s.id} className="card hover:shadow-md transition-shadow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.service?.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{s.service?.name || s.name}</div>
                         {s.description && <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 6 }}>{s.description}</div>}
                       </div>
                       {s.starting_price && (
@@ -397,7 +398,7 @@ const ProviderProfilePage: React.FC = () => {
 
                   {reviews.length === 0 ? (
                     <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: 60 }}>
-                      {t('provider.no_reviews')}
+                      {provider.review_count > 0 ? t('common.not_found') : t('provider.no_reviews')}
                     </div>
                   ) : reviews.map((review: any) => (
                     <div key={review.id} className="card p-5">
@@ -447,11 +448,11 @@ const ProviderProfilePage: React.FC = () => {
 
               {activeTab === 'portfolio' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-                  {provider.portfolio?.length === 0 ? (
+                  {portfolio.length === 0 ? (
                     <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--color-text-muted)', padding: 60 }}>
                       {t('common.not_found')}
                     </div>
-                  ) : provider.portfolio?.map((item: any) => (
+                  ) : portfolio.map((item: any) => (
                     <div key={item.id} className="group relative" style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--color-border)', aspectRatio: '1' }}>
                       <img src={item.image_url} alt={item.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} className="group-hover:scale-105" />
                       {item.title && (
@@ -567,9 +568,9 @@ const ProviderProfilePage: React.FC = () => {
               <h4 style={{ fontWeight: 800, marginBottom: 16, fontSize: '1rem' }}>{t('provider.provider_summary')}</h4>
               {[
                 { icon: <Star size={16} className="text-amber-500" />, label: t('provider.avg_rating'), value: `${provider.rating?.toFixed(1)}/5.0` },
-                { icon: <Check size={16} className="text-emerald-500" />, label: t('provider.completed_jobs'), value: provider.completed_jobs },
-                { icon: <Clock size={16} className="text-blue-500" />, label: t('provider.experience'), value: `${provider.years_experience} yıl` },
-                { icon: <Award size={16} className="text-purple-500" />, label: t('provider.verification'), value: provider.verification_level },
+                { icon: <Check size={16} className="text-emerald-500" />, label: t('provider.completed_jobs'), value: provider.completed_jobs || 0 },
+                { icon: <Clock size={16} className="text-blue-500" />, label: t('provider.experience'), value: `${provider.experience_years ?? provider.years_experience ?? 0} yıl` },
+                { icon: <Award size={16} className="text-purple-500" />, label: t('provider.verification'), value: provider.verification_level || provider.verification_status },
               ].map(item => (
                 <div key={item.label} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -582,15 +583,13 @@ const ProviderProfilePage: React.FC = () => {
                 </div>
               ))}
               
-              {reputation && reputation.metrics.response_time_minutes > 0 && (
-                 <div style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '12px 0',
-                }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--color-text-dim)', fontSize: '0.9rem', fontWeight: 500 }}>
-                    <MessageSquare size={16} className="text-indigo-500" /> {t('provider.response_speed')}
-                  </span>
-                  <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{reputation.metrics.response_time_minutes} dk</span>
+              {provider.response_time_minutes != null && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-text)' }}>
+                    <Zap size={16} className="text-rose-500" />
+                    <span style={{ fontSize: '0.85rem' }}>{t('provider.response_speed')}</span>
+                  </div>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{provider.response_time_minutes} dk</span>
                 </div>
               )}
             </div>

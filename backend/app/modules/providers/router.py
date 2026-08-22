@@ -100,6 +100,8 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
             joinedload(ProviderProfile.services).joinedload(ProviderService.service),
             joinedload(ProviderProfile.locations).joinedload(ProviderLocation.city),
             joinedload(ProviderProfile.locations).joinedload(ProviderLocation.district),
+            joinedload(ProviderProfile.portfolio_items),
+            joinedload(ProviderProfile.availability),
         )
         .filter(ProviderProfile.id == provider_id)
         .first()
@@ -139,11 +141,29 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
         ],
         "locations": [
             {
-                "city": loc.city.name if loc.city else None,
-                "district": loc.district.name if loc.district else None,
+                "city": loc.city.name if loc.city else "",
+                "district": loc.district.name if loc.district else "",
             }
             for loc in profile.locations
         ],
+        "portfolio_items": [
+            {
+                "id": item.id,
+                "title": item.title,
+                "description": item.description,
+                "image_url": item.image_url,
+                "category": item.category,
+            }
+            for item in profile.portfolio_items
+        ],
+        "availability": [
+            {
+                "day_of_week": avail.day_of_week,
+                "start_time": avail.start_time,
+                "end_time": avail.end_time,
+            }
+            for avail in profile.availability
+        ]
     }
 
 

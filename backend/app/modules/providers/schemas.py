@@ -35,6 +35,8 @@ class ProviderProfileResponse(BaseModel):
     latitude: float | None
     longitude: float | None
     created_at: datetime
+    portfolio_items: list = []
+    availability: list = []
 
     class Config:
         from_attributes = True

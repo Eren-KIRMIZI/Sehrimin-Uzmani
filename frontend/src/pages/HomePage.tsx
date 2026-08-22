@@ -145,8 +145,8 @@ const SkeletonCard = () => (
 );
 
 const ProviderCard: React.FC<{ provider: any }> = ({ provider }) => (
-  <Link to={`/provider/${provider.id}`} style={{ textDecoration: 'none' }}>
-    <div className="card provider-card glass-hover" style={{ cursor: 'pointer' }}>
+  <Link to={`/provider/${provider.id}`} style={{ textDecoration: 'none', display: 'flex', height: '100%' }}>
+    <div className="card provider-card glass-hover" style={{ cursor: 'pointer', flex: 1, display: 'flex', flexDirection: 'column' }}>
       {/* Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
         <div style={{
@@ -208,7 +208,7 @@ const ProviderCard: React.FC<{ provider: any }> = ({ provider }) => (
       {/* Stats */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        paddingTop: 12, borderTop: '1px solid var(--color-border)',
+        paddingTop: 12, borderTop: '1px solid var(--color-border)', marginTop: 'auto'
       }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
