@@ -1,9 +1,23 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AlertTriangle, MessageSquare, Plus, Lock } from 'lucide-react';
 import Layout from '../components/layout/Layout';
-import { useMyDisputes, useDispute } from '../hooks/useQueries';
+import SEO from '../components/SEO';
+import { useMyDisputes, useDispute, useConversations, useAppointments } from '../hooks/useQueries';
 import { disputesApi } from '../services';
 import { useAuthStore } from '../stores/authStore';
+import { toast, toastApiError } from '../stores/toastStore';
+
+const STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Açık',
+  IN_REVIEW: 'İncelemede',
+  RESOLVED: 'Çözüldü',
+  CLOSED: 'Kapatıldı',
+};
+
+interface CounterpartyOption {
+  id: number;
+  label: string;
+}
 
 const DisputesPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -15,6 +29,22 @@ const DisputesPage: React.FC = () => {
   const { data: disputes, refetch } = useMyDisputes(1);
   const { data: activeDispute, refetch: refetchActive } = useDispute(activeId || undefined);
 
+  // Karşı taraf seçenekleri: sohbetler + randevulardaki uzmanlar
+  const { data: convData } = useConversations();
+  const { data: apptData } = useAppointments();
+  const counterparties = useMemo<CounterpartyOption[]>(() => {
+    const map = new Map<number, string>();
+    (convData?.items ?? []).forEach(c => {
+      if (user?.role === 'USER' && c.provider) map.set(c.provider.id, c.provider.business_name || 'Uzman');
+      else if (c.customer) map.set(c.customer.id, `${c.customer.first_name} ${c.customer.last_name}`);
+    });
+    (apptData?.items ?? []).forEach(a => {
+      if (user?.role === 'USER' && a.provider) map.set(a.provider.id, a.provider.business_name || 'Uzman');
+      else if (a.customer) map.set(a.customer.id, `${a.customer.first_name} ${a.customer.last_name}`);
+    });
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [convData, apptData, user?.role]);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -23,11 +53,12 @@ const DisputesPage: React.FC = () => {
         reason: form.reason,
         description: form.description
       });
+      toast.success('Anlaşmazlık kaydınız oluşturuldu. Ekibimiz en kısa sürede inceleyecek.');
       setShowCreate(false);
       setForm({ reported_id: '', reason: '', description: '' });
       refetch();
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || 'Hata oluştu');
+    } catch (err) {
+      toastApiError(err, 'Anlaşmazlık oluşturulamadı');
     }
   };
 
@@ -38,24 +69,26 @@ const DisputesPage: React.FC = () => {
       await disputesApi.addMessage(activeId, message);
       setMessage('');
       refetchActive();
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || 'Mesaj gönderilemedi');
+    } catch (err) {
+      toastApiError(err, 'Mesaj gönderilemedi');
     }
   };
 
   const handleClose = async () => {
-    if (!activeId || !confirm('Bu anlaşmazlığı kapatmak istediğinize emin misiniz?')) return;
+    if (!activeId || !window.confirm('Bu anlaşmazlığı kapatmak istediğinize emin misiniz?')) return;
     try {
       await disputesApi.close(activeId);
+      toast.info('Anlaşmazlık kapatıldı.');
       refetchActive();
       refetch();
-    } catch (err: any) {
-      alert(err?.response?.data?.detail || 'Kapatılamadı');
+    } catch (err) {
+      toastApiError(err, 'Kapatılamadı');
     }
   };
 
   return (
     <Layout>
+      <SEO title="Anlaşmazlıklarım" description="Hizmet süreçlerinde yaşadığınız sorunlar için destek talebi oluşturun." />
       <div className="container" style={{ padding: '32px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
@@ -89,7 +122,7 @@ const DisputesPage: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                     <span style={{ fontWeight: 700 }}>#{disp.id}</span>
                     <span className={`badge ${disp.status === 'OPEN' ? 'badge-error' : disp.status === 'IN_REVIEW' ? 'badge-warning' : 'badge-success'}`}>
-                      {disp.status}
+                      {STATUS_LABELS[disp.status] ?? disp.status}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: 4 }}>{disp.reason}</div>
@@ -199,8 +232,22 @@ const DisputesPage: React.FC = () => {
             
             <form onSubmit={handleCreate} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Şikayet Edilen Kişi ID *</label>
-                <input className="input" type="number" required value={form.reported_id} onChange={e => setForm({...form, reported_id: e.target.value})} />
+                <label htmlFor="dispute-reported" style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Şikayet Edilen Kişi *</label>
+                <select
+                  id="dispute-reported"
+                  className="input"
+                  required
+                  value={form.reported_id}
+                  onChange={e => setForm({ ...form, reported_id: e.target.value })}
+                >
+                  <option value="">Seçiniz</option>
+                  {counterparties.map(cp => (
+                    <option key={cp.id} value={cp.id}>{cp.label}</option>
+                  ))}
+                </select>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  Listede aradığınız kişi yoksa, önce ilgili uzmanla bir sohbet başlatın.
+                </div>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: '0.875rem' }}>Neden *</label>

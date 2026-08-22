@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Heart, Package, Pause, Play, Plus, Tag, Trash2 } from 'lucide-react';
+import { Eye, Heart, Package, Pause, Play, Plus, Tag, Trash2, Pencil } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
 import AdCard from '../components/ads/AdCard';
@@ -24,8 +24,48 @@ const STATUS_BADGES: Record<string, { label: string; bg: string; color: string }
   REJECTED: { label: 'Reddedildi', bg: 'rgba(239,68,68,0.15)', color: '#ef4444' },
 };
 
+interface ActionRowProps {
+  ad: AdListItem;
+  onPublish: (id: number) => void;
+  onPause: (id: number) => void;
+  onMarkSold: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+const ActionRow: React.FC<ActionRowProps> = ({ ad, onPublish, onPause, onMarkSold, onDelete }) => (
+  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+    {(ad.status === 'DRAFT' || ad.status === 'REJECTED') && (
+      <Link to={`/ads/${ad.id}/edit`} className="btn btn-outline btn-sm" title="Düzenle">
+        <Pencil size={13} /> Düzenle
+      </Link>
+    )}
+    {ad.status === 'DRAFT' || ad.status === 'PAUSED' ? (
+      <button className="btn btn-outline btn-sm" onClick={() => onPublish(ad.id)} title="Yayınla">
+        <Play size={13} /> Yayınla
+      </button>
+    ) : ad.status === 'ACTIVE' ? (
+      <>
+        <button className="btn btn-outline btn-sm" onClick={() => onPause(ad.id)} title="Duraklat">
+          <Pause size={13} /> Duraklat
+        </button>
+        <button className="btn btn-primary btn-sm" onClick={() => onMarkSold(ad.id)} title="Satıldı işaretle">
+          <Tag size={13} /> Satıldı
+        </button>
+      </>
+    ) : null}
+    <button
+      className="btn btn-ghost btn-sm"
+      onClick={() => onDelete(ad.id)}
+      title="Sil"
+      style={{ color: '#ef4444' }}
+    >
+      <Trash2 size={13} />
+    </button>
+  </div>
+);
+
 const MyAdsPage: React.FC = () => {
-  const [tab, setTab] = useState<'listings' | 'favorites'>('listings');
+  const [tab, setTab] = React.useState<'listings' | 'favorites'>('listings');
   const { data: myListings, isLoading } = useMyAds();
   const { data: favorites, isLoading: favLoading } = useMyFavoriteAds();
 
@@ -36,41 +76,6 @@ const MyAdsPage: React.FC = () => {
 
   const ads = tab === 'listings' ? myListings?.items : favorites;
   const loading = tab === 'listings' ? isLoading : favLoading;
-
-  const ActionRow: React.FC<{ ad: AdListItem }> = ({ ad }) => (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-      {ad.status === 'DRAFT' || ad.status === 'PAUSED' ? (
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() => publishAd.mutate(ad.id)}
-          title="Yayınla"
-        >
-          <Play size={13} /> Yayınla
-        </button>
-      ) : ad.status === 'ACTIVE' ? (
-        <>
-          <button className="btn btn-outline btn-sm" onClick={() => pauseAd.mutate(ad.id)} title="Duraklat">
-            <Pause size={13} /> Duraklat
-          </button>
-          <button className="btn btn-primary btn-sm" onClick={() => markSold.mutate(ad.id)} title="Satıldı işaretle">
-            <Tag size={13} /> Satıldı
-          </button>
-        </>
-      ) : null}
-      <button
-        className="btn btn-ghost btn-sm"
-        onClick={() => {
-          if (confirm(`"${ad.title}" ilanını silmek istediğinize emin misiniz?`)) {
-            deleteAd.mutate(ad.id);
-          }
-        }}
-        title="Sil"
-        style={{ color: '#ef4444' }}
-      >
-        <Trash2 size={13} />
-      </button>
-    </div>
-  );
 
   return (
     <Layout>
@@ -120,7 +125,17 @@ const MyAdsPage: React.FC = () => {
                 <AdCard ad={ad} showStatus={tab === 'listings'} />
                 {tab === 'listings' && (
                   <div style={{ padding: '0 4px' }}>
-                    <ActionRow ad={ad} />
+                    <ActionRow
+                      ad={ad}
+                      onPublish={id => publishAd.mutate(id)}
+                      onPause={id => pauseAd.mutate(id)}
+                      onMarkSold={id => markSold.mutate(id)}
+                      onDelete={id => {
+                        if (window.confirm(`"${ad.title}" ilanını silmek istediğinize emin misiniz?`)) {
+                          deleteAd.mutate(id);
+                        }
+                      }}
+                    />
                     <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Eye size={11} /> {ad.view_count}

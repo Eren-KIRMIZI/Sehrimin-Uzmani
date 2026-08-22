@@ -6,6 +6,7 @@ import MapComponent from '../components/map/MapComponent';
 import { useCategories, useCities } from '../hooks/useQueries';
 import { searchApi } from '../services';
 import { useQuery } from '@tanstack/react-query';
+import { toastApiError } from '../stores/toastStore';
 import type { ProviderProfile } from '../types';
 
 const MapSearchPage: React.FC = () => {
@@ -31,7 +32,7 @@ const MapSearchPage: React.FC = () => {
       (err) => {
         console.error(err);
         setLocating(false);
-        alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+        toastApiError(err, 'Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
       }
     );
   };

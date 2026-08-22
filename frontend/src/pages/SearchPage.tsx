@@ -22,6 +22,7 @@ const SearchPage: React.FC = () => {
     category: searchParams.get('category') || undefined,
     subcategory: searchParams.get('subcategory') || undefined,
     city_id: searchParams.get('city_id') ? Number(searchParams.get('city_id')) : undefined,
+    district_id: searchParams.get('district_id') ? Number(searchParams.get('district_id')) : undefined,
     min_rating: searchParams.get('min_rating') ? Number(searchParams.get('min_rating')) : undefined,
     verified: searchParams.get('verified') === 'true' || undefined,
     sort: (searchParams.get('sort') as SearchFilters['sort']) || 'recommended',
@@ -41,11 +42,27 @@ const SearchPage: React.FC = () => {
     queryFn: () => searchApi.searchProviders({ ...filters, page }),
   });
 
+  // Filtreleri URL'e yaz — paylaşılabilir arama bağlantıları için
+  const syncUrl = useCallback((updated: SearchFilters, pageNum: number) => {
+    const params = new URLSearchParams();
+    if (updated.q) params.set('q', updated.q);
+    if (updated.category) params.set('category', updated.category);
+    if (updated.subcategory) params.set('subcategory', updated.subcategory);
+    if (updated.city_id) params.set('city_id', String(updated.city_id));
+    if (updated.district_id) params.set('district_id', String(updated.district_id));
+    if (updated.min_rating) params.set('min_rating', String(updated.min_rating));
+    if (updated.verified) params.set('verified', 'true');
+    if (updated.sort && updated.sort !== 'recommended') params.set('sort', updated.sort);
+    if (pageNum > 1) params.set('page', String(pageNum));
+    setSearchParams(params, { replace: true });
+  }, [setSearchParams]);
+
   const applyFilters = useCallback((newFilters: Partial<SearchFilters>) => {
     const updated = { ...filters, ...newFilters };
     setFilters(updated);
     setPage(1);
-  }, [filters]);
+    syncUrl(updated, 1);
+  }, [filters, syncUrl]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,7 +328,11 @@ const SearchPage: React.FC = () => {
             <button
               className="btn btn-outline btn-sm"
               disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
+              onClick={() => {
+                const p = page - 1;
+                setPage(p);
+                syncUrl(filters, p);
+              }}
             >
               ← Önceki
             </button>
@@ -321,7 +342,11 @@ const SearchPage: React.FC = () => {
             <button
               className="btn btn-outline btn-sm"
               disabled={!data.has_next}
-              onClick={() => setPage(p => p + 1)}
+              onClick={() => {
+                const p = page + 1;
+                setPage(p);
+                syncUrl(filters, p);
+              }}
             >
               Sonraki →
             </button>

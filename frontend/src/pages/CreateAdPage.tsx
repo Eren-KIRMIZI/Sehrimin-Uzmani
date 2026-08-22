@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, ImagePlus, Plus, Trash2, X } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
-import { useAdCategories, useCities, useDistricts, useCreateAd, usePublishAd } from '../hooks/useAds';
+import { useAdCategories, useCities, useDistricts, useAd, useCreateAd, useUpdateAd, usePublishAd } from '../hooks/useAds';
+import { toast, toastApiError } from '../stores/toastStore';
 import type { AdCondition, AdPriceType } from '../types/ads';
 
 const STEPS = ['Kategori', 'İlan Detayı', 'Fotoğraflar', 'Fiyat & Konum', 'Önizleme'];
@@ -17,9 +18,18 @@ const CONDITION_OPTIONS: { value: AdCondition; label: string }[] = [
 
 const CreateAdPage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const editId = id ? Number(id) : null;
+  const isEdit = editId !== null;
+
+  // Edit modunda mevcut ilanı yükle ve formu doldur
+  const { data: existingAd, isLoading: adLoading } = useAd(editId ?? undefined);
+  const [hydrated, setHydrated] = useState(false);
+
   const { data: categories } = useAdCategories();
   const { data: cities } = useCities();
   const createAd = useCreateAd();
+  const updateAd = useUpdateAd();
   const publishAd = usePublishAd();
 
   const [step, setStep] = useState(0);
@@ -43,6 +53,23 @@ const CreateAdPage: React.FC = () => {
   const [attributes, setAttributes] = useState<{ attribute_key: string; attribute_value: string }[]>([]);
   const [attrKey, setAttrKey] = useState('');
   const [attrValue, setAttrValue] = useState('');
+
+  useEffect(() => {
+    if (isEdit && existingAd && !hydrated) {
+      setCategoryId(existingAd.category?.id ?? null);
+      setTitle(existingAd.title);
+      setDescription(existingAd.description ?? '');
+      setCondition((existingAd.condition ?? '') as AdCondition | '');
+      setPriceType(existingAd.price_type);
+      setPrice(existingAd.price != null ? String(existingAd.price) : '');
+      setIsNegotiable(!!existingAd.is_negotiable);
+      setCityId(existingAd.city_id ?? null);
+      setDistrictId(existingAd.district_id ?? null);
+      setImages(existingAd.images.map(img => ({ url: img.url, is_cover: !!img.is_cover })));
+      setAttributes(existingAd.attributes.map(a => ({ attribute_key: a.attribute_key, attribute_value: a.attribute_value })));
+      setHydrated(true);
+    }
+  }, [isEdit, existingAd, hydrated]);
 
   const rootCategories = (categories || []).filter(c => !c.parent_id);
   const childrenOf = (parentId: number) => (categories || []).filter(c => c.parent_id === parentId);
@@ -93,10 +120,17 @@ const CreateAdPage: React.FC = () => {
   };
 
   const addAttribute = () => {
-    if (!attrKey.trim() || !attrValue.trim()) return;
-    setAttributes(prev => [...prev, { attribute_key: attrKey.trim().toLowerCase().replace(/\s+/g, '_'), attribute_value: attrValue.trim() }]);
+    const key = attrKey.trim().toLowerCase().replace(/\s+/g, '_');
+    if (!key || !attrValue.trim()) return;
+    // Aynı özellik anahtarı iki kez eklenmesin
+    if (attributes.some(a => a.attribute_key === key)) {
+      setError(`"${attrKey.trim()}" özelliği zaten eklendi. Önce mevcut olanı silin.`);
+      return;
+    }
+    setAttributes(prev => [...prev, { attribute_key: key, attribute_value: attrValue.trim() }]);
     setAttrKey('');
     setAttrValue('');
+    setError(null);
   };
 
   const handleSubmit = () => {
@@ -105,6 +139,48 @@ const CreateAdPage: React.FC = () => {
       setError('Kategori ve şehir zorunludur');
       return;
     }
+
+    const finish = (adId: number) => {
+      setCreatedAdId(adId);
+      publishAd.mutate(adId, {
+        onSuccess: () => {
+          toast.success(isEdit ? 'İlanınız güncellendi ve yayınlandı!' : 'İlanınız yayınlandı!');
+          navigate(`/ads/${adId}`);
+        },
+        onError: err => {
+          toastApiError(err, 'İlan kaydedildi ama yayınlama başarısız oldu');
+          navigate(`/ads/${adId}`);
+        },
+      });
+    };
+
+    if (isEdit && editId) {
+      updateAd.mutate(
+        {
+          id: editId,
+          data: {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            price: priceType === 'FREE' ? undefined : Number(price),
+            price_type: priceType,
+            condition: condition || undefined,
+            city_id: cityId,
+            district_id: districtId ?? undefined,
+            is_negotiable: isNegotiable,
+            show_phone: showPhone,
+            phone: phone.trim() || undefined,
+            attributes,
+          },
+        },
+        {
+          onSuccess: ad => finish(ad.id),
+          onError: (err: any) =>
+            setError(err?.response?.data?.detail || 'İlan güncellenemedi'),
+        }
+      );
+      return;
+    }
+
     createAd.mutate(
       {
         category_id: categoryId,
@@ -122,13 +198,7 @@ const CreateAdPage: React.FC = () => {
         attributes,
       },
       {
-        onSuccess: ad => {
-          setCreatedAdId(ad.id);
-          publishAd.mutate(ad.id, {
-            onSuccess: () => navigate(`/ads/${ad.id}`),
-            onError: () => navigate(`/ads/${ad.id}`),
-          });
-        },
+        onSuccess: ad => finish(ad.id),
         onError: (err: any) =>
           setError(err?.response?.data?.detail || 'İlan oluşturulamadı'),
       }
@@ -137,14 +207,23 @@ const CreateAdPage: React.FC = () => {
 
   return (
     <Layout>
-      <SEO title="İlan Ver" description="Ürün veya hizmetinizi ilan vererek satın." />
+      <SEO title={isEdit ? 'İlanı Düzenle' : 'İlan Ver'} description="Ürün veya hizmetinizi ilan vererek satın." />
       <div className="container" style={{ padding: '32px 24px', maxWidth: 860 }}>
-        <Link to="/ads" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-muted)', fontSize: '0.85rem', textDecoration: 'none', marginBottom: 16 }}>
-          <ArrowLeft size={15} /> İlanlara Dön
+        <Link to={isEdit ? '/ads/my' : '/ads'} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-muted)', fontSize: '0.85rem', textDecoration: 'none', marginBottom: 16 }}>
+          <ArrowLeft size={15} /> {isEdit ? 'İlanlarıma Dön' : 'İlanlara Dön'}
         </Link>
 
-        <h1 style={{ fontWeight: 900, fontSize: '1.7rem', margin: 0 }}>İlan Ver</h1>
-        <p style={{ color: 'var(--color-text-muted)', marginTop: 4 }}>Birkaç adımda ilanını yayınla</p>
+        <h1 style={{ fontWeight: 900, fontSize: '1.7rem', margin: 0 }}>{isEdit ? 'İlanı Düzenle' : 'İlan Ver'}</h1>
+        <p style={{ color: 'var(--color-text-muted)', marginTop: 4 }}>{isEdit ? 'İlan bilgilerini güncelleyip yeniden yayınla' : 'Birkaç adımda ilanını yayınla'}</p>
+
+        {isEdit && (adLoading || !hydrated) && (
+          <div className="card" style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-muted)', marginTop: 24 }}>
+            İlan bilgileri yükleniyor...
+          </div>
+        )}
+
+        {(!isEdit || (existingAd && hydrated)) && (
+        <>
 
         {/* Stepper */}
         <div style={{ display: 'flex', gap: 4, margin: '24px 0 28px', flexWrap: 'wrap' }}>
@@ -516,14 +595,16 @@ const CreateAdPage: React.FC = () => {
               <button
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={createAd.isPending || publishAd.isPending}
+                disabled={createAd.isPending || updateAd.isPending || publishAd.isPending}
               >
-                {(createAd.isPending || publishAd.isPending) ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <Check size={16} />}
-                Yayınla
+                {(createAd.isPending || updateAd.isPending || publishAd.isPending) ? <div className="spinner" style={{ width: 16, height: 16 }} /> : <Check size={16} />}
+                {isEdit ? 'Güncelle ve Yayınla' : 'Yayınla'}
               </button>
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
     </Layout>
   );

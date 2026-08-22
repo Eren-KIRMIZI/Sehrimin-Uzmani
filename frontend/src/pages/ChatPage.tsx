@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Send, Image as ImageIcon, Paperclip, Check, CheckCheck, Loader2, MessageSquare } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { useConversations, useMessages } from '../hooks/useQueries';
+import { messagingApi } from '../services';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useAuthStore } from '../stores/authStore';
+import { toast, toastApiError } from '../stores/toastStore';
 import type { Message } from '../types';
 
 const ChatPage: React.FC = () => {
@@ -21,6 +24,7 @@ const ChatPage: React.FC = () => {
   
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   // WebSocket
   const { isConnected, sendMessage, markRead } = useWebSocket({
@@ -50,9 +54,52 @@ const ChatPage: React.FC = () => {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || !activeConvId) return;
-    
-    sendMessage(activeConvId, inputValue, 'TEXT');
+    sendContent(inputValue.trim(), 'TEXT');
     setInputValue('');
+  };
+
+  // Optimistik gönderim: mesaj hemen görünür, WS bağlıysa ayrıca yayınlanır
+  const sendContent = (content: string, messageType: 'TEXT' | 'IMAGE') => {
+    if (!activeConvId) return;
+    const tempId = -Date.now();
+    const optimistic: Message = {
+      id: tempId,
+      conversation_id: activeConvId,
+      sender_id: user?.id ?? 0,
+      content,
+      message_type: messageType,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    } as Message;
+    setLocalMessages(prev => [...prev, optimistic]);
+
+    if (isConnected) {
+      sendMessage(activeConvId, content, messageType);
+    }
+
+    messagingApi
+      .sendMessage(activeConvId, content, messageType)
+      .then(saved => {
+        setLocalMessages(prev => prev.map(m => (m.id === tempId ? saved : m)));
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      })
+      .catch(err => {
+        setLocalMessages(prev => prev.filter(m => m.id !== tempId));
+        toastApiError(err, 'Mesaj gönderilemedi');
+      });
+  };
+
+  const handleImageSend = () => {
+    const url = window.prompt('Göndermek istediğiniz görselin URL\'sini yapıştırın:');
+    if (!url || !/^https?:\/\//i.test(url.trim())) {
+      if (url !== null && url.trim()) toast.error('Geçerli bir http(s) URL\'si girin.');
+      return;
+    }
+    sendContent(url.trim(), 'IMAGE');
+  };
+
+  const handleAttach = () => {
+    toast.info('Dosya eki desteği yakında eklenecek. Şimdilik görsel bağlantısı paylaşabilirsiniz.');
   };
 
   const conversations = convData?.items || [];
@@ -193,7 +240,17 @@ const ChatPage: React.FC = () => {
                         alignItems: isMe ? 'flex-end' : 'flex-start'
                       }}>
                         <div className={isMe ? 'chat-bubble-sent' : 'chat-bubble-received'}>
-                          {msg.content}
+                          {msg.message_type === 'IMAGE' ? (
+                            <a href={msg.content} target="_blank" rel="noreferrer">
+                              <img
+                                src={msg.content}
+                                alt="Paylaşılan görsel"
+                                style={{ maxWidth: 240, maxHeight: 200, borderRadius: 10, display: 'block' }}
+                              />
+                            </a>
+                          ) : (
+                            msg.content
+                          )}
                         </div>
                         <div style={{ 
                           fontSize: '0.7rem', 
@@ -216,10 +273,10 @@ const ChatPage: React.FC = () => {
               {/* Input */}
               <div style={{ padding: '16px 24px', background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}>
                 <form onSubmit={handleSend} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }}>
+                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }} onClick={handleAttach} title="Dosya ekle" aria-label="Dosya ekle">
                     <Paperclip size={20} />
                   </button>
-                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }}>
+                  <button type="button" className="btn btn-ghost" style={{ padding: 8 }} onClick={handleImageSend} title="Görsel gönder" aria-label="Görsel gönder">
                     <ImageIcon size={20} />
                   </button>
                   <input
@@ -229,11 +286,11 @@ const ChatPage: React.FC = () => {
                     placeholder="Mesaj yazın..."
                     style={{ borderRadius: 999, height: 48 }}
                   />
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary" 
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
                     style={{ borderRadius: '50%', width: 48, height: 48, padding: 0 }}
-                    disabled={!inputValue.trim() || !isConnected}
+                    disabled={!inputValue.trim()}
                   >
                     <Send size={18} style={{ marginLeft: 2 }} />
                   </button>

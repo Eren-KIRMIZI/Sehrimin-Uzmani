@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp, Tag } from 'lucide-react';
+import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp, Tag, Home, Wrench, Heart, BookOpen, Users, Dog, Car, Truck, Briefcase, Building, Calendar, Monitor, Sparkles, Box, Activity } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
 import { useCategories, useRecommendations, useCities } from '../hooks/useQueries';
@@ -10,20 +10,25 @@ import { Link } from 'react-router-dom';
 import AdCard from '../components/ads/AdCard';
 
 // Category icon map
-const categoryIcons: Record<string, string> = {
-  'ev-ve-yasam': '🏠',
-  'teknik-hizmetler': '⚡',
-  'saglik-ve-wellness': '💆',
-  'egitim': '📚',
-  'cocuk-ve-yasli-bakimi': '👶',
-  'evcil-hayvan': '🐾',
-  'arac': '🚗',
-  'tasimacilik': '🚚',
-  'profesyonel-hizmetler': '💼',
-  'gayrimenkul': '🏢',
-  'etkinlik-ve-organizasyon': '🎉',
-  'dijital-hizmetler': '💻',
-  'guzellik': '💅',
+const getCategoryIcon = (slug: string) => {
+  const props = { size: 32, strokeWidth: 1.5 };
+  switch (slug) {
+    case 'ev-ve-yasam': return <Home {...props} />;
+    case 'teknik-hizmetler': return <Wrench {...props} />;
+    case 'saglik-ve-wellness': return <Heart {...props} />;
+    case 'egitim': return <BookOpen {...props} />;
+    case 'cocuk-ve-yasli-bakimi': return <Users {...props} />;
+    case 'evcil-hayvan': return <Dog {...props} />;
+    case 'arac': return <Car {...props} />;
+    case 'tasimacilik': return <Truck {...props} />;
+    case 'profesyonel-hizmetler': return <Briefcase {...props} />;
+    case 'gayrimenkul': return <Building {...props} />;
+    case 'etkinlik-ve-organizasyon': return <Calendar {...props} />;
+    case 'dijital-hizmetler': return <Monitor {...props} />;
+    case 'guzellik': return <Sparkles {...props} />;
+    case 'spor-ve-fitness': return <Activity {...props} />;
+    default: return <Box {...props} />;
+  }
 };
 
 // ── İlanlar Vitrin Bileşeni ──────────────────────────────────────────────────
@@ -427,19 +432,27 @@ const HomePage: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16 }}>
-              {categories?.slice(0, 13).map(cat => (
+              {categories?.slice(0, 14).map(cat => (
                 <Link
                   key={cat.id}
                   to={`/search?category=${cat.slug}`}
-                  style={{ textDecoration: 'none' }}
+                  style={{ textDecoration: 'none', display: 'flex' }}
                 >
                   <div className="card glass-hover" style={{
+                    flex: 1,
                     textAlign: 'center', cursor: 'pointer',
                     padding: 24, display: 'flex', flexDirection: 'column',
                     alignItems: 'center', gap: 12,
                   }}>
-                    <div style={{ fontSize: '2.2rem' }}>
-                      {categoryIcons[cat.slug] || cat.icon || '🔧'}
+                    <div style={{
+                      width: 64, height: 64, borderRadius: 16,
+                      background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.05))',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--color-primary-light)',
+                      boxShadow: '0 4px 20px rgba(99, 102, 241, 0.1)'
+                    }}>
+                      {getCategoryIcon(cat.slug)}
                     </div>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-text)' }}>
                       {cat.name}

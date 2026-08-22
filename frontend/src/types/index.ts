@@ -183,10 +183,10 @@ export interface Quote {
   description?: string;
   materials?: string;
   available_date?: string;
-  warranty?: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: string;
-  provider: ProviderProfile;
+   warranty?: string;
+   status: 'DRAFT' | 'SUBMITTED' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'REVISED';
+   created_at: string;
+   provider: ProviderProfile;
 }
 
 // ===== APPOINTMENTS =====
@@ -197,10 +197,10 @@ export interface Appointment {
   customer_id: number;
   start_at: string;
   end_at?: string;
-  location?: string;
-  notes?: string;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  created_at: string;
+   location?: string;
+   notes?: string;
+   status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+   created_at: string;
   provider: ProviderProfile;
   customer: User;
 }
@@ -277,7 +277,8 @@ export interface PayoutRequest {
   provider_id: number;
   amount: number;
   bank_name: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  iban?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
   created_at: string;
 }
 
@@ -463,3 +464,16 @@ export interface AIMatchExplanation {
   highlight: string;
 }
 
+
+export interface ProviderVerification {
+  id: number;
+  provider_id: number;
+  provider_name: string;
+  verification_type: 'IDENTITY' | 'PROFESSIONAL' | 'BUSINESS';
+  document_url?: string;
+  note?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  admin_note?: string;
+  created_at: string;
+  reviewed_at?: string;
+}

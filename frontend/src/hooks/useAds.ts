@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adsApi } from '../services';
 import type { AdFilters } from '../types/ads';
 
+// Konum hook'ları CreateAdPage tarafından buradan import ediliyor
+export { useCities, useDistricts } from './useQueries';
+
 // QUERIES
 export const useAdCategories = () =>
   useQuery({

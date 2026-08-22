@@ -17,7 +17,6 @@ export const tr = {
     ads: 'İlanlar',
     post_ad: 'İlan Ver',
     my_ads: 'İlanlarım',
-    pricing: 'Planlar',
   },
   home: {
     hero_title: 'Şehrindeki En İyi',

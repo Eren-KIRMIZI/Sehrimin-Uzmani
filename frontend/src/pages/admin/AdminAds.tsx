@@ -169,7 +169,7 @@ export const AdminAds: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.items?.length === 0 ? (
+                  {(data?.items?.length ?? 0) === 0 ? (
                     <tr>
                       <td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--color-text-muted)' }}>
                         <Package size={32} style={{ margin: '0 auto 10px', display: 'block' }} />
@@ -285,7 +285,7 @@ export const AdminAds: React.FC = () => {
 
           {reportsLoading ? (
             <div style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></div>
-          ) : reports?.length === 0 ? (
+          ) : (reports?.length ?? 0) === 0 ? (
             <div style={{ textAlign: 'center', padding: 60, color: 'var(--color-text-muted)' }}>
               <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', color: '#10b981' }} />
               <p>Bu durumda rapor yok.</p>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User } from 'lucide-react';
+import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User, FileText, Calendar } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { Link } from 'react-router-dom';
 import { analyticsApi, adminApi } from '../../services';
 import type { ProviderAnalytics, AdminDashboard } from '../../types';
+import { useMyRequests, useAppointments } from '../../hooks/useQueries';
+import { REQUEST_STATUS_LABELS, formatDate, formatDateTime } from '../../utils/format';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
@@ -18,6 +20,14 @@ const DashboardPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<ProviderAnalytics | null>(null);
   const [adminStats, setAdminStats] = useState<AdminDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Müşteri istatistikleri için gerçek veri
+  const isCustomer = !isProvider && !isAdmin;
+  const { data: myRequests } = useMyRequests();
+  const { data: appointments } = useAppointments();
+  const activeRequests = myRequests?.items.filter(r => ['OPEN', 'IN_PROGRESS'].includes(r.status)) ?? [];
+  const openQuotes = myRequests?.items.reduce((acc, r) => acc + (r.quotes?.length ?? 0), 0) ?? 0;
+  const upcomingAppointments = (appointments?.items ?? []).filter(a => ['PENDING', 'CONFIRMED'].includes(a.status));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -178,7 +188,7 @@ const DashboardPage: React.FC = () => {
             </>
           ) : (
             <>
-              {/* Customer Stats placeholder */}
+              {/* Müşteri istatistikleri — gerçek veriler */}
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
@@ -186,16 +196,30 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Aktif Talepler</span>
                 </div>
-                <div style={{ fontSize: '2rem', fontWeight: 800 }}>1</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{activeRequests.length}</div>
+                <p className="text-xs text-gray-500 mt-2">Toplam {myRequests?.items.length ?? 0} talep</p>
               </div>
               <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
                     <MessageSquare size={20} />
                   </div>
-                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Yeni Teklifler</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Gelen Teklifler</span>
                 </div>
-                <div style={{ fontSize: '2rem', fontWeight: 800 }}>2</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{openQuotes}</div>
+                <p className="text-xs text-gray-500 mt-2">Tüm taleplerinizde</p>
+              </div>
+              <div className="card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                    <Calendar size={20} />
+                  </div>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text-muted)' }}>Yaklaşan Randevular</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 800 }}>{upcomingAppointments.length}</div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {upcomingAppointments[0] ? `Sıradaki: ${formatDate(upcomingAppointments[0].start_at)}` : 'Planlanmış randevu yok'}
+                </p>
               </div>
             </>
           )}
@@ -261,12 +285,66 @@ const DashboardPage: React.FC = () => {
             {/* Recent Requests / Jobs */}
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ margin: 0, fontWeight: 700 }}>Son {isProvider ? 'İşler' : isAdmin ? 'Aktiviteler' : 'Talepler'}</h3>
-                <Link to={isProvider ? "/jobs" : isAdmin ? "/admin/audit" : "/requests"} style={{ fontSize: '0.875rem', color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Tümünü Gör</Link>
+                <h3 style={{ margin: 0, fontWeight: 700 }}>Son {isProvider ? 'Randevular' : isAdmin ? 'Aktiviteler' : 'Talepler'}</h3>
+                <Link to={isProvider ? "/appointments" : isAdmin ? "/admin?tab=overview" : "/requests"} style={{ fontSize: '0.875rem', color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Tümünü Gör</Link>
               </div>
-              <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                Henüz gösterilecek kayıt bulunmuyor.
-              </div>
+              {isCustomer && activeRequests.length > 0 ? (
+                <div style={{ display: 'grid' }}>
+                  {activeRequests.slice(0, 4).map(r => (
+                    <Link
+                      key={r.id}
+                      to="/requests"
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                        padding: '14px 24px', textDecoration: 'none', color: 'inherit',
+                        borderBottom: '1px solid var(--color-border)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <FileText size={18} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.92rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.title}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>{formatDate(r.created_at)}</div>
+                        </div>
+                      </div>
+                      <span className="badge badge-outline" style={{ flexShrink: 0 }}>
+                        {REQUEST_STATUS_LABELS[r.status] ?? r.status}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : isCustomer && upcomingAppointments.length > 0 ? (
+                <div style={{ display: 'grid' }}>
+                  {upcomingAppointments.slice(0, 4).map(a => (
+                    <Link
+                      key={a.id}
+                      to="/appointments"
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                        padding: '14px 24px', textDecoration: 'none', color: 'inherit',
+                        borderBottom: '1px solid var(--color-border)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                        <Calendar size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.92rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {a.provider?.business_name ?? 'Randevu'}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>{formatDateTime(a.start_at)}</div>
+                        </div>
+                      </div>
+                      <span className="badge badge-outline" style={{ flexShrink: 0 }}>
+                        {a.status === 'CONFIRMED' ? 'Onaylandı' : 'Bekliyor'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                  Henüz gösterilecek kayıt bulunmuyor.
+                </div>
+              )}
             </div>
             
           </div>
@@ -280,6 +358,9 @@ const DashboardPage: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {isProvider ? (
                   <>
+                    <Link to="/appointments" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                      Randevularım <ChevronRight size={16} />
+                    </Link>
                     <Link to="/earnings" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
                       Kazançlar & Ödemeler <ChevronRight size={16} />
                     </Link>
@@ -292,13 +373,13 @@ const DashboardPage: React.FC = () => {
                   </>
                 ) : isAdmin ? (
                   <>
-                    <Link to="/admin/users" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                    <Link to="/admin?tab=users" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
                       Kullanıcı Yönetimi <ChevronRight size={16} />
                     </Link>
-                    <Link to="/admin/providers" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                    <Link to="/admin?tab=verifications" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
                       Uzman Onayları <ChevronRight size={16} />
                     </Link>
-                    <Link to="/admin/disputes" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
+                    <Link to="/admin?tab=disputes" className="btn btn-outline" style={{ justifyContent: 'space-between' }}>
                       Anlaşmazlık Çözümü <ChevronRight size={16} />
                     </Link>
                   </>

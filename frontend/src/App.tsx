@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore';
 import { authApi } from './services';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Toaster } from './components/ui/Toaster';
 
 // Pages (eager — kritik rotalar)
 import HomePage from './pages/HomePage';
@@ -18,6 +19,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import AdminPage from './pages/admin/AdminPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import StaticPage from './pages/StaticPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Pages (lazy — code splitting ile yüklenecek)
@@ -28,6 +30,11 @@ const AdsPage = lazy(() => import('./pages/AdsPage'));
 const AdDetailPage = lazy(() => import('./pages/AdDetailPage'));
 const CreateAdPage = lazy(() => import('./pages/CreateAdPage'));
 const MyAdsPage = lazy(() => import('./pages/MyAdsPage'));
+const MyRequestsPage = lazy(() => import('./pages/requests/MyRequestsPage'));
+const AppointmentsPage = lazy(() => import('./pages/appointments/AppointmentsPage'));
+const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,6 +92,19 @@ const App: React.FC = () => {
             <Route path="/provider/:id" element={<ProviderProfilePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={
+              <Suspense fallback={LazyFallback}>
+                <ForgotPasswordPage />
+              </Suspense>
+            } />
+            <Route path="/reset-password" element={
+              <Suspense fallback={LazyFallback}>
+                <ResetPasswordPage />
+              </Suspense>
+            } />
+
+            {/* Statik içerik sayfaları (Footer yasal linkleri) */}
+            <Route path="/sayfa/:slug" element={<StaticPage />} />
 
             {/* İlanlar (Public) */}
             <Route path="/ads" element={
@@ -106,6 +126,13 @@ const App: React.FC = () => {
                 </Suspense>
               </ProtectedRoute>
             } />
+            <Route path="/ads/:id/edit" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <CreateAdPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
             <Route path="/ads/my" element={
               <ProtectedRoute>
                 <Suspense fallback={LazyFallback}>
@@ -116,6 +143,27 @@ const App: React.FC = () => {
 
             {/* Protected Routes (All authenticated users) */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/requests" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <MyRequestsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/appointments" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <AppointmentsPage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Suspense fallback={LazyFallback}>
+                  <ProfilePage />
+                </Suspense>
+              </ProtectedRoute>
+            } />
             <Route path="/chat" element={
               <ProtectedRoute>
                 <Suspense fallback={LazyFallback}>
@@ -149,6 +197,7 @@ const App: React.FC = () => {
             {/* 404 — Bilinmeyen URL */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
+          <Toaster />
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

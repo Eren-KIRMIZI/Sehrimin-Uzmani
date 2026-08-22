@@ -117,7 +117,7 @@ export const NotificationCenter: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+        className="relative p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-colors bg-transparent"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (

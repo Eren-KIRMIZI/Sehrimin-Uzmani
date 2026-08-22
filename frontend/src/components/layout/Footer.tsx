@@ -8,21 +8,21 @@ const Footer: React.FC = () => {
   const links = {
     platform: [
       { to: '/search', label: 'Uzman Ara' },
-      { to: '/map', label: 'Haritada Ara' },
-      { to: '/pricing', label: 'Abonelik Planları' },
+      { to: '/map-search', label: 'Haritada Ara' },
+      { to: '/ads', label: 'İlanlar' },
       { to: '/request/create', label: 'Hizmet Talebi Oluştur' },
     ],
     company: [
-      { to: '/', label: 'Hakkımızda' },
-      { to: '/', label: 'Blog' },
-      { to: '/', label: 'Kariyer' },
-      { to: '/', label: 'İletişim' },
+      { to: '/sayfa/hakkimizda', label: 'Hakkımızda' },
+      { to: '/sayfa/sss', label: 'Sıkça Sorulan Sorular' },
+      { to: '/sayfa/guvenlik', label: 'Güvenlik' },
+      { to: '/sayfa/iletisim', label: 'İletişim' },
     ],
     legal: [
-      { to: '/', label: 'Gizlilik Politikası' },
-      { to: '/', label: 'Kullanım Koşulları' },
-      { to: '/', label: 'KVKK Aydınlatma' },
-      { to: '/', label: 'Çerez Politikası' },
+      { to: '/sayfa/gizlilik', label: 'Gizlilik Politikası' },
+      { to: '/sayfa/kullanici-sozlesmesi', label: 'Kullanım Koşulları' },
+      { to: '/sayfa/kvkk', label: 'KVKK Aydınlatma' },
+      { to: '/sayfa/cerez-politikasi', label: 'Çerez Politikası' },
     ],
   };
 

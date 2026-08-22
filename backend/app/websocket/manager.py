@@ -147,7 +147,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
 
     db = SessionLocal()
     try:
-        if check_token_blacklist(payload, db):
+        if check_token_blacklist(token, db):
             await websocket.close(code=4001, reason="Token revoked")
             return
 

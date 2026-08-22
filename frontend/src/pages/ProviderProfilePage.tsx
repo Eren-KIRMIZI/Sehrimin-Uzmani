@@ -332,16 +332,21 @@ const ProviderProfilePage: React.FC = () => {
                     </div>
 
                     <div className="flex-1 space-y-2">
-                       {/* Rating bars would go here in a real app, currently mocked structure */}
-                       {[5, 4, 3, 2, 1].map(r => (
-                          <div key={r} className="flex items-center gap-2 text-sm">
-                            <span className="w-4 font-medium text-gray-500">{r}</span>
-                            <Star size={12} className="text-amber-500" />
-                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-amber-500 rounded-full" style={{ width: r === 5 ? '80%' : r === 4 ? '15%' : '0%' }}></div>
+                       {/* Puan dağılımı — gerçek yorum verisinden hesaplanır */}
+                       {[5, 4, 3, 2, 1].map(r => {
+                          const count = reviews.filter((rev: any) => Math.round(rev.rating) === r).length;
+                          const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                          return (
+                            <div key={r} className="flex items-center gap-2 text-sm">
+                              <span className="w-4 font-medium text-gray-500">{r}</span>
+                              <Star size={12} className="text-amber-500" />
+                              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }}></div>
+                              </div>
+                              <span className="w-6 text-right text-xs text-gray-400">{count}</span>
                             </div>
-                          </div>
-                       ))}
+                          );
+                       })}
                     </div>
                   </div>
 

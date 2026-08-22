@@ -37,6 +37,7 @@ const AdDetailPage: React.FC = () => {
   const [showPhone, setShowPhone] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [reportDescription, setReportDescription] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -105,11 +106,12 @@ const AdDetailPage: React.FC = () => {
   const handleReport = () =>
     requireAuth(() => {
       reportAd.mutate(
-        { id: ad.id, reason: reportReason || 'other', description: reportReason },
+        { id: ad.id, reason: reportReason, description: reportDescription.trim() || undefined },
         {
           onSuccess: () => {
             setShowReportModal(false);
             setReportReason('');
+            setReportDescription('');
             showToast('Raporunuz alındı. Teşekkürler!');
           },
         }
@@ -412,21 +414,45 @@ const AdDetailPage: React.FC = () => {
           >
             <h3 style={{ fontWeight: 700, marginBottom: 6 }}>İlanı Raporla</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: 14 }}>
-              Bu ilanla ilgili sorunu kısaca açıklayın.
+              Bu ilanla ilgili sorunu bildirin.
             </p>
-            <textarea
+            <label htmlFor="report-reason" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+              Sebep *
+            </label>
+            <select
+              id="report-reason"
               className="input"
-              rows={4}
               value={reportReason}
               onChange={e => setReportReason(e.target.value)}
-              placeholder="Örn: Sahte ilan, yanlış kategori, yasaklı ürün..."
+              style={{ marginBottom: 12 }}
+            >
+              <option value="">Sebep seçin...</option>
+              <option value="SPAM">Spam / Reklam</option>
+              <option value="FRAUD">Dolandırıcılık şüphesi</option>
+              <option value="INAPPROPRIATE">Uygunsuz içerik</option>
+              <option value="WRONG_CATEGORY">Yanlış kategori</option>
+              <option value="SOLD_ELSEWHERE">Aynı ürün başka yerde satılıyor</option>
+              <option value="PROHIBITED_ITEM">Yasaklı ürün</option>
+              <option value="OTHER">Diğer</option>
+            </select>
+            <label htmlFor="report-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+              Açıklama (opsiyonel)
+            </label>
+            <textarea
+              id="report-description"
+              className="input"
+              rows={3}
+              maxLength={500}
+              value={reportDescription}
+              onChange={e => setReportDescription(e.target.value)}
+              placeholder="Sorunu kısaca açıklayın..."
               style={{ marginBottom: 14, resize: 'vertical' }}
             />
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowReportModal(false)}>
                 Vazgeç
               </button>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleReport} disabled={!reportReason.trim() || reportAd.isPending}>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleReport} disabled={!reportReason || reportAd.isPending}>
                 Raporla
               </button>
             </div>

@@ -23,9 +23,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const connect = useCallback(() => {
     const token = localStorage.getItem('access_token');
     if (!token) return;
+    // Mock oturumda gerçek WS yok — bağlanmayı deneme
+    if (token.startsWith('mock.')) return;
 
     try {
-      const ws = new WebSocket(`ws://${window.location.hostname}:8000/ws/${token}`);
+      const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = import.meta.env.VITE_WS_URL
+        ? String(import.meta.env.VITE_WS_URL).replace(/\/$/, '')
+        : import.meta.env.DEV
+          ? `${proto}://${window.location.hostname}:8000`
+          : `${proto}://${window.location.host}`;
+      const ws = new WebSocket(`${host}/ws/${token}`);
       wsRef.current = ws;
 
       ws.onopen = () => {

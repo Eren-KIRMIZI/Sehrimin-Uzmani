@@ -5,6 +5,7 @@ import Layout from '../components/layout/Layout';
 import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
 import { requestsApi } from '../services';
 import { AIRequestAssistant } from '../components/ai/AIRequestAssistant';
+import { toastApiError } from '../stores/toastStore';
 import type { AIAnalysis } from '../types';
 
 const STEPS = [
@@ -108,7 +109,8 @@ const ServiceRequestForm: React.FC = () => {
   const canProceed = () => {
     switch (step) {
       case 1: return !!form.category_id;
-      case 2: return !!form.subcategory_id;
+      // Alt kategorisi olmayan kategorilerde adım 2 otomatik geçilir
+      case 2: return !selectedCategory?.subcategories?.length || !!form.subcategory_id;
       case 3: return form.title.length >= 5 && form.description.length >= 10;
       case 4: return !!form.city_id;
       default: return true;
@@ -125,7 +127,7 @@ const ServiceRequestForm: React.FC = () => {
       });
       setSuccess(true);
     } catch (e: any) {
-      alert(e?.response?.data?.detail || 'Hata oluştu');
+      toastApiError(e, 'Talep oluşturulamadı');
     } finally {
       setLoading(false);
     }
@@ -411,7 +413,12 @@ const ServiceRequestForm: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
           <button
             className="btn btn-ghost"
-            onClick={() => step > 1 ? setStep(s => s - 1) : navigate(-1)}
+            onClick={() => {
+              // Alt kategorisi olmayan kategoride adım 2'yi atla
+              if (step === 3 && !selectedCategory?.subcategories?.length) setStep(1);
+              else if (step > 1) setStep(s => s - 1);
+              else navigate(-1);
+            }}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <ChevronLeft size={16} /> Geri
@@ -419,7 +426,11 @@ const ServiceRequestForm: React.FC = () => {
           {step < 10 && (
             <button
               className="btn btn-primary"
-              onClick={() => setStep(s => s + 1)}
+              onClick={() => {
+                // Alt kategorisi olmayan kategoride adım 2'yi otomatik geç
+                if (step === 1 && form.category_id && !selectedCategory?.subcategories?.length) setStep(3);
+                else setStep(s => s + 1);
+              }}
               disabled={!canProceed()}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}
             >

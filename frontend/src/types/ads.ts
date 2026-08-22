@@ -77,9 +77,12 @@ export interface AdDetail extends AdListItem {
   attributes: AdAttribute[];
   category?: AdCategory | null;
   seller?: SellerInfo | null;
+  city_id?: number | null;
+  district_id?: number | null;
   city_name?: string | null;
   district_name?: string | null;
   is_favorite: boolean;
+  is_negotiable?: boolean;
   seller_phone?: string | null;
 }
 

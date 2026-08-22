@@ -12,12 +12,24 @@ const RegisterPage: React.FC = () => {
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '', password: '', role: 'USER' as 'USER' | 'PROVIDER'
   });
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [kvkkAccepted, setKvkkAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (form.password !== passwordConfirm) {
+      setError('Şifreler eşleşmiyor. Lütfen kontrol edin.');
+      return;
+    }
+    if (!kvkkAccepted) {
+      setError('Devam etmek için Kullanım Koşulları ve KVKK metnini onaylamanız gerekiyor.');
+      return;
+    }
+
     setLoading(true);
     
     try {
@@ -126,7 +138,46 @@ const RegisterPage: React.FC = () => {
                 Şifreniz en az 8 karakter uzunluğunda olmalı, büyük harf, küçük harf ve rakam içermelidir.
               </div>
             </div>
-            
+
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: '0.875rem' }}>Şifre (Tekrar) *</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
+                <input
+                  type="password"
+                  className="input"
+                  required
+                  value={passwordConfirm}
+                  onChange={e => setPasswordConfirm(e.target.value)}
+                  placeholder="Şifrenizi tekrar girin"
+                  style={{
+                    paddingLeft: 42, height: 48,
+                    borderColor: passwordConfirm && passwordConfirm !== form.password ? 'var(--color-error)' : undefined,
+                  }}
+                />
+              </div>
+              {passwordConfirm && passwordConfirm !== form.password && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-error)', marginTop: 6 }}>
+                  Şifreler eşleşmiyor.
+                </div>
+              )}
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+              <input
+                type="checkbox"
+                checked={kvkkAccepted}
+                onChange={e => setKvkkAccepted(e.target.checked)}
+                style={{ marginTop: 3, accentColor: 'var(--color-primary)', width: 16, height: 16 }}
+              />
+              <span>
+                <Link to="/sayfa/kullanici-sozlesmesi" target="_blank" style={{ color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>Kullanım Koşulları</Link>
+                {' '}ve{' '}
+                <Link to="/sayfa/kvkk" target="_blank" style={{ color: 'var(--color-primary-light)', textDecoration: 'none', fontWeight: 600 }}>KVKK Aydınlatma Metni</Link>
+                'ni okudum, kabul ediyorum. *
+              </span>
+            </label>
+
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: 48, marginTop: 8, fontSize: '1rem', justifyContent: 'center' }}>
               {loading ? <div className="spinner" /> : 'Kayıt Ol'}
             </button>

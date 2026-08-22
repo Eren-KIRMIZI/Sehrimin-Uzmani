@@ -17,7 +17,6 @@ export const en = {
     ads: 'Listings',
     post_ad: 'Post Ad',
     my_ads: 'My Ads',
-    pricing: 'Pricing',
   },
   home: {
     hero_title: 'Find the Best',

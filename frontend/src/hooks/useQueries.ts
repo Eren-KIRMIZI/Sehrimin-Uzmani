@@ -4,9 +4,10 @@ import {
   searchApi, requestsApi, reviewsApi, favoritesApi,
   notificationsApi, messagingApi, commissionsApi,
   subscriptionsApi, promotionsApi, disputesApi, adminApi,
-  reputationApi, badgesApi, appointmentsApi
+  reputationApi, badgesApi, appointmentsApi, quotesApi,
+  verificationApi, usersApi, analyticsApi
 } from '../services';
-import type { SearchFilters } from '../types';
+import type { SearchFilters, Review, Quote, Appointment, User } from '../types';
 
 // AUTH
 export const useCurrentUser = () =>
@@ -192,3 +193,237 @@ export const useMarkAllRead = () => {
     },
   });
 };
+
+// ===== REQUEST DETAIL & QUOTES =====
+export const useRequestDetail = (id?: number) =>
+  useQuery({
+    queryKey: ['request', id],
+    queryFn: () => requestsApi.getById(id!),
+    enabled: !!id,
+  });
+
+export const useQuotesForRequest = (requestId?: number) =>
+  useQuery({
+    queryKey: ['quotes', requestId],
+    queryFn: () => quotesApi.getForRequest(requestId!),
+    enabled: !!requestId,
+  });
+
+export const useCreateRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: requestsApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['requests'] });
+      qc.invalidateQueries({ queryKey: ['adminRequests'] });
+    },
+  });
+};
+
+const invalidateQuoteCascades = (qc: ReturnType<typeof useQueryClient>, requestId?: number) => {
+  qc.invalidateQueries({ queryKey: ['quotes'] });
+  qc.invalidateQueries({ queryKey: ['myQuotes'] });
+  if (requestId) {
+    qc.invalidateQueries({ queryKey: ['request', requestId] });
+    qc.invalidateQueries({ queryKey: ['requests'] });
+  }
+};
+
+export const useAcceptQuote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: quotesApi.accept,
+    onSuccess: (_res, quoteId) => {
+      // requestId bilinmiyorsa genişçe geçersiz kıl
+      void quoteId;
+      invalidateQuoteCascades(qc);
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+};
+
+export const useRejectQuote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: quotesApi.reject,
+    onSuccess: () => invalidateQuoteCascades(qc),
+  });
+};
+
+export const useReviseQuote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Quote> }) => quotesApi.revise(id, data),
+    onSuccess: () => invalidateQuoteCascades(qc),
+  });
+};
+
+export const useSendQuote = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ requestId, providerId, data }: { requestId: number; providerId: number; data: Partial<Quote> }) =>
+      quotesApi.sendQuote(requestId, providerId, data),
+    onSuccess: (_res, vars) => invalidateQuoteCascades(qc, vars.requestId),
+  });
+};
+
+// ===== APPOINTMENTS =====
+export const useAppointments = () =>
+  useQuery({ queryKey: ['appointments'], queryFn: () => appointmentsApi.getAll() });
+
+export const useAppointmentAction = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'confirm' | 'start' | 'complete' | 'cancel' | 'noShow' }) =>
+      appointmentsApi[action](id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      qc.invalidateQueries({ queryKey: ['earnings'] });
+      qc.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+};
+
+// ===== REVIEWS =====
+export const useCreateReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: reviewsApi.create,
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ['reviews', vars.provider_id] });
+      qc.invalidateQueries({ queryKey: ['provider', vars.provider_id] });
+    },
+  });
+};
+
+export const useReplyReview = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reviewId, reply }: { reviewId: number; reply: string }) => reviewsApi.reply(reviewId, reply),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['reviews'] }),
+  });
+};
+
+// ===== VERIFICATION =====
+export const useMyVerifications = () =>
+  useQuery({ queryKey: ['myVerifications'], queryFn: verificationApi.getMy, retry: false });
+
+export const usePendingVerifications = () =>
+  useQuery({ queryKey: ['pendingVerifications'], queryFn: verificationApi.getPending });
+
+export const useApplyVerification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: verificationApi.apply,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['myVerifications'] });
+      qc.invalidateQueries({ queryKey: ['pendingVerifications'] });
+    },
+  });
+};
+
+export const useVerificationDecision = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, approve, note }: { id: number; approve: boolean; note?: string }) =>
+      approve ? verificationApi.approve(id) : verificationApi.reject(id, note),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['pendingVerifications'] });
+      qc.invalidateQueries({ queryKey: ['providers'] });
+    },
+  });
+};
+
+// ===== PROFILE / ACCOUNT =====
+export const useUpdateProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<User>) => usersApi.updateMe(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['me'] }),
+  });
+};
+
+export const useChangePassword = () =>
+  useMutation({ mutationFn: ({ current, next }: { current: string; next: string }) => authApi.changePassword(current, next) });
+
+export const useEnable2fa = () => useMutation({ mutationFn: authApi.enable2fa });
+export const useVerify2fa = () => useMutation({ mutationFn: authApi.verify2fa });
+export const useDisable2fa = () => useMutation({ mutationFn: authApi.disable2fa });
+
+// ===== EARNINGS EXTRA =====
+export const useEarningsHistory = () =>
+  useQuery({ queryKey: ['earningsHistory'], queryFn: () => commissionsApi.getEarningsHistory() });
+
+export const useMyPayouts = () =>
+  useQuery({ queryKey: ['myPayouts'], queryFn: commissionsApi.getMyPayouts });
+
+export const useRequestPayout = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: commissionsApi.requestPayout,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['earnings'] });
+      qc.invalidateQueries({ queryKey: ['myPayouts'] });
+    },
+  });
+};
+
+// ===== SUBSCRIPTION ACTIONS =====
+export const useSubscribe = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ plan_id, interval }: { plan_id: number; interval: 'MONTHLY' | 'QUARTERLY' | 'YEARLY' }) =>
+      subscriptionsApi.subscribe(plan_id, interval),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mySubscription'] });
+      qc.invalidateQueries({ queryKey: ['me'] });
+    },
+  });
+};
+
+export const useCancelSubscription = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: subscriptionsApi.cancel,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mySubscription'] }),
+  });
+};
+
+// ===== PROMOTIONS =====
+export const useCreatePromotion = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: promotionsApi.create,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['myPromotions'] }),
+  });
+};
+
+// ===== PROMOTION BID =====
+export const useUpdatePromotionBid = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, bid_amount }: { id: number; bid_amount: number }) => promotionsApi.updateBid(id, bid_amount),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['myPromotions'] }),
+  });
+};
+
+// ===== ADMIN EXTRAS =====
+export const useAdminUpdateUser = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: object }) => adminApi.updateUser(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['adminUsers'] }),
+  });
+};
+
+export const useAdminVerifyProvider = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.verifyProvider,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['adminProviders'] }),
+  });
+};
+
+// ===== ANALYTICS =====
+export const useMyAnalytics = () =>
+  useQuery({ queryKey: ['myAnalytics'], queryFn: analyticsApi.getMyAnalytics });

@@ -9,23 +9,42 @@ import { useAdCategories, useAds } from '../hooks/useAds';
 import type { AdFilters } from '../types/ads';
 
 const AdsPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
 
   const [filters, setFilters] = useState<AdFilters>({
     q: searchParams.get('q') || undefined,
     category: searchParams.get('category') || undefined,
     city_id: searchParams.get('city_id') ? Number(searchParams.get('city_id')) : undefined,
-    sort: 'newest',
+    district_id: searchParams.get('district_id') ? Number(searchParams.get('district_id')) : undefined,
+    min_price: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined,
+    max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,
+    condition: (searchParams.get('condition') as AdFilters['condition']) || undefined,
+    sort: (searchParams.get('sort') as AdFilters['sort']) || 'newest',
     page: 1,
     limit: 12,
   });
 
   const [localQ, setLocalQ] = useState(filters.q || '');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [minPrice, setMinPrice] = useState(filters.min_price ? String(filters.min_price) : '');
+  const [maxPrice, setMaxPrice] = useState(filters.max_price ? String(filters.max_price) : '');
   const [selectedCityId, setSelectedCityId] = useState<number | undefined>(filters.city_id);
+
+  // Filtreleri URL query string'e yaz — paylaşılabilir/geri tuşu uyumlu bağlantılar için
+  const syncUrl = useCallback((merged: AdFilters, pageNum: number) => {
+    const params = new URLSearchParams();
+    if (merged.q) params.set('q', merged.q);
+    if (merged.category) params.set('category', merged.category);
+    if (merged.city_id) params.set('city_id', String(merged.city_id));
+    if (merged.district_id) params.set('district_id', String(merged.district_id));
+    if (merged.min_price != null) params.set('min_price', String(merged.min_price));
+    if (merged.max_price != null) params.set('max_price', String(merged.max_price));
+    if (merged.condition) params.set('condition', merged.condition);
+    if (merged.sort && merged.sort !== 'newest') params.set('sort', merged.sort);
+    if (pageNum > 1) params.set('page', String(pageNum));
+    setSearchParams(params, { replace: true });
+  }, [setSearchParams]);
 
   const { data: categories } = useAdCategories();
   const { data: cities } = useCities();
@@ -41,10 +60,14 @@ const AdsPage: React.FC = () => {
 
   const applyFilters = useCallback(
     (patch: Partial<AdFilters>) => {
-      setFilters(prev => ({ ...prev, ...patch, page: 1 }));
+      setFilters(prev => {
+        const merged = { ...prev, ...patch, page: 1 };
+        syncUrl(merged, 1);
+        return merged;
+      });
       setPage(1);
     },
-    []
+    [syncUrl]
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -382,7 +405,11 @@ const AdsPage: React.FC = () => {
                 <button
                   className="btn btn-outline btn-sm"
                   disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
+                  onClick={() => {
+                    const p = page - 1;
+                    setPage(p);
+                    syncUrl(filters, p);
+                  }}
                 >
                   ← Önceki
                 </button>
@@ -392,7 +419,11 @@ const AdsPage: React.FC = () => {
                 <button
                   className="btn btn-outline btn-sm"
                   disabled={!data.has_next}
-                  onClick={() => setPage(p => p + 1)}
+                  onClick={() => {
+                    const p = page + 1;
+                    setPage(p);
+                    syncUrl(filters, p);
+                  }}
                 >
                   Sonraki →
                 </button>

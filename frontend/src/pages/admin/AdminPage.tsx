@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Shield, Users, AlertTriangle, FileText, Settings, CreditCard, Activity, CheckCircle, Clock, Package, Flag, Eye, Trash2, Ban } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { useAuthStore } from '../../stores/authStore';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAdminDashboard, useAdminUsers, useAdminDisputes, useAdminPayouts } from '../../hooks/useQueries';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { AdminUsers } from './AdminUsers';
 import { AdminDisputes } from './AdminDisputes';
 import { AdminPayouts } from './AdminPayouts';
 import { AdminAds } from './AdminAds';
+import { AdminVerifications } from './AdminVerifications';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Sekme durumu URL ile senkron — /admin?tab=users gibi bağlantılar çalışır
+  const activeTab = searchParams.get('tab') ?? 'overview';
+
+  const setActiveTab = (tab: string) => {
+    setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true });
+  };
 
   const { data: adminStats, isLoading } = useAdminDashboard();
 
@@ -21,8 +28,8 @@ const AdminPage: React.FC = () => {
     return <Navigate to="/" replace />;
   }
 
-  // Mock chart data for overview since API might not return it yet
-  const mockChartData = [
+  // Demo haftalık aktivite verisi — backend'te zaman serisi endpoint'i henüz yok
+  const weeklyChartData = [
     { name: 'Pzt', requests: 40, users: 24, revenue: 2400 },
     { name: 'Sal', requests: 30, users: 13, revenue: 2210 },
     { name: 'Çar', requests: 20, users: 58, revenue: 2290 },
@@ -77,7 +84,7 @@ const AdminPage: React.FC = () => {
           {activeTab === 'overview' && (
             <div className="animate-fade-in max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-8">
-                <h1 style={{ fontWeight: 800, fontSize: '2rem' }}>Sistem Özeti</h1>
+                <h1 style={{ fontWeight: 800, fontSize: '2rem', color: '#111827' }}>Sistem Özeti</h1>
                 <div className="text-sm text-gray-500 flex items-center gap-2">
                   <Clock size={16} /> Son güncelleme: {new Date().toLocaleTimeString('tr-TR')}
                 </div>
@@ -115,7 +122,7 @@ const AdminPage: React.FC = () => {
                       <h3 className="font-bold text-lg mb-6 text-gray-800">Platform Aktivitesi</h3>
                       <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <AreaChart data={weeklyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorRequests" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
@@ -145,7 +152,9 @@ const AdminPage: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="font-bold text-amber-900 text-sm">Bekleyen Uzman Doğrulamaları</h4>
-                            <p className="text-amber-800/80 text-xs mt-1">Sistemde onay bekleyen 12 yeni uzman kaydı bulunuyor. En eskisi 2 gün önce.</p>
+                            <p className="text-amber-800/80 text-xs mt-1">
+                              Sistemde onay bekleyen {adminStats?.pending_verifications ?? 0} doğrulama başvurusu bulunuyor.
+                            </p>
                             <button className="mt-3 text-xs font-bold text-amber-700 hover:text-amber-900" onClick={() => setActiveTab('verifications')}>İncele &rarr;</button>
                           </div>
                         </div>
@@ -156,7 +165,9 @@ const AdminPage: React.FC = () => {
                           </div>
                           <div>
                             <h4 className="font-bold text-red-900 text-sm">Aktif Anlaşmazlıklar (Disputes)</h4>
-                            <p className="text-red-800/80 text-xs mt-1">Platformda çözülmeyi bekleyen 3 açık anlaşmazlık (dispute) var.</p>
+                            <p className="text-red-800/80 text-xs mt-1">
+                              Platformda çözülmeyi bekleyen {adminStats?.open_disputes ?? 0} açık anlaşmazlık (dispute) var.
+                            </p>
                             <button className="mt-3 text-xs font-bold text-red-700 hover:text-red-900" onClick={() => setActiveTab('disputes')}>Çözümle &rarr;</button>
                           </div>
                         </div>
@@ -171,14 +182,15 @@ const AdminPage: React.FC = () => {
           
           {activeTab !== 'overview' && (
             <div className="animate-fade-in max-w-7xl mx-auto">
-              <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 24, textTransform: 'capitalize' }}>
+              <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 24, textTransform: 'capitalize', color: '#111827' }}>
                 {activeTab.replace('_', ' ')}
               </h1>
               {activeTab === 'users' && <AdminUsers />}
+              {activeTab === 'verifications' && <AdminVerifications />}
               {activeTab === 'disputes' && <AdminDisputes />}
               {activeTab === 'payouts' && <AdminPayouts />}
               {activeTab === 'ads' && <AdminAds />}
-              {!['users', 'disputes', 'payouts', 'ads'].includes(activeTab) && (
+              {!['users', 'verifications', 'disputes', 'payouts', 'ads'].includes(activeTab) && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100" style={{ padding: 80, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Settings size={32} />
