@@ -42,9 +42,10 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 def compile_tsvector(element, compiler, **kw):
     return "TEXT"
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
+TEST_DATABASE_URL = os.environ.get("DATABASE_URL")
+connect_args = {"check_same_thread": False} if TEST_DATABASE_URL.startswith("sqlite") else {}
 test_engine = create_engine(
-    TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+    TEST_DATABASE_URL, connect_args=connect_args
 )
 
 
