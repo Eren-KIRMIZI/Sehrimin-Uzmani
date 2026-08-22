@@ -156,7 +156,7 @@ const AdminPage: React.FC = () => {
                             <p className="text-amber-800/80 text-xs mt-1">
                               Sistemde onay bekleyen {adminStats?.pending_verifications ?? 0} doğrulama başvurusu bulunuyor.
                             </p>
-                            <button className="mt-3 text-xs font-bold text-amber-700 hover:text-amber-900" onClick={() => setActiveTab('verifications')}>İncele &rarr;</button>
+                            <button className="btn btn-outline btn-sm mt-3" onClick={() => setActiveTab('verifications')}>İncele &rarr;</button>
                           </div>
                         </div>
 
@@ -169,7 +169,7 @@ const AdminPage: React.FC = () => {
                             <p className="text-red-800/80 text-xs mt-1">
                               Platformda çözülmeyi bekleyen {adminStats?.open_disputes ?? 0} açık anlaşmazlık (dispute) var.
                             </p>
-                            <button className="mt-3 text-xs font-bold text-red-700 hover:text-red-900" onClick={() => setActiveTab('disputes')}>Çözümle &rarr;</button>
+                            <button className="btn btn-outline btn-sm mt-3" onClick={() => setActiveTab('disputes')}>Çözümle &rarr;</button>
                           </div>
                         </div>
 

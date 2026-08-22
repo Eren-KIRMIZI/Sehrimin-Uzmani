@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Upload, MapPin, Calendar, DollarSign, FileText, Eye, Send } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Upload, MapPin, Calendar, DollarSign, FileText, Eye, Send, Rocket, Wrench } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { useCategories, useCities, useDistricts } from '../hooks/useQueries';
 import { requestsApi } from '../services';
@@ -215,8 +215,8 @@ const ServiceRequestForm: React.FC = () => {
                     textAlign: 'center', transition: 'all 0.2s',
                   }}
                 >
-                  <div style={{ fontSize: '1.8rem', marginBottom: 8 }}>
-                    {cat.icon || '🔧'}
+                  <div style={{ fontSize: '1.8rem', marginBottom: 8, display: 'flex', justifyContent: 'center' }}>
+                    {cat.icon || <Wrench size={32} />}
                   </div>
                   <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--color-text)' }}>{cat.name}</div>
                 </button>
@@ -391,7 +391,7 @@ const ServiceRequestForm: React.FC = () => {
 
           {step === 10 && (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: '3rem', marginBottom: 16 }}>🚀</div>
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}><Rocket size={48} className="text-indigo-500" /></div>
               <h3 style={{ fontWeight: 700, marginBottom: 8 }}>Talebinizi Yayınlamaya Hazır mısınız?</h3>
               <p style={{ color: 'var(--color-text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
                 Talebiniz yayınlandığında, alandaki uzmanlar teklif göndermeye başlayacak. Teklifleri karşılaştırarak en uygununu seçebilirsiniz.

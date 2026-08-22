@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp, Tag, Home, Wrench, Heart, BookOpen, Users, Dog, Car, Truck, Briefcase, Building, Calendar, Monitor, Sparkles, Box, Activity } from 'lucide-react';
+import { Search, Star, Shield, Clock, ChevronRight, Zap, MapPin, TrendingUp, Tag, Home, Wrench, Heart, BookOpen, Users, Dog, Car, Truck, Briefcase, Building, Calendar, Monitor, Sparkles, Box, Activity, MessageSquare, CheckCircle2 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import SEO from '../components/SEO';
 import { useCategories, useRecommendations, useCities } from '../hooks/useQueries';
@@ -385,17 +385,19 @@ const HomePage: React.FC = () => {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32 }}>
             {[
-              { num: '01', icon: '🔍', title: 'Hizmet Seç', desc: 'İhtiyacın olan hizmet kategorisini belirle ya da doğal dilde yaz' },
-              { num: '02', icon: '👥', title: 'Uzman Bul', desc: 'Puanlı ve doğrulanmış uzmanları karşılaştır, yorumları oku' },
-              { num: '03', icon: '💬', title: 'Teklif Al', desc: 'Uzmanlardan teklif al, fiyat ve süreyi karşılaştır' },
-              { num: '04', icon: '✅', title: 'Tamamla', desc: 'Randevu oluştur, hizmeti tamamla, değerlendirme yap' },
+              { num: '01', icon: <Search size={28} strokeWidth={1.5} />, title: 'Hizmet Seç', desc: 'İhtiyacın olan hizmet kategorisini belirle ya da doğal dilde yaz' },
+              { num: '02', icon: <Users size={28} strokeWidth={1.5} />, title: 'Uzman Bul', desc: 'Puanlı ve doğrulanmış uzmanları karşılaştır, yorumları oku' },
+              { num: '03', icon: <MessageSquare size={28} strokeWidth={1.5} />, title: 'Teklif Al', desc: 'Uzmanlardan teklif al, fiyat ve süreyi karşılaştır' },
+              { num: '04', icon: <CheckCircle2 size={28} strokeWidth={1.5} />, title: 'Tamamla', desc: 'Randevu oluştur, hizmeti tamamla, değerlendirme yap' },
             ].map(step => (
               <div key={step.num} style={{ textAlign: 'center' }}>
                 <div style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  width: 72, height: 72, borderRadius: 20, fontSize: '1.8rem',
+                  width: 72, height: 72, borderRadius: 20,
                   background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+                  color: 'var(--color-primary-light)',
                   marginBottom: 16, position: 'relative',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
                 }}>
                   {step.icon}
                   <div style={{

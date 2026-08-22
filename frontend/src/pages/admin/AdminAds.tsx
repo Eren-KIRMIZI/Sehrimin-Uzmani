@@ -6,7 +6,9 @@ import api from '../../services/api';
 // Tip genişletmesi (admin endpoint'lerden gelen veri)
 type AdminAdItem = {
   id: number;
-  title: string;
+  title?: string;
+  title_tr?: string;
+  title_en?: string;
   price?: number | null;
   price_type: string;
   status: string;
@@ -192,7 +194,7 @@ export const AdminAds: React.FC = () => {
                         </td>
                         <td style={{ padding: '10px 16px' }}>
                           <a href={`/ads/${ad.id}`} target="_blank" rel="noreferrer" style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--color-text)', textDecoration: 'none' }}>
-                            {ad.title.length > 45 ? ad.title.slice(0, 45) + '...' : ad.title}
+                            {(ad.title || ad.title_tr || '').length > 45 ? (ad.title || ad.title_tr || '').slice(0, 45) + '...' : (ad.title || ad.title_tr || 'İlan')}
                           </a>
                           <div style={{ fontSize: '0.72rem', color: 'var(--color-text-dim)', marginTop: 2 }}>#{ad.id}</div>
                         </td>
@@ -232,7 +234,7 @@ export const AdminAds: React.FC = () => {
                                 title="Reddet"
                                 style={{ color: '#ef4444' }}
                                 onClick={() => {
-                                  if (confirm(`"${ad.title}" ilanını reddetmek istediğinizden emin misiniz?`)) {
+                                  if (confirm(`"${ad.title || ad.title_tr || 'İlan'}" ilanını reddetmek istediğinizden emin misiniz?`)) {
                                     rejectMutation.mutate({ id: ad.id, reason: 'Admin moderasyon' });
                                   }
                                 }}

@@ -184,7 +184,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         ai_insights.append(
             {
                 "type": "warning",
-                "icon": "📉",
+                "icon": "TrendingDown",
                 "text": f"Teklif kabul oranınız %{conversion_rate:.0f}. Teklif açıklamalarınızı ve fiyatlarınızı gözden geçirmeniz önerilir.",
             }
         )
@@ -193,7 +193,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         ai_insights.append(
             {
                 "type": "info",
-                "icon": "💬",
+                "icon": "MessageCircle",
                 "text": "Son 30 günde yeni yorum almadınız. Tamamladığınız işlerden sonra müşterilerinizden değerlendirme isteyebilirsiniz.",
             }
         )
@@ -202,7 +202,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         ai_insights.append(
             {
                 "type": "success",
-                "icon": "⭐",
+                "icon": "Star",
                 "text": f"{avg_rating}/5.0 puanınızla üst %10'daki uzmanlar arasındasınız. Profilinizi öne çıkararak daha fazla müşteriye ulaşabilirsiniz.",
             }
         )
@@ -211,7 +211,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         ai_insights.append(
             {
                 "type": "warning",
-                "icon": "🎯",
+                "icon": "Target",
                 "text": "Son 30 günde kazanılan iş yok. Teklif verme stratejinizi değiştirmeyi deneyin.",
             }
         )
@@ -220,7 +220,7 @@ def get_provider_analytics(provider_id: int, user_id: int, db: Session) -> dict:
         ai_insights.append(
             {
                 "type": "success",
-                "icon": "🏆",
+                "icon": "Trophy",
                 "text": f"%{conversion_rate:.0f} dönüşüm oranıyla platform ortalamasının üzerindesiniz!",
             }
         )

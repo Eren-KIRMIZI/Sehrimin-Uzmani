@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User, FileText, Calendar } from 'lucide-react';
+import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User, FileText, Calendar, Sparkles, TrendingDown, MessageCircle, Target, Trophy } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import { Link } from 'react-router-dom';
 import { analyticsApi, adminApi } from '../../services';
@@ -66,7 +66,7 @@ const DashboardPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <div>
             <h1 style={{ fontWeight: 800, fontSize: '2rem', marginBottom: 4 }}>
-              Merhaba, {user?.first_name} 👋
+              Merhaba, {user?.first_name}
             </h1>
             <p style={{ color: 'var(--color-text-muted)' }}>
               {isProvider ? 'İşlerinizi ve kazançlarınızı buradan yönetin.' : 
@@ -85,7 +85,7 @@ const DashboardPage: React.FC = () => {
         {isProvider && analytics?.ai_insights && analytics.ai_insights.length > 0 && (
           <div className="mb-8 space-y-3">
             <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-              <span className="text-xl">✨</span> AI Performans Asistanı
+              <Sparkles className="text-indigo-500" size={24} /> AI Performans Asistanı
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {analytics.ai_insights.map((insight, idx) => (
@@ -97,7 +97,14 @@ const DashboardPage: React.FC = () => {
                     ${insight.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-800' : ''}
                   `}
                 >
-                  <div className="text-2xl mt-0.5">{insight.icon}</div>
+                  <div className="text-indigo-500 mt-0.5">
+                    {insight.icon === 'TrendingDown' && <TrendingDown size={24} />}
+                    {insight.icon === 'MessageCircle' && <MessageCircle size={24} />}
+                    {insight.icon === 'Star' && <Star size={24} />}
+                    {insight.icon === 'Target' && <Target size={24} />}
+                    {insight.icon === 'Trophy' && <Trophy size={24} />}
+                    {(!['TrendingDown', 'MessageCircle', 'Star', 'Target', 'Trophy'].includes(insight.icon)) && <Sparkles size={24} />}
+                  </div>
                   <div className="text-sm font-medium">{insight.text}</div>
                 </div>
               ))}
