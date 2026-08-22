@@ -55,6 +55,9 @@ export interface ProviderProfile {
   services: any[]; // relaxed to any[] to support both ProviderService[] and the simplified {name, starting_price} from backend
   locations: any[]; // relaxed to any[] to support both ProviderLocation[] and the simplified {city, district} from backend
   portfolio: PortfolioItem[];
+  languages?: string[];
+  education?: string[];
+  certifications?: string[];
   availability: ProviderAvailability[];
 }
 

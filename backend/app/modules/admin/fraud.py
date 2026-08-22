@@ -118,7 +118,9 @@ def calculate_risk_score(user_id: int, db: Session) -> dict:
             or 0
         )
 
-        completed_jobs = (provider.performance.completed_jobs if provider.performance else 0) or 0
+        completed_jobs = (
+            provider.performance.completed_jobs if provider.performance else 0
+        ) or 0
 
         if total_quotes_accepted >= 5:
             completion_rate = completed_jobs / total_quotes_accepted

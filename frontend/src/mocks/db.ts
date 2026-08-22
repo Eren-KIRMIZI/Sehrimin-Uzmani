@@ -782,7 +782,8 @@ export const promotions: any[] = [
   },
 ];
 
-// â”€â”€ Anlaşmazlıklar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â�export const ads: any[] = [
+
+export const ads: any[] = [
   {
     id: 1, title: 'iPhone 15 Pro 256GB — Doğal Titanyum', price: 42500, price_type: 'FIXED',
     condition: 'LIKE_NEW', status: 'ACTIVE', category_id: 8,
@@ -1007,112 +1008,6 @@ export const promotions: any[] = [
     ],
   },
 ];
-Benzin' },
-    ],
-    images: [
-      { id: 3, url: 'https://picsum.photos/seed/bmw1/800/600', is_cover: true },
-      { id: 4, url: 'https://picsum.photos/seed/bmw2/800/600' },
-      { id: 5, url: 'https://picsum.photos/seed/bmw3/800/600' },
-    ],
-  },
-  {
-    id: 3, title: 'MacBook Air M2 8/256', price: 27500, price_type: 'FIXED',
-    condition: 'GOOD', status: 'ACTIVE', category_id: 9,
-    city_name: 'İzmir', district_name: 'Bornova', city_id: 3, district_id: 7,
-    view_count: 342, favorite_count: 29, is_featured: false, is_negotiable: false,
-    seller_id: 7, published_at: daysFromNow(-4), created_at: daysFromNow(-4),
-    description: 'Öğrenciden, çok temiz kullanılmış. Åarj döngüsü 87.',
-    attributes: [
-      { attribute_key: 'islemci', attribute_value: 'Apple M2' },
-      { attribute_key: 'ram', attribute_value: '8 GB' },
-    ],
-    images: [{ id: 6, url: 'https://picsum.photos/seed/mac1/800/600', is_cover: true }],
-  },
-  {
-    id: 4, title: '3+1 Kiralık Daire — Kadıköy', price: 22000, price_type: 'FIXED',
-    condition: undefined, status: 'ACTIVE', category_id: 5,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 967, favorite_count: 51, is_featured: false, is_negotiable: false,
-    seller_id: 6, published_at: daysFromNow(-1), created_at: daysFromNow(-1),
-    description: 'Metroya 5 dk, eşyasız, yeni bina. Aidat 800 TL.',
-    attributes: [
-      { attribute_key: 'oda_salon', attribute_value: '3+1' },
-      { attribute_key: 'brut_m2', attribute_value: '130' },
-      { attribute_key: 'kat', attribute_value: '4' },
-    ],
-    images: [
-      { id: 7, url: 'https://picsum.photos/seed/daire1/800/600', is_cover: true },
-      { id: 8, url: 'https://picsum.photos/seed/daire2/800/600' },
-    ],
-  },
-  {
-    id: 5, title: ' köpek yatağı + oyuncak seti', price: 450, price_type: 'FIXED',
-    condition: 'NEW', status: 'ACTIVE', category_id: 11,
-    city_name: 'İstanbul', district_name: 'Beşiktaş', city_id: 1, district_id: 2,
-    view_count: 45, favorite_count: 3, is_featured: false, is_negotiable: false,
-    seller_id: 4, published_at: daysFromNow(-3), created_at: daysFromNow(-3),
-    description: 'Hiç kullanılmadı, hediye geldi. Orta boy köpekler için.',
-    attributes: [{ attribute_key: 'boyut', attribute_value: 'Orta' }],
-    images: [{ id: 9, url: 'https://picsum.photos/seed/yatak1/800/600', is_cover: true }],
-  },
-  {
-    id: 6, title: 'Vespa Sprint 150 — 2022', price: 96500, price_type: 'NEGOTIABLE',
-    condition: 'LIKE_NEW', status: 'ACTIVE', category_id: 3,
-    city_name: 'İzmir', district_name: 'Karşıyaka', city_id: 3, district_id: 8,
-    view_count: 611, favorite_count: 38, is_featured: false, is_negotiable: true,
-    seller_id: 11, published_at: daysFromNow(-8), created_at: daysFromNow(-8),
-    description: '4500 kmde, garajda saklandı, ilk sahibinden.',
-    attributes: [
-      { attribute_key: 'model_yili', attribute_value: '2022' },
-      { attribute_key: 'km', attribute_value: '4500' },
-    ],
-    images: [{ id: 10, url: 'https://picsum.photos/seed/vespa1/800/600', is_cover: true }],
-  },
-  {
-    id: 7, title: 'Çalışma masası + sandalye takımı', price: 1800, price_type: 'FIXED',
-    condition: 'GOOD', status: 'SOLD', category_id: 11,
-    city_name: 'Ankara', district_name: 'Çankaya', city_id: 2, district_id: 5,
-    view_count: 230, favorite_count: 12, is_featured: false, is_negotiable: false,
-    seller_id: 12, published_at: daysFromNow(-15), created_at: daysFromNow(-15),
-    description: 'Satıldı, ilan referans için duruyor.',
-    attributes: [],
-    images: [{ id: 11, url: 'https://picsum.photos/seed/masa1/800/600', is_cover: true }],
-  },
-  // Demo kullanıcısının (id=2) ilanları
-  {
-    id: 8, title: 'Elektronik davul seti (Medeli)', price: 6500, price_type: 'NEGOTIABLE',
-    condition: 'GOOD', status: 'ACTIVE', category_id: 9,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 88, favorite_count: 7, is_featured: false, is_negotiable: true,
-    seller_id: 2, published_at: daysFromNow(-5), created_at: daysFromNow(-5),
-    description: 'Tabure + kulaklık dahil, kusursuz çalışan davul seti.',
-    attributes: [{ attribute_key: 'marka', attribute_value: 'Medeli' }],
-    images: [{ id: 12, url: 'https://picsum.photos/seed/davul1/800/600', is_cover: true }],
-  },
-  {
-    id: 9, title: 'Bisiklet — Trek Marlin 7', price: 11200, price_type: 'FIXED',
-    condition: 'LIKE_NEW', status: 'PAUSED', category_id: 2,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 156, favorite_count: 21, is_featured: false, is_negotiable: false,
-    seller_id: 2, published_at: daysFromNow(-10), created_at: daysFromNow(-10),
-    description: 'M boy, 300 km yapıldı, kaza kaydı yok.',
-    attributes: [
-      { attribute_key: 'marka', attribute_value: 'Trek' },
-      { attribute_key: 'kadro', attribute_value: 'M' },
-    ],
-    images: [{ id: 13, url: 'https://picsum.photos/seed/bisiklet1/800/600', is_cover: true }],
-  },
-  {
-    id: 10, title: 'Vintage kitaplık (meşe)', price: 2400, price_type: 'NEGOTIABLE',
-    condition: 'GOOD', status: 'DRAFT', category_id: 11,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 0, favorite_count: 0, is_featured: false, is_negotiable: true,
-    seller_id: 2, published_at: undefined, created_at: daysFromNow(-1),
-    description: 'Taşınmadan önce satılık, 5 raflı meşe kitaplık.',
-    attributes: [{ attribute_key: 'malzeme', attribute_value: 'Meşe' }],
-    images: [{ id: 14, url: 'https://picsum.photos/seed/kitaplik1/800/600', is_cover: true }],
-  },
-];
 
 export const adReports: Array<Record<string, unknown>> = [];
 
@@ -1178,3 +1073,9 @@ export const parseFakeToken = (token: string): { sub: number } | null => {
 };
 
 
+
+export const disputes: any[] = [];
+export const verifications: any[] = [];
+export const adminDashboard: any = {};
+export const auditLogs: any[] = [];
+export const adCategories: any[] = [];
