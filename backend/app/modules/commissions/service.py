@@ -110,9 +110,7 @@ def _on_appointment_completed(payload: dict):
                 category_id = req.category_id
                 # Teklif fiyatı yoksa bütçenin ortalamasını kullan
                 if amount == 0 and req.budget_max:
-                    mid = (
-                        (req.budget_min or 0) + req.budget_max
-                    ) / 2
+                    mid = ((req.budget_min or 0) + req.budget_max) / 2
                     amount = float(mid)
 
         if amount <= 0:
@@ -152,9 +150,7 @@ def _on_appointment_completed(payload: dict):
             earning.total_commission_paid = round(
                 earning.total_commission_paid + commission_amount, 2
             )
-            earning.pending_amount = round(
-                earning.pending_amount + provider_earning, 2
-            )
+            earning.pending_amount = round(earning.pending_amount + provider_earning, 2)
         else:
             earning = ProviderEarning(
                 provider_id=provider_id,

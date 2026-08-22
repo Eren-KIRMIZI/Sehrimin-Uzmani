@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.base.models import BaseModel
@@ -15,8 +15,6 @@ class Notification(BaseModel):
     action_url = Column(String(255), nullable=True)
     is_read = Column(Boolean, default=False)
 
-    __table_args__ = (
-        Index("ix_notifications_user_read", "user_id", "is_read"),
-    )
+    __table_args__ = (Index("ix_notifications_user_read", "user_id", "is_read"),)
 
     user = relationship("User", back_populates="notifications")

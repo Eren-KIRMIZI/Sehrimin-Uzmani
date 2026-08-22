@@ -28,7 +28,6 @@ class User(BaseModel):
         """first_name + last_name birleştirmesi — birden fazla modülde kullanılır."""
         return f"{self.first_name or ''} {self.last_name or ''}".strip()
 
-
     # Relationships
     provider_profile = relationship(
         "ProviderProfile", back_populates="user", uselist=False

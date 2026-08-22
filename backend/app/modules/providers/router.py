@@ -114,8 +114,12 @@ def get_provider_profile(provider_id: int, db: Session = Depends(get_db)):
         "experience_years": profile.experience_years,
         "rating": profile.performance.rating if profile.performance else 0.0,
         "review_count": profile.performance.review_count if profile.performance else 0,
-        "completed_jobs": profile.performance.completed_jobs if profile.performance else 0,
-        "response_time_minutes": profile.performance.average_response_time if profile.performance else None,
+        "completed_jobs": profile.performance.completed_jobs
+        if profile.performance
+        else 0,
+        "response_time_minutes": profile.performance.average_response_time
+        if profile.performance
+        else None,
         "verification_status": profile.verification_status,
         "is_available": profile.is_available,
         "user": {

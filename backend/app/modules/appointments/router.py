@@ -46,7 +46,10 @@ def confirm_appointment(
     if not appt:
         raise HTTPException(status_code=404, detail="Randevu bulunamadı")
     profile = current_user.provider_profile
-    if not (profile and profile.id == appt.provider_id) and current_user.role != "ADMIN":
+    if (
+        not (profile and profile.id == appt.provider_id)
+        and current_user.role != "ADMIN"
+    ):
         raise HTTPException(
             status_code=403, detail="Bu randevuyu yalnızca ilgili uzman onaylayabilir"
         )
@@ -69,7 +72,10 @@ def start_appointment(
     if not appt:
         raise HTTPException(status_code=404, detail="Randevu bulunamadı")
     profile = current_user.provider_profile
-    if not (profile and profile.id == appt.provider_id) and current_user.role != "ADMIN":
+    if (
+        not (profile and profile.id == appt.provider_id)
+        and current_user.role != "ADMIN"
+    ):
         raise HTTPException(
             status_code=403, detail="Bu randevuyu yalnızca ilgili uzman başlatabilir"
         )
@@ -92,7 +98,10 @@ def complete_appointment(
     if not appt:
         raise HTTPException(status_code=404, detail="Randevu bulunamadı")
     profile = current_user.provider_profile
-    if not (profile and profile.id == appt.provider_id) and current_user.role != "ADMIN":
+    if (
+        not (profile and profile.id == appt.provider_id)
+        and current_user.role != "ADMIN"
+    ):
         raise HTTPException(
             status_code=403, detail="Bu randevuyu yalnızca ilgili uzman tamamlayabilir"
         )
@@ -136,7 +145,10 @@ def no_show_appointment(
     if not appt:
         raise HTTPException(status_code=404, detail="Randevu bulunamadı")
     profile = current_user.provider_profile
-    if not (profile and profile.id == appt.provider_id) and current_user.role != "ADMIN":
+    if (
+        not (profile and profile.id == appt.provider_id)
+        and current_user.role != "ADMIN"
+    ):
         raise HTTPException(
             status_code=403,
             detail="Bu randevuyu yalnızca ilgili uzman gelmedi olarak işaretleyebilir",
@@ -146,5 +158,3 @@ def no_show_appointment(
         return {"message": "Uzman gelmedi olarak işaretlendi", "status": appt.status}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-

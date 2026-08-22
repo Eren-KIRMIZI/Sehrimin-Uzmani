@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.core.base.models import BaseModel
@@ -23,9 +23,7 @@ class Quote(BaseModel):
         String(20), default="DRAFT"
     )  # DRAFT, SUBMITTED, VIEWED, NEGOTIATING, REJECTED, ACCEPTED
 
-    __table_args__ = (
-        Index("ix_quotes_request_status", "request_id", "status"),
-    )
+    __table_args__ = (Index("ix_quotes_request_status", "request_id", "status"),)
 
     request = relationship("ServiceRequest", back_populates="quotes")
     provider = relationship("ProviderProfile", back_populates="quotes")

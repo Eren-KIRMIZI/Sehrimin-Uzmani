@@ -126,14 +126,18 @@ def _try_get_price_estimate_from_result(ai_result: dict) -> Optional[dict]:
 
             if service_name:
                 from app.modules.categories.models import Service
-                svc = db.query(Service).filter(
-                    Service.name.ilike(f"%{service_name}%"), Service.is_active
-                ).first()
+
+                svc = (
+                    db.query(Service)
+                    .filter(Service.name.ilike(f"%{service_name}%"), Service.is_active)
+                    .first()
+                )
                 if svc:
                     service_id = svc.id
 
             if not service_id and category_slug:
                 from app.modules.categories.models import Category
+
                 cat = db.query(Category).filter(Category.slug == category_slug).first()
                 if cat:
                     category_id = cat.id
@@ -142,7 +146,10 @@ def _try_get_price_estimate_from_result(ai_result: dict) -> Optional[dict]:
                 city_id = None
                 if city_name:
                     from app.modules.locations.models import City
-                    city = db.query(City).filter(City.name.ilike(f"%{city_name}%")).first()
+
+                    city = (
+                        db.query(City).filter(City.name.ilike(f"%{city_name}%")).first()
+                    )
                     if city:
                         city_id = city.id
 
@@ -150,7 +157,11 @@ def _try_get_price_estimate_from_result(ai_result: dict) -> Optional[dict]:
                     db, service_id=service_id, category_id=category_id, city_id=city_id
                 )
                 if est["sample_size"] > 0:
-                    return {"min": est["min_price"], "max": est["max_price"], "avg": est["avg_price"]}
+                    return {
+                        "min": est["min_price"],
+                        "max": est["max_price"],
+                        "avg": est["avg_price"],
+                    }
         finally:
             db.close()
     except Exception as e:

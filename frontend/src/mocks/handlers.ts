@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // MOCK HANDLERS â€” GerÃ§ek API yanÄ±t vermezse devreye giren sahte servisler.
 // withMock(real, mock): Ã¶nce gerÃ§ek isteÄŸi dener; aÄŸ hatasÄ± / 404 / 5xx
 // durumunda mock'a dÃ¼ÅŸer. 400/401/403 gibi gerÃ§ek doÄŸrulama hatalarÄ± yutulmaz.
@@ -551,7 +551,7 @@ export const mockQuotes = {
     notifications.unshift({
       id: nextId('notifications'), user_id: request.customer_id, type: 'QUOTE',
       title: 'Yeni Teklif',
-      message: `${provider.business_name} talebinize â‚º${price.toLocaleString('tr-TR')} teklif verdi.`,
+      message: `${provider.business_name} talebinize ₺${price.toLocaleString('tr-TR')} teklif verdi.`,
       is_read: false, created_at: new Date().toISOString(),
     });
     return enrichQuote(created);
@@ -565,7 +565,7 @@ export const mockQuotes = {
   accept: async (id: number) => {
     await delay();
     const quote = quotes.find(q => q.id === id);
-    if (!quote) fail('Teklif bulunamadÄ±');
+    if (!quote) fail('Teklif bulunamadı');
     quotes.forEach(q => { if (q.request_id === quote.request_id) q.status = q.id === id ? 'ACCEPTED' : 'REJECTED'; });
     const request = requests.find(r => r.id === quote.request_id);
     if (request) request.status = 'IN_PROGRESS';
@@ -574,7 +574,7 @@ export const mockQuotes = {
       notifications.unshift({
         id: nextId('notifications'), user_id: prov.user_id, type: 'QUOTE',
         title: 'Teklifiniz Kabul Edildi',
-        message: 'Teklifiniz kabul edildi! Randevu planlamasÄ± iÃ§in mesaj gÃ¶nderebilirsiniz.',
+        message: 'Teklifiniz kabul edildi! Randevu planlaması için mesaj gönderebilirsiniz.',
         is_read: false, created_at: new Date().toISOString(),
       });
     }
@@ -583,14 +583,14 @@ export const mockQuotes = {
 
   reject: async (id: number) => {
     const quote = quotes.find(q => q.id === id);
-    if (!quote) fail('Teklif bulunamadÄ±');
+    if (!quote) fail('Teklif bulunamadı');
     quote.status = 'REJECTED';
     return enrichQuote(quote);
   },
 
   revise: async (id: number, data: Partial<Quote>) => {
     const quote = quotes.find(q => q.id === id);
-    if (!quote) fail('Teklif bulunamadÄ±');
+    if (!quote) fail('Teklif bulunamadı');
     Object.assign(quote, data, { status: 'SUBMITTED' });
     return enrichQuote(quote);
   },
@@ -606,7 +606,7 @@ export const mockQuotes = {
   },
 };
 
-// â”€â”€ APPOINTMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockAppointments = {
   create: async (data: Partial<Appointment>): Promise<Appointment> => {
     await delay();
@@ -617,7 +617,7 @@ export const mockAppointments = {
       customer_id: getCurrentUserId(),
       start_at: data.start_at!,
       end_at: data.end_at,
-      location: data.location || 'MÃ¼ÅŸteri adresi',
+      location: data.location || 'Müşteri adresi',
       notes: data.notes || '',
       status: 'SCHEDULED',
       created_at: new Date().toISOString(),
@@ -649,13 +649,13 @@ export const mockAppointments = {
 
   getById: async (id: number): Promise<Appointment> => {
     const a = appointments.find(x => x.id === id);
-    if (!a) fail('Randevu bulunamadÄ±');
+    if (!a) fail('Randevu bulunamadı');
     return enrichAppointment(a);
   },
 
   update: async (id: number, data: Partial<Appointment>) => {
     const a = appointments.find(x => x.id === id);
-    if (!a) fail('Randevu bulunamadÄ±');
+    if (!a) fail('Randevu bulunamadı');
     Object.assign(a, data);
     return enrichAppointment(a);
   },
@@ -663,7 +663,7 @@ export const mockAppointments = {
   setStatus: async (id: number, status: string, message: string) => {
     await delay();
     const a = appointments.find(x => x.id === id);
-    if (!a) fail('Randevu bulunamadÄ±');
+    if (!a) fail('Randevu bulunamadı');
     a.status = status;
     if (status === 'COMPLETED') {
       const prov = dbGetters.providerById(a.provider_id);
@@ -683,11 +683,11 @@ export const mockAppointments = {
     return { message, status };
   },
 
-  confirm: (id: number) => mockAppointments.setStatus(id, 'CONFIRMED', 'Randevu onaylandÄ±'),
-  start: (id: number) => mockAppointments.setStatus(id, 'IN_PROGRESS', 'Ä°ÅŸ baÅŸlatÄ±ldÄ±'),
-  complete: (id: number) => mockAppointments.setStatus(id, 'COMPLETED', 'Ä°ÅŸ tamamlandÄ±'),
+  confirm: (id: number) => mockAppointments.setStatus(id, 'CONFIRMED', 'Randevu onaylandı'),
+  start: (id: number) => mockAppointments.setStatus(id, 'IN_PROGRESS', 'İş başlatıldı'),
+  complete: (id: number) => mockAppointments.setStatus(id, 'COMPLETED', 'İş tamamlandı'),
   cancel: (id: number) => mockAppointments.setStatus(id, 'CANCELLED', 'Randevu iptal edildi'),
-  noShow: (id: number) => mockAppointments.setStatus(id, 'NO_SHOW', 'KarÅŸÄ± taraf gelmedi olarak iÅŸaretlendi'),
+  noShow: (id: number) => mockAppointments.setStatus(id, 'NO_SHOW', 'Karşı taraf gelmedi olarak işaretlendi'),
 
   getAvailableSlots: async (provider_id: number, date: string) => {
     await delay();
@@ -711,7 +711,7 @@ export const mockAppointments = {
   },
 };
 
-// â”€â”€ REVIEWS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockReviews = {
   create: async (data: Partial<Review>): Promise<Review> => {
     await delay();
@@ -749,20 +749,20 @@ export const mockReviews = {
   reply: async (reviewId: number, reply: string) => {
     await delay();
     const rv = reviews.find(x => x.id === reviewId);
-    if (!rv) fail('Yorum bulunamadÄ±');
+    if (!rv) fail('Yorum bulunamadı');
     rv.provider_reply = reply;
     return enrichReview(rv);
   },
 };
 
-// â”€â”€ FAVORITES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockFavorites = {
   toggle: async (providerId: number) => {
     await delay();
     const idx = favoriteProviderIds.indexOf(providerId);
     if (idx >= 0) favoriteProviderIds.splice(idx, 1);
     else favoriteProviderIds.push(providerId);
-    return { message: idx >= 0 ? 'Favorilerden Ã§Ä±karÄ±ldÄ±' : 'Favorilere eklendi', is_favorite: idx < 0 };
+    return { message: idx >= 0 ? 'Favorilerden çıkarıldı' : 'Favorilere eklendi', is_favorite: idx < 0 };
   },
   getAll: async () => {
     await delay();
@@ -774,11 +774,11 @@ export const mockFavorites = {
   remove: async (providerId: number) => {
     const idx = favoriteProviderIds.indexOf(providerId);
     if (idx >= 0) favoriteProviderIds.splice(idx, 1);
-    return { message: 'Favorilerden Ã§Ä±karÄ±ldÄ±' };
+    return { message: 'Favorilerden çıkarıldı' };
   },
 };
 
-// â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockNotifications = {
   getAll: async (): Promise<Notification[]> => {
     await delay();
@@ -796,11 +796,11 @@ export const mockNotifications = {
   },
   markAllRead: async () => {
     notifications.forEach(n => { if (n.user_id === getCurrentUserId()) n.is_read = true; });
-    return { message: 'TÃ¼mÃ¼ okundu' };
+    return { message: 'Tümü okundu' };
   },
 };
 
-// â”€â”€ MESSAGING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockMessaging = {
   createConversation: async (provider_id: number): Promise<Conversation> => {
     await delay();
@@ -808,7 +808,7 @@ export const mockMessaging = {
     const existing = conversations.find(c => c.customer_id === me && c.provider_id === provider_id);
     if (existing) return existing as unknown as Conversation;
     const prov = dbGetters.providerById(provider_id);
-    if (!prov) fail('Uzman bulunamadÄ±');
+    if (!prov) fail('Uzman bulunamadı');
     const created = {
       id: nextId('conversations'), customer_id: me, provider_id,
       created_at: new Date().toISOString(), unread_count: 0,
@@ -836,7 +836,7 @@ export const mockMessaging = {
     await delay();
     const list = messages
       .filter(m => m.conversation_id === conversationId)
-      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)); // en yeni Ã¶nce (ChatPage ters Ã§evirir)
+      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)); // en yeni önce (ChatPage ters çevirir)
     return buildPaginated(list as Message[], params?.page ?? 1, 50);
   },
 
@@ -863,7 +863,7 @@ export const mockMessaging = {
   },
 };
 
-// â”€â”€ COMMISSIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockCommissions = {
   getEarnings: async (): Promise<EarningsSummary> => {
     await delay();
@@ -877,7 +877,7 @@ export const mockCommissions = {
   requestPayout: async (data: { amount: number; iban: string; bank_name: string }): Promise<PayoutRequest> => {
     await delay();
     if (data.amount > earningsSummary.available_for_payout) {
-      fail('Ã‡ekilebilir bakiyenizden fazla tutar giremezsiniz');
+      fail('Çekilebilir bakiyenizden fazla tutar giremezsiniz');
     }
     const created = {
       id: nextId('payouts'), provider_id: myProvider()?.id as number || 1,
@@ -892,14 +892,14 @@ export const mockCommissions = {
   getMyPayouts: async (): Promise<PayoutRequest[]> => payouts,
 };
 
-// â”€â”€ SUBSCRIPTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockSubscriptions = {
   getPlans: async (): Promise<SubscriptionPlan[]> => plans,
   subscribe: async (plan_id: number, interval: 'MONTHLY' | 'QUARTERLY' | 'YEARLY') => {
     await delay();
     const plan = plans.find(p => p.id === plan_id);
     if (!plan) {
-      throw new Error('Plan bulunamadÄ±');
+      throw new Error('Plan bulunamadı');
     }
     const days = interval === 'MONTHLY' ? 30 : interval === 'QUARTERLY' ? 90 : 365;
     mySubscription.plan = plan;
@@ -907,7 +907,7 @@ export const mockSubscriptions = {
     mySubscription.status = 'ACTIVE';
     mySubscription.expires_at = new Date(Date.now() + days * 86400000).toISOString();
     currentUser().subscription_plan = plan.slug as User['subscription_plan'];
-    return { message: `${plan.name} planÄ±na abone olundu`, status: 'ACTIVE' };
+    return { message: `${plan.name} planına abone olundu`, status: 'ACTIVE' };
   },
   getMy: async (): Promise<ProviderSubscription> => {
     await delay();
@@ -915,12 +915,12 @@ export const mockSubscriptions = {
   },
   cancel: async () => {
     mySubscription.status = 'CANCELLED';
-    return { message: 'Abonelik dÃ¶nem sonunda sonlandÄ±rÄ±lacak' };
+    return { message: 'Abonelik dönem sonunda sonlandırılacak' };
   },
   getPayments: async () => [],
 };
 
-// â”€â”€ PROMOTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockPromotions = {
   create: async (data: Partial<Promotion>): Promise<Promotion> => {
     await delay();
@@ -943,7 +943,7 @@ export const mockPromotions = {
   pause: async (id: number) => {
     const p = promotions.find(x => x.id === id);
     if (p) p.status = 'PAUSED';
-    return { message: 'Kampanya duraklatÄ±ldÄ±' };
+    return { message: 'Kampanya duraklatıldı' };
   },
   resume: async (id: number) => {
     const p = promotions.find(x => x.id === id);
@@ -957,19 +957,19 @@ export const mockPromotions = {
   },
   updateBid: async (id: number, bid_amount: number) => {
     const p = promotions.find(x => x.id === id);
-    if (!p) fail('Kampanya bulunamadÄ±');
+    if (!p) fail('Kampanya bulunamadı');
     p.bid_amount = bid_amount;
-    return { message: 'Teklif gÃ¼ncellendi' };
+    return { message: 'Teklif güncellendi' };
   },
 };
 
-// â”€â”€ DISPUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockDisputes = {
   create: async (data: { reported_id: number; reason: string; description: string }): Promise<Dispute> => {
     await delay();
     const reporter = currentUser();
     const reported = dbGetters.userById(data.reported_id);
-    if (!reported) fail('Åikayet edilen kullanÄ±cÄ± bulunamadÄ±');
+    if (!reported) fail('Şikayet edilen kullanıcı bulunamadı');
     const created = {
       id: nextId('disputes'), reporter_id: reporter.id, reported_id: data.reported_id,
       reason: data.reason, description: data.description,
@@ -993,14 +993,14 @@ export const mockDisputes = {
   getById: async (id: number): Promise<Dispute> => {
     await delay();
     const d = disputes.find(x => x.id === id);
-    if (!d) fail('AnlaÅŸmazlÄ±k bulunamadÄ±');
+    if (!d) fail('Anlaşmazlık bulunamadı');
     return d as unknown as Dispute;
   },
 
   addMessage: async (id: number, message: string): Promise<DisputeMessage> => {
     await delay();
     const d = disputes.find(x => x.id === id);
-    if (!d) fail('AnlaÅŸmazlÄ±k bulunamadÄ±');
+    if (!d) fail('Anlaşmazlık bulunamadı');
     const sender = currentUser();
     const msg = {
       id: nextId('disputeMessages'), dispute_id: id, sender_id: sender.id,
@@ -1014,16 +1014,16 @@ export const mockDisputes = {
   close: async (id: number) => {
     const d = disputes.find(x => x.id === id);
     if (d) d.status = 'CLOSED';
-    return { message: 'AnlaÅŸmazlÄ±k kapatÄ±ldÄ±' };
+    return { message: 'Anlaşmazlık kapatıldı' };
   },
 };
 
-// â”€â”€ VERIFICATION (DoÄŸrulama) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockVerification = {
   apply: async (data: { verification_type: string; document_url?: string; note?: string }) => {
     await delay();
     const prov = myProvider();
-    if (!prov) fail('DoÄŸrulama baÅŸvurusu iÃ§in uzman profili gerekli');
+    if (!prov) fail('Doğrulama başvurusu için uzman profili gerekli');
     const created = {
       id: nextId('verifications'),
       provider_id: prov.id as number,
@@ -1053,7 +1053,7 @@ export const mockVerification = {
   approve: async (verificationId: number) => {
     await delay();
     const v = verifications.find(x => x.id === verificationId);
-    if (!v) fail('DoÄŸrulama talebi bulunamadÄ±');
+    if (!v) fail('Doğrulama talebi bulunamadı');
     v.status = 'APPROVED';
     v.reviewed_at = new Date().toISOString();
     const levelMap: Record<string, string> = { IDENTITY: 'ID', PROFESSIONAL: 'PROFESSIONAL', BUSINESS: 'BUSINESS' };
@@ -1064,13 +1064,13 @@ export const mockVerification = {
       action: 'VERIFY_APPROVE', target: `verification#${v.id}`,
       created_at: new Date().toISOString(),
     });
-    return { message: 'DoÄŸrulama onaylandÄ±' };
+    return { message: 'Doğrulama onaylandı' };
   },
 
   reject: async (verificationId: number, note?: string) => {
     await delay();
     const v = verifications.find(x => x.id === verificationId);
-    if (!v) fail('DoÄŸrulama talebi bulunamadÄ±');
+    if (!v) fail('Doğrulama talebi bulunamadı');
     v.status = 'REJECTED';
     v.admin_note = note || '';
     v.reviewed_at = new Date().toISOString();
@@ -1079,11 +1079,11 @@ export const mockVerification = {
       action: 'VERIFY_REJECT', target: `verification#${v.id}`,
       created_at: new Date().toISOString(),
     });
-    return { message: 'DoÄŸrulama reddedildi' };
+    return { message: 'Doğrulama reddedildi' };
   },
 };
 
-// â”€â”€ ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockAdmin = {
   getDashboard: async (): Promise<AdminDashboard> => {
     await delay();
@@ -1096,7 +1096,7 @@ export const mockAdmin = {
   },
   updateUser: async (id: number, data: object) => {
     const u = dbGetters.userById(id);
-    if (!u) fail('KullanÄ±cÄ± bulunamadÄ±');
+    if (!u) fail('Kullanıcı bulunamadı');
     Object.assign(u, data);
     return u;
   },
@@ -1107,9 +1107,9 @@ export const mockAdmin = {
   },
   verifyProvider: async (id: number) => {
     const prov = dbGetters.providerById(id);
-    if (!prov) fail('Uzman bulunamadÄ±');
+    if (!prov) fail('Uzman bulunamadı');
     prov.verification_level = 'BUSINESS';
-    return { message: 'Uzman doÄŸrulandÄ±' };
+    return { message: 'Uzman doğrulandı' };
   },
   getRequests: async (params?: object) => {
     await delay();
@@ -1142,17 +1142,17 @@ export const mockAdmin = {
     return {
       risk_score: score,
       risk_level: score < 35 ? 'LOW' : score < 60 ? 'MEDIUM' : 'HIGH',
-      factors: ['Hesap yaÅŸÄ±', 'Ä°ÅŸlem geÃ§miÅŸi', 'Åikayet sayÄ±sÄ±'],
+      factors: ['Hesap yaşı', 'İşlem geçmişi', 'Şikayet sayısı'],
     };
   },
 };
 
-// â”€â”€ REPUTATION / BADGES / ANALYTICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 export const mockReputation = {
   getFor: async (providerId?: number): Promise<ReputationScore> => {
     await delay();
     const p = providerId ? dbGetters.providerById(providerId) : dbGetters.providerByUserId(getCurrentUserId());
-    if (!p) fail('Uzman profili bulunamadÄ±');
+    if (!p) fail('Uzman profili bulunamadı');
     const ratingScore = (p.rating / 5) * 40;
     const completionScore = Math.min(25, (p.completed_jobs / 20) * 2.5);
     const verificationWeights: Record<string, number> = { NONE: 0, BASIC: 7, ID: 13, PROFESSIONAL: 18, BUSINESS: 25 };
@@ -1162,7 +1162,7 @@ export const mockReputation = {
     const score = Math.round(ratingScore + completionScore + verificationScore + responseScore + repeatScore);
     return {
       score,
-      label: score >= 85 ? 'MÃ¼kemmel' : score >= 70 ? 'Ã‡ok Ä°yi' : score >= 50 ? 'Ä°yi' : 'Yeni BaÅŸlayan',
+      label: score >= 85 ? 'Mükemmel' : score >= 70 ? 'Çok İyi' : score >= 50 ? 'İyi' : 'Yeni Başlayan',
       breakdown: {
         rating_score: Math.round(ratingScore),
         completion_score: Math.round(completionScore),
@@ -1192,11 +1192,11 @@ export const mockBadges = {
     if (!p) return { badges: [] };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const defs: any[] = [
-      { id: 'verified', label: 'DoÄŸrulanmÄ±ÅŸ Uzman', icon: 'ğŸ›¡ï¸', description: 'Kimlik/doÄŸrulama sÃ¼recini tamamladÄ±', color: 'blue', test: p.verification_level !== 'NONE' },
-      { id: 'top-rated', label: 'YÃ¼ksek PuanlÄ±', icon: 'â­', description: '4.5 Ã¼zeri ortalama puan', color: 'yellow', test: p.rating >= 4.5 },
-      { id: 'experienced', label: 'Deneyimli', icon: 'ğŸ…', description: '100+ tamamlanmÄ±ÅŸ iÅŸ', color: 'green', test: p.completed_jobs >= 100 },
-      { id: 'veteran', label: 'KÄ±demli', icon: 'ğŸ–ï¸', description: '10+ yÄ±l deneyim', color: 'purple', test: p.years_experience >= 10 },
-      { id: 'popular', label: 'PopÃ¼ler', icon: 'ğŸ”¥', description: '50+ deÄŸerlendirme', color: 'red', test: p.review_count >= 50 },
+      { id: 'verified', label: 'Doğrulanmış Uzman', icon: '🛡️', description: 'Kimlik/doğrulama sürecini tamamladı', color: 'blue', test: p.verification_level !== 'NONE' },
+      { id: 'top-rated', label: 'Yüksek Puanlı', icon: '⭐', description: '4.5 üzeri ortalama puan', color: 'yellow', test: p.rating >= 4.5 },
+      { id: 'experienced', label: 'Deneyimli', icon: '💼', description: '100+ tamamlanmış iş', color: 'green', test: p.completed_jobs >= 100 },
+      { id: 'veteran', label: 'Kıdemli', icon: '🎖️', description: '10+ yıl deneyim', color: 'purple', test: p.years_experience >= 10 },
+      { id: 'popular', label: 'Popüler', icon: '🔥', description: '50+ değerlendirme', color: 'red', test: p.review_count >= 50 },
     ];
     return { badges: defs.map(({ test, ...b }) => ({ ...b, earned: test })) };
   },
@@ -1211,11 +1211,11 @@ export const mockAnalytics = {
   },
 };
 
-// â”€â”€ ADS (Ä°lanlar) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ———————————————————————————————————————————————————————————————————————————————————————————————————
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const toAdListItem = (ad: any): AdListItem => ({
   id: ad.id,
-  title: ad.title,
+  title_tr: ad.title_tr || ad.title || 'İlan',
   price: ad.price,
   currency: 'TRY',
   price_type: ad.price_type as AdListItem['price_type'],
@@ -1236,7 +1236,7 @@ const toAdListItem = (ad: any): AdListItem => ({
 
 const toAdDetail = (ad: any): AdDetail => ({
   ...toAdListItem(ad),
-  description: ad.description,
+  description_tr: ad.description_tr || ad.description,
   contact_count: 3,
   expires_at: null,
   city_id: ad.city_id ?? null,
@@ -1293,7 +1293,7 @@ export const mockAds = {
   getById: async (id: number): Promise<AdDetail> => {
     await delay();
     const ad = ads.find(a => a.id === id);
-    if (!ad) fail('Ä°lan bulunamadÄ±');
+    if (!ad) fail('İlan bulunamadı');
     ad.view_count += 1;
     return toAdDetail(ad);
   },
@@ -1313,7 +1313,7 @@ export const mockAds = {
     await delay();
     const created = {
       id: nextId('ads'),
-      title: data.title,
+      title_tr: data.title_tr,
       price: data.price,
       price_type: data.price_type,
       condition: data.condition,
@@ -1328,7 +1328,7 @@ export const mockAds = {
       seller_id: getCurrentUserId(),
       published_at: undefined,
       created_at: new Date().toISOString(),
-      description: data.description || '',
+      description_tr: data.description_tr || '',
       attributes: data.attributes,
       images: data.images.map((img, i) => ({ id: nextId('adImages'), url: img.url, is_cover: i === 0 })),
     };

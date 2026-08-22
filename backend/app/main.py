@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.database import Base, check_db_health, engine
+from app.core.database import check_db_health
 from app.core.logging import setup_logging
 from app.core.metrics import metrics_response
 from app.core.redis import check_redis_health, verify_redis_connection
@@ -21,11 +21,11 @@ from app.modules.ads.models import (  # noqa: F401 — metadata discovery
     AdImage,
     AdReport,
 )
-from app.modules.commissions import service as commission_service  # noqa: F401 — event subscription
-from app.modules.messaging.router import router as messaging_router
+from app.modules.commissions import (
+    service as commission_service,  # noqa: F401 — event subscription
+)
 from app.shared.models import SystemSetting  # noqa: F401 — metadata discovery
 from app.websocket.manager import websocket_endpoint
-
 
 # Logging'i mümkün olan en erken an kur
 setup_logging()

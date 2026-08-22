@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.appointments.models import Appointment
 from app.modules.categories.models import Service
-from app.modules.commissions.models import ProviderEarning, Transaction
+from app.modules.commissions.models import Transaction
 from app.modules.favorites.models import Favorite
 from app.modules.providers.models import ProviderPerformance
 from app.modules.quotes.models import Quote
@@ -56,6 +56,7 @@ def get_crm_dashboard(provider_id: int, db: Session) -> dict:
     revenue_30d = 0.0
     try:
         from app.modules.commissions.models import Transaction
+
         rev = (
             db.query(sql_func.sum(Transaction.provider_earning))
             .filter(
@@ -188,7 +189,6 @@ def get_crm_customers(provider_id: int, db: Session) -> list:
 
 def get_crm_revenue(provider_id: int, db: Session, days: int = 30) -> dict:
     """Uzmanın gelir/gider detayı — Transaction tablosundan hesaplanır."""
-    from app.modules.commissions.models import Transaction
 
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days)

@@ -23,7 +23,9 @@ class PromotedProvider(BaseModel):
     budget = Column(Float, nullable=False)
     spent = Column(Float, default=0.0)
     daily_budget = Column(Float, nullable=True)
-    daily_spent = Column(Float, default=0.0)  # Günlük harcama — jobs.py tarafından sıfırlanır
+    daily_spent = Column(
+        Float, default=0.0
+    )  # Günlük harcama — jobs.py tarafından sıfırlanır
     bid_amount = Column(Float, default=1.0)
     status = Column(String(20), default="active")
     start_date = Column(DateTime, default=datetime.utcnow)

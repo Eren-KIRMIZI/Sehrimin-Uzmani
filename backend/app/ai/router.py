@@ -1,12 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.ai.service import chat_service_request
-
-from app.core.security import get_current_user
 from app.core.rate_limiter import RateLimiter
+from app.core.security import get_current_user
 from app.modules.users.models import User
-from fastapi import Depends
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -22,7 +20,9 @@ class ChatRequestBody(BaseModel):
 
 
 @router.post("/chat-request", dependencies=[Depends(RateLimiter(calls=10, period=60))])
-async def chat_request(body: ChatRequestBody, current_user: User = Depends(get_current_user)):
+async def chat_request(
+    body: ChatRequestBody, current_user: User = Depends(get_current_user)
+):
     """
     Kullanıcının serbest metin talebini diyalog bazlı analiz eder.
     Eksik bilgi varsa soru sorar, tamamlandıysa JSON döndürür.

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -119,13 +118,16 @@ def list_conversations(
     result = []
     for conv in convs:
         # Son mesajı Python tarafında bul (messages joinedload ile geldi)
-        messages_sorted = sorted(conv.messages, key=lambda m: m.created_at, reverse=True)
+        messages_sorted = sorted(
+            conv.messages, key=lambda m: m.created_at, reverse=True
+        )
         last_msg = messages_sorted[0] if messages_sorted else None
 
         # Okunmamış mesaj sayısı Python tarafında hesapla
         unread = sum(
-            1 for m in conv.messages
-            if m.sender_id != current_user.id and m.is_read == False
+            1
+            for m in conv.messages
+            if m.sender_id != current_user.id and not m.is_read
         )
 
         other_user = None
@@ -203,7 +205,7 @@ def list_messages(
     db.query(Message).filter(
         Message.conversation_id == conversation_id,
         Message.sender_id != current_user.id,
-        Message.is_read == False,
+        Message.is_read.is_(False),
     ).update({"is_read": True})
     db.commit()
 
@@ -313,7 +315,7 @@ def unread_count(
             .filter(
                 Message.conversation_id.in_(conv_ids),
                 Message.sender_id != current_user.id,
-                Message.is_read == False,
+                Message.is_read.is_(False),
             )
             .count()
         )

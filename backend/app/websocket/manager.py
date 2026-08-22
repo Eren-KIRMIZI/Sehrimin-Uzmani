@@ -16,7 +16,6 @@ import threading
 from fastapi import WebSocket, WebSocketDisconnect
 
 from app.core.database import SessionLocal
-from app.core.redis import redis_client
 from app.core.metrics import (
     WS_AUTH_FAILURES_TOTAL,
     WS_CONNECTIONS_ACTIVE,
@@ -27,6 +26,7 @@ from app.core.metrics import (
     WS_SEND_ERRORS_TOTAL,
     ws_action_label,
 )
+from app.core.redis import redis_client
 from app.core.security import check_token_blacklist, decode_token
 from app.modules.messaging.models import Conversation, Message
 from app.modules.providers.models import ProviderProfile
@@ -76,7 +76,9 @@ class ConnectionManager:
     def start_listener(self, loop):
         if self._listener_thread is None:
             self.loop = loop
-            self._listener_thread = threading.Thread(target=self._listen_to_redis, daemon=True)
+            self._listener_thread = threading.Thread(
+                target=self._listen_to_redis, daemon=True
+            )
             self._listener_thread.start()
 
     def _listen_to_redis(self):
@@ -88,8 +90,7 @@ class ConnectionManager:
                     msg_payload = data.get("message")
                     if user_id and msg_payload and self.loop:
                         asyncio.run_coroutine_threadsafe(
-                            self._send_to_user_local(user_id, msg_payload),
-                            self.loop
+                            self._send_to_user_local(user_id, msg_payload), self.loop
                         )
                 except Exception as e:
                     logger.error("Error processing redis message: %s", str(e))

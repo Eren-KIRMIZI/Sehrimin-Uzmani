@@ -135,9 +135,11 @@ class QuoteService:
         quote = db.query(Quote).filter(Quote.id == quote_id).with_for_update().first()
         if not quote:
             raise ValueError("Teklif bulunamadı")
-        
+
         if quote.status != "SUBMITTED":
-            raise ValueError("Sadece 'SUBMITTED' durumundaki teklifler kabul edilebilir")
+            raise ValueError(
+                "Sadece 'SUBMITTED' durumundaki teklifler kabul edilebilir"
+            )
 
         # Diğer teklifleri reddet
         other_quotes = quote_repo.get_by_request(db, quote.request_id)
