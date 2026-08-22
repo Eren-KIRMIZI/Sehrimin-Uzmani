@@ -23,13 +23,13 @@ class ChatRequestBody(BaseModel):
 async def chat_request(
     request: Request,
     body: ChatRequestBody,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     rate_limiter.check(
         key=f"ai_chat:{current_user.id}",
         max_requests=10,
         window_seconds=60,
-        strict=True
+        strict=True,
     )
     """
     Kullanıcının serbest metin talebini diyalog bazlı analiz eder.
