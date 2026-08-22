@@ -11,10 +11,12 @@ Değişiklikler:
 import asyncio
 import json
 import logging
+import threading
 
 from fastapi import WebSocket, WebSocketDisconnect
 
 from app.core.database import SessionLocal
+from app.core.redis import redis_client
 from app.core.metrics import (
     WS_AUTH_FAILURES_TOTAL,
     WS_CONNECTIONS_ACTIVE,
@@ -66,9 +68,37 @@ def _is_content_blocked(content: str) -> bool:
 class ConnectionManager:
     def __init__(self):
         self.active_connections: dict[int, set[WebSocket]] = {}
+        self.pubsub = redis_client.pubsub()
+        self.pubsub.subscribe("ws_messages")
+        self.loop = None
+        self._listener_thread = None
+
+    def start_listener(self, loop):
+        if self._listener_thread is None:
+            self.loop = loop
+            self._listener_thread = threading.Thread(target=self._listen_to_redis, daemon=True)
+            self._listener_thread.start()
+
+    def _listen_to_redis(self):
+        for message in self.pubsub.listen():
+            if message["type"] == "message":
+                try:
+                    data = json.loads(message["data"])
+                    user_id = data.get("user_id")
+                    msg_payload = data.get("message")
+                    if user_id and msg_payload and self.loop:
+                        asyncio.run_coroutine_threadsafe(
+                            self._send_to_user_local(user_id, msg_payload),
+                            self.loop
+                        )
+                except Exception as e:
+                    logger.error("Error processing redis message: %s", str(e))
 
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
+        if self._listener_thread is None:
+            self.start_listener(asyncio.get_running_loop())
+
         if user_id not in self.active_connections:
             self.active_connections[user_id] = set()
         self.active_connections[user_id].add(websocket)
@@ -101,7 +131,7 @@ class ConnectionManager:
     def _total_connections(self) -> int:
         return sum(len(conns) for conns in self.active_connections.values())
 
-    async def send_to_user(self, user_id: int, message: dict):
+    async def _send_to_user_local(self, user_id: int, message: dict):
         if user_id not in self.active_connections:
             return
         dead_connections: set[WebSocket] = set()
@@ -117,6 +147,11 @@ class ConnectionManager:
             self.active_connections[user_id].discard(conn)
             if not self.active_connections[user_id]:
                 del self.active_connections[user_id]
+
+    async def send_to_user(self, user_id: int, message: dict):
+        # Mesajı direkt göndermek yerine, Redis Pub/Sub ile yayınlıyoruz (çoklu-worker desteği)
+        payload = json.dumps({"user_id": user_id, "message": message})
+        await asyncio.to_thread(redis_client.publish, "ws_messages", payload)
 
     async def send_personal_notification(self, user_id: int, notification: dict):
         await self.send_to_user(
