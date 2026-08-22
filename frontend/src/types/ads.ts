@@ -42,7 +42,8 @@ export type AdCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'USED';
 
 export interface AdListItem {
   id: number;
-  title: string;
+  title_tr: string;
+  title_en?: string | null;
   price?: number | null;
   currency: string;
   price_type: AdPriceType;
@@ -70,7 +71,8 @@ export interface AdListResponse {
 }
 
 export interface AdDetail extends AdListItem {
-  description?: string | null;
+  description_tr?: string | null;
+  description_en?: string | null;
   contact_count: number;
   expires_at?: string | null;
   images: AdImage[];
@@ -88,8 +90,10 @@ export interface AdDetail extends AdListItem {
 
 export interface AdCreatePayload {
   category_id: number;
-  title: string;
-  description?: string;
+  title_tr: string;
+  title_en?: string;
+  description_tr?: string;
+  description_en?: string;
   price?: number;
   price_type: AdPriceType;
   condition?: AdCondition;
@@ -103,8 +107,10 @@ export interface AdCreatePayload {
 }
 
 export interface AdUpdatePayload {
-  title?: string;
-  description?: string;
+  title_tr?: string;
+  title_en?: string;
+  description_tr?: string;
+  description_en?: string;
   price?: number;
   price_type?: AdPriceType;
   condition?: AdCondition;

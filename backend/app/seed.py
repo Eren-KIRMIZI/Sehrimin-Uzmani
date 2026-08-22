@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.modules.categories.models import Category, Service, SubCategory
 from app.modules.locations.models import City, District
 
@@ -989,11 +992,260 @@ def seed_demo_users(db: Session):
     db.commit()
 
 
+DEMO_ADS = [
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "telefon",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "title": "iPhone 15 Pro 256GB Titanium",
+        "description": "2 aylık, kutulu, faturalı. Garantisi devam ediyor. Batarya sağlığı %100.",
+        "price": 42500,
+        "price_type": "FIXED",
+        "condition": "LIKE_NEW",
+        "status": "ACTIVE",
+        "is_featured": True,
+        "is_negotiable": True,
+        "view_count": 214,
+        "favorite_count": 18,
+        "days_ago": 2,
+        "image_seeds": ["iphone15pro-1", "iphone15pro-2"],
+        "attributes": {"marka": "Apple", "bellek": "256 GB", "garanti": "Var"},
+    },
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "otomobil",
+        "city": "İstanbul",
+        "district": "Şişli",
+        "title": "BMW 320i Executive — 2019",
+        "description": "Tek elden, hatasız, servis bakımları yetkili servicede. Takas olmaz.",
+        "price": 1250000,
+        "price_type": "NEGOTIABLE",
+        "condition": "USED",
+        "status": "ACTIVE",
+        "is_featured": True,
+        "is_negotiable": True,
+        "view_count": 1893,
+        "favorite_count": 74,
+        "days_ago": 6,
+        "image_seeds": ["bmw320i-1", "bmw320i-2", "bmw320i-3"],
+        "attributes": {"marka": "BMW", "model_yili": "2019", "km": "87000", "yakit": "Benzin"},
+    },
+    {
+        "seller_email": "demo@kullanici.com",
+        "category_slug": "bilgisayar",
+        "city": "İzmir",
+        "district": None,
+        "title": "MacBook Air M2 8/256",
+        "description": "Öğrenciden, çok temiz kullanılmış. Şarj döngüsü 87.",
+        "price": 27500,
+        "price_type": "FIXED",
+        "condition": "GOOD",
+        "status": "ACTIVE",
+        "view_count": 342,
+        "favorite_count": 29,
+        "days_ago": 4,
+        "image_seeds": ["macbook-air-m2"],
+        "attributes": {"islemci": "Apple M2", "ram": "8 GB"},
+    },
+    {
+        "seller_email": "demo@kullanici.com",
+        "category_slug": "kiralik-daire",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "title": "3+1 Kiralık Daire — Kadıköy",
+        "description": "Metroya 5 dk, eşyasız, yeni bina. Aidat 800 TL.",
+        "price": 22000,
+        "price_type": "FIXED",
+        "condition": None,
+        "status": "ACTIVE",
+        "view_count": 967,
+        "favorite_count": 51,
+        "days_ago": 1,
+        "image_seeds": ["daire-kadikoy-1", "daire-kadikoy-2"],
+        "attributes": {"oda_salon": "3+1", "brut_m2": "130", "kat": "4"},
+    },
+    {
+        "seller_email": "demo@kullanici.com",
+        "category_slug": "mobilya",
+        "city": "İstanbul",
+        "district": "Beşiktaş",
+        "title": "Köpek yatağı + oyuncak seti",
+        "description": "Hiç kullanılmadı, hediye geldi. Orta boy köpekler için.",
+        "price": 450,
+        "price_type": "FIXED",
+        "condition": "NEW",
+        "status": "ACTIVE",
+        "view_count": 45,
+        "favorite_count": 3,
+        "days_ago": 3,
+        "image_seeds": ["kopek-yatagi"],
+        "attributes": {"boyut": "Orta"},
+    },
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "motosiklet",
+        "city": "İzmir",
+        "district": None,
+        "title": "Vespa Sprint 150 — 2022",
+        "description": "4500 kmde, garajda saklandı, ilk sahibinden.",
+        "price": 96500,
+        "price_type": "NEGOTIABLE",
+        "condition": "LIKE_NEW",
+        "status": "ACTIVE",
+        "is_negotiable": True,
+        "view_count": 611,
+        "favorite_count": 38,
+        "days_ago": 8,
+        "image_seeds": ["vespa-sprint-1"],
+        "attributes": {"model_yili": "2022", "km": "4500"},
+    },
+    {
+        "seller_email": "demo@admin.com",
+        "category_slug": "mobilya",
+        "city": "Ankara",
+        "district": "Çankaya",
+        "title": "Çalışma masası + sandalye takımı",
+        "description": "Satıldı, ilan referans için duruyor.",
+        "price": 1800,
+        "price_type": "FIXED",
+        "condition": "GOOD",
+        "status": "SOLD",
+        "view_count": 230,
+        "favorite_count": 12,
+        "days_ago": 15,
+        "image_seeds": ["calisma-masasi"],
+        "attributes": {},
+    },
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "elektronik",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "title": "Elektronik davul seti (Medeli)",
+        "description": "Tabure + kulaklık dahil, kusursuz çalışan davul seti.",
+        "price": 6500,
+        "price_type": "NEGOTIABLE",
+        "condition": "GOOD",
+        "status": "ACTIVE",
+        "is_negotiable": True,
+        "view_count": 88,
+        "favorite_count": 7,
+        "days_ago": 5,
+        "image_seeds": ["davul-seti"],
+        "attributes": {"marka": "Medeli"},
+    },
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "diger",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "title": "Bisiklet — Trek Marlin 7",
+        "description": "M boy, 300 km yapıldı, kaza kaydı yok.",
+        "price": 11200,
+        "price_type": "FIXED",
+        "condition": "LIKE_NEW",
+        "status": "PAUSED",
+        "view_count": 156,
+        "favorite_count": 21,
+        "days_ago": 10,
+        "image_seeds": ["trek-marlin"],
+        "attributes": {"marka": "Trek", "kadro": "M"},
+    },
+    {
+        "seller_email": "demo@uzman.com",
+        "category_slug": "mobilya",
+        "city": "İstanbul",
+        "district": "Kadıköy",
+        "title": "Vintage kitaplık (meşe)",
+        "description": "Taşınmadan önce satılık, 5 raflı meşe kitaplık.",
+        "price": 2400,
+        "price_type": "NEGOTIABLE",
+        "condition": "GOOD",
+        "status": "DRAFT",
+        "days_ago": 1,
+        "image_seeds": ["vintage-kitaplik"],
+        "attributes": {"malzeme": "Meşe"},
+    },
+]
+
+
+def seed_demo_ads(db: Session):
+    """Geliştirme ortamı için örnek ilanlar; mevcut ilan varsa dokunmaz."""
+    if settings.is_production:
+        return
+    from app.modules.ads.models import Ad, AdAttribute, AdCategory, AdImage
+    from app.modules.users.models import User
+
+    if db.query(Ad).count() > 0:
+        return
+
+    users = {u.email: u.id for u in db.query(User).all()}
+    categories = {c.slug: c.id for c in db.query(AdCategory).all()}
+    cities = {c.name: c.id for c in db.query(City).all()}
+    districts = {(d.city_id, d.name): d.id for d in db.query(District).all()}
+
+    now = datetime.now(timezone.utc)
+    for item in DEMO_ADS:
+        city_id = cities.get(item["city"])
+        district_name = item.get("district")
+        district_id = districts.get((city_id, district_name)) if city_id and district_name else None
+
+        status = item["status"]
+        published_at = (
+            now - timedelta(days=item["days_ago"]) if status != "DRAFT" else None
+        )
+
+        ad = Ad(
+            user_id=users[item["seller_email"]],
+            category_id=categories[item["category_slug"]],
+            title=item["title"],
+            description=item["description"],
+            price=item.get("price"),
+            currency="TRY",
+            price_type=item.get("price_type", "FIXED"),
+            condition=item.get("condition"),
+            status=status,
+            city_id=city_id,
+            district_id=district_id,
+            is_featured=item.get("is_featured", False),
+            is_negotiable=item.get("is_negotiable", False),
+            show_phone=True,
+            view_count=item.get("view_count", 0),
+            favorite_count=item.get("favorite_count", 0),
+            published_at=published_at,
+            expires_at=published_at + timedelta(days=30) if published_at else None,
+        )
+        db.add(ad)
+        db.flush()
+
+        for j, seed_name in enumerate(item["image_seeds"]):
+            db.add(
+                AdImage(
+                    ad_id=ad.id,
+                    url=f"https://picsum.photos/seed/{seed_name}/800/600",
+                    thumbnail_url=f"https://picsum.photos/seed/{seed_name}/400/300",
+                    sort_order=j,
+                    is_cover=(j == 0),
+                )
+            )
+        for key, value in (item.get("attributes") or {}).items():
+            db.add(
+                AdAttribute(ad_id=ad.id, attribute_key=key, attribute_value=value)
+            )
+
+    db.commit()
+
+
 def run_all_seeds(db: Session):
     """
     Seed fonksiyonlarını çalıştırır.
     system_settings tablosunda 'seeded' flag'i varsa tekrar çalışmaz.
     """
+    # Yeni eklenen seed'lerin de çalışabilmesi için kendi boş-mu kontrolü olan
+    # seed'ler flag kontrolünden önce çalıştırılır
+    seed_demo_ads(db)
+
     try:
         from app.shared.models import SystemSetting
 

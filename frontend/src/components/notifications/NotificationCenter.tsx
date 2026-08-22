@@ -117,12 +117,25 @@ export const NotificationCenter: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-300 hover:text-white hover:bg-white/10 rounded-full transition-colors bg-transparent"
+        style={{
+          background: 'transparent',
+          border: 'none',
+          position: 'relative',
+          display: 'flex',
+          padding: 8,
+          color: 'var(--color-text-muted)',
+          cursor: 'pointer'
+        }}
       >
-        <Bell className="w-6 h-6" />
+        <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full">
-            {unreadCount > 99 ? '99+' : unreadCount}
+          <span style={{
+            position: 'absolute', top: 4, right: 4,
+            background: 'var(--color-primary)', color: 'white',
+            borderRadius: '50%', width: 16, height: 16,
+            fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+          }}>
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>

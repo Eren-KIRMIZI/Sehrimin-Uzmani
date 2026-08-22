@@ -43,8 +43,10 @@ class Ad(BaseModel):
     category_id = Column(
         Integer, ForeignKey("ad_categories.id"), nullable=False, index=True
     )
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=True)
+    title_tr = Column(String(200), nullable=False)
+    description_tr = Column(Text, nullable=True)
+    title_en = Column(String(200), nullable=True)
+    description_en = Column(Text, nullable=True)
     price = Column(Float, nullable=True)
     currency = Column(String(10), default="TRY")
     price_type = Column(String(20), default="FIXED")  # FIXED, NEGOTIABLE, FREE

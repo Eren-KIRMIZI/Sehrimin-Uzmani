@@ -12,6 +12,7 @@ import {
   usePauseAd,
   usePublishAd,
 } from '../hooks/useAds';
+import { useI18nStore } from '../stores/i18nStore';
 import type { AdListItem } from '../types/ads';
 
 const STATUS_BADGES: Record<string, { label: string; bg: string; color: string }> = {
@@ -68,6 +69,7 @@ const MyAdsPage: React.FC = () => {
   const [tab, setTab] = React.useState<'listings' | 'favorites'>('listings');
   const { data: myListings, isLoading } = useMyAds();
   const { data: favorites, isLoading: favLoading } = useMyFavoriteAds();
+  const { language } = useI18nStore();
 
   const publishAd = usePublishAd();
   const pauseAd = usePauseAd();
@@ -131,7 +133,8 @@ const MyAdsPage: React.FC = () => {
                       onPause={id => pauseAd.mutate(id)}
                       onMarkSold={id => markSold.mutate(id)}
                       onDelete={id => {
-                        if (window.confirm(`"${ad.title}" ilanını silmek istediğinize emin misiniz?`)) {
+                        const title = language === 'en' ? (ad.title_en || ad.title_tr) : ad.title_tr;
+                        if (window.confirm(`"${title}" ilanını silmek istediğinize emin misiniz?`)) {
                           deleteAd.mutate(id);
                         }
                       }}

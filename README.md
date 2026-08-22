@@ -227,6 +227,13 @@ sehriminUzmani/
 
 ## Ozellikler
 
+### Çoklu Dil Desteği (i18n)
+
+- Dış servislere (Google Translate vb.) bağımlı olmayan, sıfır maliyetli ve tamamen kendi içinde barınan çoklu dil (Türkçe/İngilizce) altyapısı.
+- Veritabanı seviyesinde `title_tr`, `title_en` şeklinde yapılandırma.
+- İlan oluştururken Türkçe alanlar zorunlu, İngilizce alanlar opsiyonel (Graceful Fallback: İngilizce yoksa Türkçe gösterilir).
+- Frontend'de Zustand tabanlı i18n store ile anlık dil değişimi.
+
 ### Hizmet Talep Sistemi
 
 - Dogal dil ile hizmet talebi olusturma: Kullanici ne istedigini yazinca sistem kategori, konum, aciliyet, butce ve tarih bilgilerini otomatik cikarir

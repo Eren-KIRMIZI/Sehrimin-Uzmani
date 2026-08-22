@@ -45,8 +45,10 @@ class AdAttributeOut(AdAttributeIn):
 
 class AdCreate(BaseModel):
     category_id: int
-    title: str = Field(min_length=5, max_length=200)
-    description: str | None = None
+    title_tr: str = Field(min_length=5, max_length=200)
+    description_tr: str | None = None
+    title_en: str | None = Field(default=None, max_length=200)
+    description_en: str | None = None
     price: float | None = Field(default=None, ge=0)
     currency: str = "TRY"
     price_type: str = "FIXED"  # FIXED, NEGOTIABLE, FREE
@@ -63,8 +65,10 @@ class AdCreate(BaseModel):
 
 
 class AdUpdate(BaseModel):
-    title: str | None = Field(default=None, min_length=5, max_length=200)
-    description: str | None = None
+    title_tr: str | None = Field(default=None, min_length=5, max_length=200)
+    description_tr: str | None = None
+    title_en: str | None = Field(default=None, max_length=200)
+    description_en: str | None = None
     price: float | None = Field(default=None, ge=0)
     price_type: str | None = None
     condition: str | None = None
@@ -96,8 +100,10 @@ class AdOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    title: str
-    description: str | None = None
+    title_tr: str
+    description_tr: str | None = None
+    title_en: str | None = None
+    description_en: str | None = None
     price: float | None = None
     currency: str
     price_type: str
@@ -126,7 +132,8 @@ class AdDetailOut(AdOut):
 
 class AdListItem(BaseModel):
     id: int
-    title: str
+    title_tr: str
+    title_en: str | None = None
     price: float | None = None
     currency: str
     price_type: str

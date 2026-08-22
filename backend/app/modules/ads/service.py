@@ -76,8 +76,10 @@ class AdService:
         ad = Ad(
             user_id=user.id,
             category_id=data.category_id,
-            title=data.title.strip(),
-            description=data.description,
+            title_tr=data.title_tr.strip(),
+            description_tr=data.description_tr,
+            title_en=data.title_en.strip() if data.title_en else None,
+            description_en=data.description_en,
             price=data.price,
             currency=data.currency or "TRY",
             price_type=data.price_type,

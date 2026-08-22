@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Camera, Eye, Heart, MapPin, Star } from 'lucide-react';
 import type { AdListItem } from '../../types/ads';
+import { useI18nStore } from '../../stores/i18nStore';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   DRAFT: { label: 'Taslak', color: '#9ca3af' },
@@ -29,6 +30,9 @@ interface AdCardProps {
 
 const AdCard: React.FC<AdCardProps> = ({ ad, showStatus = false }) => {
   const status = STATUS_LABELS[ad.status];
+  const { language } = useI18nStore();
+  const displayTitle = language === 'en' ? (ad.title_en || ad.title_tr) : ad.title_tr;
+  const isFallback = language === 'en' && !ad.title_en;
 
   return (
     <Link to={`/ads/${ad.id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
@@ -60,7 +64,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, showStatus = false }) => {
           {ad.cover_image ? (
             <img
               src={ad.cover_image}
-              alt={ad.title}
+              alt={displayTitle}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               loading="lazy"
             />
@@ -134,7 +138,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, showStatus = false }) => {
               minHeight: '2.5em',
             }}
           >
-            {ad.title}
+            {displayTitle}
+            {isFallback && <span style={{ fontSize: '0.65rem', color: 'var(--color-text-dim)', display: 'block', fontWeight: 500 }}>(English translation unavailable)</span>}
           </div>
 
           <div

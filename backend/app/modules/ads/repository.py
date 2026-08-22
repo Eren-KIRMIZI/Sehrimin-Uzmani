@@ -51,8 +51,10 @@ class AdRepository(BaseRepository[Ad, Any, Any]):
         if q:
             like = f"%{q.lower()}%"
             query = query.filter(
-                sql_func.lower(Ad.title).like(like)
-                | sql_func.lower(sql_func.coalesce(Ad.description, "")).like(like)
+                sql_func.lower(Ad.title_tr).like(like)
+                | sql_func.lower(sql_func.coalesce(Ad.title_en, "")).like(like)
+                | sql_func.lower(sql_func.coalesce(Ad.description_tr, "")).like(like)
+                | sql_func.lower(sql_func.coalesce(Ad.description_en, "")).like(like)
             )
         if category_ids:
             query = query.filter(Ad.category_id.in_(category_ids))

@@ -1,11 +1,25 @@
 import json
 import os
 import secrets
+from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings
 
-_DEFAULT_SECRET = os.environ.get("SECRET_KEY", "")
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+def _read_env_file_value(key: str) -> str:
+    if not _ENV_FILE.exists():
+        return ""
+    for line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith(f"{key}="):
+            return stripped.split("=", 1)[1].strip().strip('"').strip("'")
+    return ""
+
+
+_DEFAULT_SECRET = os.environ.get("SECRET_KEY", "") or _read_env_file_value("SECRET_KEY")
 if not _DEFAULT_SECRET:
     _DEFAULT_SECRET = secrets.token_urlsafe(64)
     import warnings

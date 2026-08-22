@@ -9,6 +9,7 @@ import SEO from '../components/SEO';
 import AdCard from '../components/ads/AdCard';
 import { useAd, useContactAdSeller, useReportAd, useSimilarAds, useToggleAdFavorite } from '../hooks/useAds';
 import { useAuthStore } from '../stores/authStore';
+import { useI18nStore } from '../stores/i18nStore';
 
 const CONDITION_LABELS: Record<string, string> = {
   NEW: 'Sıfır',
@@ -38,11 +39,17 @@ const AdDetailPage: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportDescription, setReportDescription] = useState('');
-  const [toast, setToast] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const { language } = useI18nStore();
+  const displayTitle = ad ? (language === 'en' ? (ad.title_en || ad.title_tr) : ad.title_tr) : '';
+  const displayDescription = ad ? (language === 'en' ? (ad.description_en || ad.description_tr) : ad.description_tr) : '';
+  const isFallbackTitle = language === 'en' && !ad?.title_en;
+  const isFallbackDescription = language === 'en' && !ad?.description_en;
 
   const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3000);
   };
 
   const requireAuth = (action: () => void) => {
@@ -127,7 +134,7 @@ const AdDetailPage: React.FC = () => {
 
   return (
     <Layout>
-      <SEO title={ad.title} description={ad.description?.slice(0, 150)} />
+      <SEO title={displayTitle} description={displayDescription?.slice(0, 150)} />
 
       {/* Breadcrumb */}
       <div style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)', padding: '12px 0' }}>
@@ -145,7 +152,7 @@ const AdDetailPage: React.FC = () => {
               </>
             )}
             <ChevronRight size={12} />
-            <span style={{ color: 'var(--color-text)' }}>{ad.title.slice(0, 40)}{ad.title.length > 40 ? '...' : ''}</span>
+            <span style={{ color: 'var(--color-text)' }}>{displayTitle.slice(0, 40)}{displayTitle.length > 40 ? '...' : ''}</span>
           </div>
         </div>
       </div>
@@ -169,7 +176,7 @@ const AdDetailPage: React.FC = () => {
               {ad.images?.length > 0 ? (
                 <img
                   src={ad.images[selectedImage]?.url}
-                  alt={ad.title}
+                  alt={displayTitle}
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
               ) : (
@@ -208,9 +215,12 @@ const AdDetailPage: React.FC = () => {
 
             {/* Açıklama */}
             <div className="card" style={{ padding: 24, marginTop: 20 }}>
-              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 12 }}>Açıklama</h2>
+              <h2 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: 12 }}>
+                Açıklama
+                {isFallbackDescription && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', marginLeft: 8, fontWeight: 500 }}>(English translation unavailable)</span>}
+              </h2>
               <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-                {ad.description || 'İlan açıklaması girilmemiş.'}
+                {displayDescription || 'İlan açıklaması girilmemiş.'}
               </p>
             </div>
 
@@ -262,7 +272,10 @@ const AdDetailPage: React.FC = () => {
           {/* Sağ — Fiyat + Satıcı */}
           <div style={{ position: 'sticky', top: 80 }}>
             <div className="card" style={{ padding: 24 }}>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.35, margin: 0 }}>{ad.title}</h1>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.35, margin: 0 }}>
+                {displayTitle}
+                {isFallbackTitle && <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'block', fontWeight: 500, marginTop: 4 }}>(English translation unavailable)</span>}
+              </h1>
               <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--color-primary-light)', margin: '14px 0' }}>
                 {priceDisplay}
                 {ad.is_negotiable && ad.price != null && (
@@ -461,7 +474,7 @@ const AdDetailPage: React.FC = () => {
       )}
 
       {/* Toast */}
-      {toast && (
+      {toastMsg && (
         <div
           style={{
             position: 'fixed',
@@ -480,7 +493,7 @@ const AdDetailPage: React.FC = () => {
             animation: 'fadeIn 0.2s ease',
           }}
         >
-          <Shield size={15} color="#10b981" /> {toast}
+          <Shield size={15} color="#10b981" /> {toastMsg}
         </div>
       )}
     </Layout>

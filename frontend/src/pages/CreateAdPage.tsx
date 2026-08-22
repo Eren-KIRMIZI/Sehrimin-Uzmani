@@ -38,8 +38,10 @@ const CreateAdPage: React.FC = () => {
 
   // Form state
   const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [titleTr, setTitleTr] = useState('');
+  const [titleEn, setTitleEn] = useState('');
+  const [descriptionTr, setDescriptionTr] = useState('');
+  const [descriptionEn, setDescriptionEn] = useState('');
   const [condition, setCondition] = useState<AdCondition | ''>('');
   const [priceType, setPriceType] = useState<AdPriceType>('FIXED');
   const [price, setPrice] = useState('');
@@ -57,8 +59,10 @@ const CreateAdPage: React.FC = () => {
   useEffect(() => {
     if (isEdit && existingAd && !hydrated) {
       setCategoryId(existingAd.category?.id ?? null);
-      setTitle(existingAd.title);
-      setDescription(existingAd.description ?? '');
+      setTitleTr(existingAd.title_tr);
+      setTitleEn(existingAd.title_en ?? '');
+      setDescriptionTr(existingAd.description_tr ?? '');
+      setDescriptionEn(existingAd.description_en ?? '');
       setCondition((existingAd.condition ?? '') as AdCondition | '');
       setPriceType(existingAd.price_type);
       setPrice(existingAd.price != null ? String(existingAd.price) : '');
@@ -84,8 +88,8 @@ const CreateAdPage: React.FC = () => {
       return false;
     }
     if (step === 1) {
-      if (title.trim().length < 5) {
-        setError('Başlık en az 5 karakter olmalı');
+      if (titleTr.trim().length < 5) {
+        setError('Türkçe başlık en az 5 karakter olmalı');
         return false;
       }
     }
@@ -159,8 +163,10 @@ const CreateAdPage: React.FC = () => {
         {
           id: editId,
           data: {
-            title: title.trim(),
-            description: description.trim() || undefined,
+            title_tr: titleTr.trim(),
+            title_en: titleEn.trim() || undefined,
+            description_tr: descriptionTr.trim() || undefined,
+            description_en: descriptionEn.trim() || undefined,
             price: priceType === 'FREE' ? undefined : Number(price),
             price_type: priceType,
             condition: condition || undefined,
@@ -184,8 +190,10 @@ const CreateAdPage: React.FC = () => {
     createAd.mutate(
       {
         category_id: categoryId,
-        title: title.trim(),
-        description: description.trim() || undefined,
+        title_tr: titleTr.trim(),
+        title_en: titleEn.trim() || undefined,
+        description_tr: descriptionTr.trim() || undefined,
+        description_en: descriptionEn.trim() || undefined,
         price: priceType === 'FREE' ? undefined : Number(price),
         price_type: priceType,
         condition: condition || undefined,
@@ -312,14 +320,15 @@ const CreateAdPage: React.FC = () => {
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <h2 style={{ fontWeight: 700, margin: 0 }}>İlan Detayı</h2>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginTop: 10, color: 'var(--color-primary)' }}>🇹🇷 Türkçe İçerik (Zorunlu)</h3>
               <div>
                 <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: 6 }}>
                   Başlık *
                 </label>
                 <input
                   className="input"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  value={titleTr}
+                  onChange={e => setTitleTr(e.target.value)}
                   placeholder="Örn: Temiz Honda Civic 2022, 85.000 km"
                   maxLength={200}
                 />
@@ -330,10 +339,39 @@ const CreateAdPage: React.FC = () => {
                 </label>
                 <textarea
                   className="input"
-                  rows={6}
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
+                  rows={4}
+                  value={descriptionTr}
+                  onChange={e => setDescriptionTr(e.target.value)}
                   placeholder="Ürünün/hizmetin durumunu, kullanım süresini ve detaylarını yazın..."
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              <div className="divider" style={{ margin: '16px 0' }} />
+
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-muted)' }}>🇬🇧 İngilizce İçerik (Opsiyonel)</h3>
+              <div>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--color-text-muted)' }}>
+                  English Title
+                </label>
+                <input
+                  className="input"
+                  value={titleEn}
+                  onChange={e => setTitleEn(e.target.value)}
+                  placeholder="e.g. Clean Honda Civic 2022, 85,000 km"
+                  maxLength={200}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: 6, color: 'var(--color-text-muted)' }}>
+                  English Description
+                </label>
+                <textarea
+                  className="input"
+                  rows={4}
+                  value={descriptionEn}
+                  onChange={e => setDescriptionEn(e.target.value)}
+                  placeholder="Write the details in English..."
                   style={{ resize: 'vertical' }}
                 />
               </div>
@@ -563,7 +601,7 @@ const CreateAdPage: React.FC = () => {
                           ? `${new Intl.NumberFormat('tr-TR').format(Number(price))} ₺`
                           : 'Fiyat sorunuz'}
                     </div>
-                    <div style={{ fontWeight: 600, marginTop: 4 }}>{title}</div>
+                    <div style={{ fontWeight: 600, marginTop: 4 }}>{titleTr}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                       {selectedCategory?.name} • {cities?.find(c => c.id === cityId)?.name}
                       {districts?.find(d => d.id === districtId) ? ` / ${districts.find(d => d.id === districtId)?.name}` : ''}
