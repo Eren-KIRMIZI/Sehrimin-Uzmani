@@ -1,53 +1,49 @@
 import sys
 import os
+import getpass
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Load env
-from dotenv import load_dotenv
-load_dotenv()
+from app.core.database import SessionLocal
+from app.modules.users.models import User
+from app.core.security import get_password_hash
 
-import psycopg2
-from passlib.context import CryptContext
+def create_or_update_admin():
+    email = input("Admin Email [admin@sehriminuzmani.com]: ").strip() or "admin@sehriminuzmani.com"
+    password = getpass.getpass("Admin Password: ")
+    if not password:
+        print("Şifre boş olamaz!")
+        sys.exit(1)
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+psycopg2://sehrim_admin:sehrim2026!@localhost:5432/sehriminuzmani")
-# Parse URL for psycopg2
-# postgresql+psycopg2://user:pass@host:port/db
-url = DATABASE_URL.replace("postgresql+psycopg2://", "")
-user_pass, rest = url.split("@", 1)
-host_port, db = rest.split("/", 1)
-if ":" in user_pass:
-    user, password = user_pass.split(":", 1)
-else:
-    user, password = user_pass, ""
-if ":" in host_port:
-    host, port = host_port.split(":", 1)
-else:
-    host, port = host_port, "5432"
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        hashed = get_password_hash(password)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-hashed = pwd_context.hash("REDACTED_DEMO_PASS")
+        if user:
+            user.password_hash = hashed
+            user.role = "ADMIN"
+            user.is_active = True
+            user.email_verified = True
+            print(f"Admin kullanıcısı güncellendi: {email}")
+        else:
+            user = User(
+                email=email,
+                first_name="Admin",
+                last_name="User",
+                password_hash=hashed,
+                role="ADMIN",
+                is_active=True,
+                email_verified=True
+            )
+            db.add(user)
+            print(f"Admin kullanıcısı oluşturuldu: {email}")
 
-conn = psycopg2.connect(dbname=db, user=user, password=password, host=host, port=port)
-cur = conn.cursor()
+        db.commit()
+    except Exception as e:
+        print(f"Hata: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
-cur.execute("SELECT id FROM users WHERE email = %s", ("admin@sehriminuzmani.com",))
-row = cur.fetchone()
-
-if row:
-    cur.execute(
-        "UPDATE users SET password_hash=%s, role=%s, is_active=%s, email_verified=%s WHERE email=%s",
-        (hashed, "ADMIN", True, True, "admin@sehriminuzmani.com")
-    )
-    print("Admin kullanici guncellendi!")
-else:
-    cur.execute(
-        """INSERT INTO users (email, first_name, last_name, password_hash, role, is_active, email_verified, created_at, updated_at)
-           VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())""",
-        ("admin@sehriminuzmani.com", "Admin", "User", hashed, "ADMIN", True, True)
-    )
-    print("Admin kullanici olusturuldu!")
-
-conn.commit()
-cur.close()
-conn.close()
-print("Giriş bilgileri: admin@sehriminuzmani.com / REDACTED_DEMO_PASS")
+if __name__ == "__main__":
+    create_or_update_admin()

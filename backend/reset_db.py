@@ -11,7 +11,18 @@ import app.main # This will import all routers and thus all models
 
 from sqlalchemy import text
 
+from app.core.config import settings
+
 def reset_db():
+    if settings.ENVIRONMENT == "production":
+        print("HATA: Production ortamında reset_db çalıştırılamaz!")
+        sys.exit(1)
+
+    confirm = input(f"[{settings.ENVIRONMENT}] DİKKAT: Veritabanı (public schema) CASCADE ile SİLİNECEKTİR. Onaylıyor musunuz? (evet/hayir): ")
+    if confirm.lower() != "evet":
+        print("İşlem iptal edildi.")
+        sys.exit(0)
+
     print("Dropping all tables with CASCADE...")
     with engine.connect() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE;"))
@@ -20,9 +31,8 @@ def reset_db():
         conn.execute(text("GRANT ALL ON SCHEMA public TO public;"))
         conn.commit()
     
-    print("Creating all tables...")
-    Base.metadata.create_all(bind=engine)
     print("Database reset complete.")
+    print("Lütfen tabloları oluşturmak için 'alembic upgrade head' komutunu çalıştırın.")
 
 if __name__ == "__main__":
     reset_db()

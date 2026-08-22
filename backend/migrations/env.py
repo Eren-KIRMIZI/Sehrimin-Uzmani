@@ -28,6 +28,9 @@ import app.modules.commissions.models  # noqa: F401
 import app.modules.promotions.models  # noqa: F401
 import app.modules.subscriptions.models  # noqa: F401
 import app.modules.locations.models  # noqa: F401
+import app.modules.ads.models  # noqa: F401
+import app.modules.admin.models  # noqa: F401
+import app.shared.models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

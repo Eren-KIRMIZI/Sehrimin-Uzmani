@@ -11,6 +11,7 @@ from app.modules.commissions.router import router as commissions_router
 from app.modules.disputes.router import router as disputes_router
 from app.modules.favorites.router import router as favorites_router
 from app.modules.locations.router import router as locations_router
+from app.modules.messaging.router import router as messaging_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.pricing.router import router as pricing_router
 from app.modules.promotions.router import router as promotions_router
@@ -40,6 +41,7 @@ api_router.include_router(appointments_router)
 api_router.include_router(reviews_router)
 api_router.include_router(favorites_router)
 api_router.include_router(notifications_router)
+api_router.include_router(messaging_router)
 api_router.include_router(admin_router)
 api_router.include_router(commissions_router)
 api_router.include_router(disputes_router)

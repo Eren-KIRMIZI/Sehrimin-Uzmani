@@ -38,8 +38,8 @@ async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────────
     logger.info("Uygulama baslatiliyor", extra={"environment": settings.ENVIRONMENT})
 
-    # Veritabanı tablolarını oluştur
-    Base.metadata.create_all(bind=engine)
+    # Veritabanı tablolarını oluştur (Artık SADECE Alembic üzerinden yönetilecek)
+    # Base.metadata.create_all(bind=engine)
 
     # Seed data
     from app.core.database import SessionLocal
@@ -121,7 +121,6 @@ app.add_middleware(MetricsMiddleware)  # Logging'in de dışında — tüm trafi
 
 # ── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(api_router)
-app.include_router(messaging_router)
 
 
 @app.websocket("/ws/{token}")
