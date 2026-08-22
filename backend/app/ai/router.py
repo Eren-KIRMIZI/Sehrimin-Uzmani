@@ -22,7 +22,7 @@ class ChatRequestBody(BaseModel):
 @router.post("/chat-request")
 async def chat_request(
     request: Request,
-    body: ChatRequestBody, 
+    body: ChatRequestBody,
     current_user: User = Depends(get_current_user)
 ):
     rate_limiter.check(
