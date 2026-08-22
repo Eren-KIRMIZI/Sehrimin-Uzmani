@@ -265,7 +265,7 @@ class ProviderMatcher:
         offset = max(0, offset)
 
         q = self.db.query(User).filter(
-            User.role == "provider",
+            User.role == "PROVIDER",
             User.is_active,
         )
 
@@ -363,8 +363,8 @@ class ProviderMatcher:
                 {
                     "provider_id": provider.id,
                     "full_name": provider.full_name,
-                    "slug": provider.slug,
-                    "avatar_url": provider.avatar_url,
+                    "business_name": profile.business_name if profile else None,
+                    "avatar_url": provider.avatar,
                     "match_score": score,
                     "match_score_pct": min(100, int(score)),
                     "match_reasons": match_reasons,

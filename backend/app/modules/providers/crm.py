@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.appointments.models import Appointment
 from app.modules.categories.models import Service
-from app.modules.commissions.models import ProviderEarning
+from app.modules.commissions.models import ProviderEarning, Transaction
 from app.modules.favorites.models import Favorite
 from app.modules.providers.models import ProviderPerformance
 from app.modules.quotes.models import Quote
@@ -52,15 +52,16 @@ def get_crm_dashboard(provider_id: int, db: Session) -> dict:
         or 0
     )
 
-    # Son 30 gün geliri
+    # Son 30 gün geliri — Transaction tablosundan hesaplanır
     revenue_30d = 0.0
     try:
+        from app.modules.commissions.models import Transaction
         rev = (
-            db.query(sql_func.sum(ProviderEarning.net_amount))
+            db.query(sql_func.sum(Transaction.provider_earning))
             .filter(
-                ProviderEarning.provider_id == provider_id,
-                ProviderEarning.created_at >= thirty_days_ago,
-                ProviderEarning.status.in_(["COMPLETED", "PENDING"]),
+                Transaction.provider_id == provider_id,
+                Transaction.created_at >= thirty_days_ago,
+                Transaction.status.in_(["completed", "paid"]),
             )
             .scalar()
         )
@@ -186,17 +187,20 @@ def get_crm_customers(provider_id: int, db: Session) -> list:
 
 
 def get_crm_revenue(provider_id: int, db: Session, days: int = 30) -> dict:
-    """Uzmanın gelir/gider detayı."""
+    """Uzmanın gelir/gider detayı — Transaction tablosundan hesaplanır."""
+    from app.modules.commissions.models import Transaction
+
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days)
 
-    earnings = (
-        db.query(ProviderEarning)
+    transactions = (
+        db.query(Transaction)
         .filter(
-            ProviderEarning.provider_id == provider_id,
-            ProviderEarning.created_at >= start_date,
+            Transaction.provider_id == provider_id,
+            Transaction.created_at >= start_date,
+            Transaction.status.in_(["completed", "paid"]),
         )
-        .order_by(ProviderEarning.created_at.desc())
+        .order_by(Transaction.created_at.desc())
         .all()
     )
 
@@ -205,17 +209,21 @@ def get_crm_revenue(provider_id: int, db: Session, days: int = 30) -> dict:
     total_net = 0.0
     daily = {}
 
-    for e in earnings:
-        total_gross += float(e.gross_amount or 0)
-        total_commission += float(e.commission_amount or 0)
-        total_net += float(e.net_amount or 0)
+    for t in transactions:
+        gross = float(t.amount or 0)
+        commission = float(t.commission_amount or 0)
+        net = float(t.provider_earning or 0)
 
-        day_key = e.created_at.strftime("%Y-%m-%d") if e.created_at else "unknown"
+        total_gross += gross
+        total_commission += commission
+        total_net += net
+
+        day_key = t.created_at.strftime("%Y-%m-%d") if t.created_at else "unknown"
         if day_key not in daily:
             daily[day_key] = {"gross": 0.0, "commission": 0.0, "net": 0.0, "count": 0}
-        daily[day_key]["gross"] += float(e.gross_amount or 0)
-        daily[day_key]["commission"] += float(e.commission_amount or 0)
-        daily[day_key]["net"] += float(e.net_amount or 0)
+        daily[day_key]["gross"] += gross
+        daily[day_key]["commission"] += commission
+        daily[day_key]["net"] += net
         daily[day_key]["count"] += 1
 
     return {
@@ -223,7 +231,7 @@ def get_crm_revenue(provider_id: int, db: Session, days: int = 30) -> dict:
         "total_gross": round(total_gross, 2),
         "total_commission": round(total_commission, 2),
         "total_net": round(total_net, 2),
-        "transaction_count": len(earnings),
+        "transaction_count": len(transactions),
         "daily_breakdown": [{"date": k, **v} for k, v in sorted(daily.items())],
     }
 

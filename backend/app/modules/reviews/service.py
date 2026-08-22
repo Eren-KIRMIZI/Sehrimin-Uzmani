@@ -66,11 +66,18 @@ class ReviewService:
         """Uzmanın genel puan ortalamasını incremental günceller."""
         perf = db.query(ProviderPerformance).filter_by(provider_id=provider_id).first()
         if not perf:
+            # ProviderPerformance kaydı yoksa oluştur
+            perf = ProviderPerformance(
+                provider_id=provider_id,
+                rating=new_rating,
+                review_count=1,
+            )
+            db.add(perf)
             return
 
-        old_total = (perf.rating or 0.0) * (perf.total_reviews or 0)
-        perf.total_reviews = (perf.total_reviews or 0) + 1
-        perf.rating = (old_total + new_rating) / perf.total_reviews
+        old_total = (perf.rating or 0.0) * (perf.review_count or 0)
+        perf.review_count = (perf.review_count or 0) + 1
+        perf.rating = (old_total + new_rating) / perf.review_count
 
     def add_provider_reply(
         self, db: Session, review_id: int, reply_text: str, provider_user_id: int

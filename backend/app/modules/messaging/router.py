@@ -140,7 +140,7 @@ def list_conversations(
             .filter(
                 Message.conversation_id == conv.id,
                 Message.sender_id != current_user.id,
-                not Message.is_read,
+                Message.is_read == False,
             )
             .count()
         )
@@ -212,7 +212,7 @@ def list_messages(
     db.query(Message).filter(
         Message.conversation_id == conversation_id,
         Message.sender_id != current_user.id,
-        not Message.is_read,
+        Message.is_read == False,
     ).update({"is_read": True})
     db.commit()
 
@@ -322,7 +322,7 @@ def unread_count(
             .filter(
                 Message.conversation_id.in_(conv_ids),
                 Message.sender_id != current_user.id,
-                not Message.is_read,
+                Message.is_read == False,
             )
             .count()
         )

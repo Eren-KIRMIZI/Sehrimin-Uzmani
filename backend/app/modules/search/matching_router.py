@@ -79,10 +79,13 @@ def get_recommendations(
     service_ids = set()
     category_ids = set()
     for appt in recent:
-        if appt.service_id:
-            service_ids.add(appt.service_id)
-        if appt.category_id:
-            category_ids.add(appt.category_id)
+        # service_id ve category_id Appointment'ta değil, ServiceRequest'te bulunur
+        req = appt.request  # lazy-load relationship
+        if req:
+            if req.service_id:
+                service_ids.add(req.service_id)
+            if req.category_id:
+                category_ids.add(req.category_id)
 
     all_matches = []
     seen = set()

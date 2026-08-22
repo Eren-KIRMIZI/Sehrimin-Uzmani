@@ -107,8 +107,16 @@ def get_current_active_user(current_user=Depends(get_current_user)):
 
 
 def require_role(*roles):
+    # Liste veya tuple geçilirse düzleştir: require_role(["ADMIN"]) → ("ADMIN",)
+    flat_roles = []
+    for r in roles:
+        if isinstance(r, (list, tuple)):
+            flat_roles.extend(r)
+        else:
+            flat_roles.append(r)
+
     def role_checker(current_user=Depends(get_current_user)):
-        if current_user.role not in roles:
+        if current_user.role not in flat_roles:
             raise HTTPException(status_code=403, detail="Yetkiniz yetersiz")
         return current_user
 

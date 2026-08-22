@@ -21,9 +21,11 @@ from app.modules.ads.models import (  # noqa: F401 — metadata discovery
     AdImage,
     AdReport,
 )
+from app.modules.commissions import service as commission_service  # noqa: F401 — event subscription
 from app.modules.messaging.router import router as messaging_router
 from app.shared.models import SystemSetting  # noqa: F401 — metadata discovery
 from app.websocket.manager import websocket_endpoint
+
 
 # Logging'i mümkün olan en erken an kur
 setup_logging()

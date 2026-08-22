@@ -23,6 +23,12 @@ class User(BaseModel):
     subscription_plan = Column(String(50), nullable=True)
     commission_discount = Column(Float, default=0.0)
 
+    @property
+    def full_name(self) -> str:
+        """first_name + last_name birleştirmesi — birden fazla modülde kullanılır."""
+        return f"{self.first_name or ''} {self.last_name or ''}".strip()
+
+
     # Relationships
     provider_profile = relationship(
         "ProviderProfile", back_populates="user", uselist=False
