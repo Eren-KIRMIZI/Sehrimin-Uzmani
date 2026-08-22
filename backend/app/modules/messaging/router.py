@@ -125,9 +125,7 @@ def list_conversations(
 
         # Okunmamış mesaj sayısı Python tarafında hesapla
         unread = sum(
-            1
-            for m in conv.messages
-            if m.sender_id != current_user.id and not m.is_read
+            1 for m in conv.messages if m.sender_id != current_user.id and not m.is_read
         )
 
         other_user = None
