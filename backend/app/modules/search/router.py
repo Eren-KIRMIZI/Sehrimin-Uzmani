@@ -213,7 +213,13 @@ def search_providers(
         rank = None
 
     if need_location_join:
-        query = query.group_by(ProviderProfile.id)
+        query = query.group_by(
+            ProviderProfile.id,
+            ProviderPerformance.rating,
+            ProviderPerformance.review_count,
+            User.first_name,
+            User.last_name,
+        )
 
     total = query.count()
 
