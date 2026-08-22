@@ -87,6 +87,19 @@ def search_providers(
         query = query.filter(ProviderLocation.district_id == district_id)
 
     if lat and lng:
+        import math
+        # Bounding box pre-filter for composite index (approx 111 km per latitude degree)
+        lat_delta = radius / 111.0
+        cos_lat = math.cos(math.radians(lat))
+        lng_delta = radius / (111.0 * cos_lat) if cos_lat != 0 else 0
+
+        query = query.filter(
+            ProviderLocation.latitude >= lat - lat_delta,
+            ProviderLocation.latitude <= lat + lat_delta,
+            ProviderLocation.longitude >= lng - lng_delta,
+            ProviderLocation.longitude <= lng + lng_delta
+        )
+
         distance_col = _haversine_sql(lat, lng).label("distance_km")
         query = query.filter(distance_col <= radius)
     else:
@@ -146,34 +159,25 @@ def search_providers(
         query = query.filter(ProviderProfile.verification_status != "NONE")
 
     if q:
-        # Full text search using tsvector
+        import sqlalchemy as sa
+        # Full text search using computed tsvector column + GIN index
         search_query = sql_func.plainto_tsquery("turkish", q)
-        vector = (
-            sql_func.setweight(
-                sql_func.to_tsvector(
-                    "turkish", sql_func.coalesce(ProviderProfile.business_name, "")
-                ),
-                "A",
-            )
-            | sql_func.setweight(
-                sql_func.to_tsvector(
-                    "turkish", sql_func.coalesce(ProviderProfile.bio, "")
-                ),
-                "B",
-            )
-            | sql_func.setweight(
-                sql_func.to_tsvector("turkish", sql_func.coalesce(User.first_name, "")),
-                "C",
-            )
-            | sql_func.setweight(
-                sql_func.to_tsvector("turkish", sql_func.coalesce(User.last_name, "")),
-                "C",
+        
+        # User isimleri için runtime hesaplama devam ediyor ama asıl ağır text'ler computed
+        user_vector = (
+            sql_func.setweight(sql_func.to_tsvector("turkish", sql_func.coalesce(User.first_name, "")), "C")
+            | sql_func.setweight(sql_func.to_tsvector("turkish", sql_func.coalesce(User.last_name, "")), "C")
+        )
+
+        query = query.filter(
+            sa.or_(
+                ProviderProfile.search_vector.op("@@")(search_query),
+                user_vector.op("@@")(search_query)
             )
         )
-        query = query.filter(vector.op("@@")(search_query))
 
-        # Add rank column for ordering later if sort is recommended
-        rank = sql_func.ts_rank(vector, search_query).label("search_rank")
+        # Add rank column for ordering
+        rank = sql_func.ts_rank(ProviderProfile.search_vector.op("||")(user_vector), search_query).label("search_rank")
         query = query.add_columns(rank)
     else:
         rank = None

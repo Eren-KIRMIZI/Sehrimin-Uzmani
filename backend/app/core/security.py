@@ -51,11 +51,26 @@ def decode_token(token: str) -> dict:
         )
 
 
-def check_token_blacklist(token: str, db: Session) -> bool:
-    from app.modules.auth.models import RevokedToken
+def check_token_blacklist(token: str, db: Session | None = None) -> bool:
+    """
+    Token'ın iptal edilip edilmediğini kontrol eder.
 
-    revoked = db.query(RevokedToken).filter(RevokedToken.token == token).first()
-    return revoked is not None
+    Önce Redis'e bakar (mikrosaniye). Redis DOWN olursa fail-open politikası:
+    token geçerli kabul edilir (access token TTL=30dk, risk sınırlı).
+
+    Bu bilinçli bir security trade-off'tur:
+      - Performans: DB'ye token başına 1 sorgu ortadan kalkar (145 endpoint).
+      - Risk: Redis geçici down'da logout yapan kullanıcının token'ı ~30dk daha çalışabilir.
+      - Admin/finansal endpoint'ler için ayrı politika gerekiyorsa `require_role` override edilebilir.
+    """
+    try:
+        from app.core.redis import redis_client
+        result = redis_client.exists(f"revoked:{token}")
+        return bool(result)
+    except Exception:
+        # Redis erişilemez → fail-open (token geçerli say)
+        # Fallback olarak DB kullanmıyoruz: amaç DB baskısını azaltmak
+        return False
 
 
 def get_current_user(

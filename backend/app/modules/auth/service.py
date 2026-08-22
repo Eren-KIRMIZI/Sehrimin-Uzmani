@@ -132,6 +132,18 @@ class AuthService:
 
         tokens = self._create_tokens(user.id)
         self.db.commit()
+
+        # Kullanılan eski refresh token'ı Redis'e de ekle
+        try:
+            from app.core.redis import redis_client
+            from datetime import datetime, timezone as tz
+            now = datetime.now(tz.utc)
+            remaining = max(0, int((expires_at - now).total_seconds()))
+            if remaining > 0:
+                redis_client.setex(f"revoked:{refresh_token}", remaining, "1")
+        except Exception:
+            pass
+
         return {"user": user, **tokens}
 
     def logout(self, token: str, user_id: int):
@@ -142,6 +154,18 @@ class AuthService:
         revoked = RevokedToken(token=token, user_id=user_id, expires_at=expires_at)
         self.db.add(revoked)
         self.db.commit()
+
+        # Redis'e de yaz — blacklist kontrolü Redis üzerinden yapılıyor.
+        # TTL: token'ın kalan ömrü (en fazla). Sona ermiş key'i tutmaya gerek yok.
+        try:
+            from app.core.redis import redis_client
+            now = datetime.now(timezone.utc)
+            remaining_seconds = max(0, int((expires_at - now).total_seconds()))
+            if remaining_seconds > 0:
+                redis_client.setex(f"revoked:{token}", remaining_seconds, "1")
+        except Exception:
+            # Redis erişilemezse DB kaydı yeterli; kontrol fail-open ile geçecek
+            pass
 
     def _create_tokens(self, user_id: int) -> dict:
         access_token = create_access_token(data={"sub": str(user_id)})

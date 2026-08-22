@@ -45,7 +45,7 @@ def unread_count(
 ):
     count = (
         db.query(Notification)
-        .filter(Notification.user_id == current_user.id, not Notification.is_read)
+        .filter(Notification.user_id == current_user.id, Notification.is_read == False)  # noqa: E712
         .count()
     )
     return {"count": count}
@@ -76,7 +76,7 @@ def mark_all_read(
     db: Session = Depends(get_db),
 ):
     db.query(Notification).filter(
-        Notification.user_id == current_user.id, not Notification.is_read
+        Notification.user_id == current_user.id, Notification.is_read == False  # noqa: E712
     ).update({"is_read": True})
     db.commit()
     return {"message": "Tüm bildirimler okundu"}

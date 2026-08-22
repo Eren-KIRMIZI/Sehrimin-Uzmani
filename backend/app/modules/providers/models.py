@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Text, Computed
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import relationship
 
 from app.core.base.models import BaseModel
@@ -15,6 +16,7 @@ class ProviderProfile(BaseModel):
     experience_years = Column(Integer, default=0)
     verification_status = Column(String(20), default="NONE")
     is_available = Column(Boolean, default=True)
+    search_vector = Column(TSVECTOR, Computed("setweight(to_tsvector('turkish', coalesce(business_name, '')), 'A') || setweight(to_tsvector('turkish', coalesce(bio, '')), 'B')", persisted=True))
 
     user = relationship("User", back_populates="provider_profile")
     performance = relationship(

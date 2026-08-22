@@ -17,6 +17,13 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
 
 @router.get("")
 def list_categories(db: Session = Depends(get_db)):
+    from app.core.cache import ref_cache
+
+    cache_key = "categories:all"
+    cached = ref_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     categories = (
         db.query(Category)
         .filter(Category.is_active)
@@ -57,6 +64,8 @@ def list_categories(db: Session = Depends(get_db)):
                 ],
             }
         )
+
+    ref_cache.set(cache_key, result)
     return result
 
 
@@ -128,6 +137,10 @@ def admin_create_category(
     db.add(cat)
     db.commit()
     db.refresh(cat)
+
+    from app.core.cache import ref_cache
+    ref_cache.invalidate("categories:all")
+
     return {"message": "Kategori oluşturuldu", "category": cat}
 
 
@@ -146,6 +159,10 @@ def admin_create_subcategory(
     db.add(subcat)
     db.commit()
     db.refresh(subcat)
+
+    from app.core.cache import ref_cache
+    ref_cache.invalidate("categories:all")
+
     return {"message": "Alt kategori oluşturuldu", "subcategory": subcat}
 
 
@@ -164,4 +181,8 @@ def admin_create_service(
     db.add(service)
     db.commit()
     db.refresh(service)
+
+    from app.core.cache import ref_cache
+    ref_cache.invalidate("categories:all")
+
     return {"message": "Hizmet oluşturuldu", "service": service}

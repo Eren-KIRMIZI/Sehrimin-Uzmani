@@ -151,7 +151,9 @@ async def websocket_endpoint(websocket: WebSocket, token: str):
             await websocket.close(code=4001, reason="Token revoked")
             return
 
-        user = db.query(User).filter(User.id == user_id, User.is_active).first()
+        user = await asyncio.to_thread(
+            lambda: db.query(User).filter(User.id == user_id, User.is_active).first()
+        )
         if not user:
             await websocket.close(code=4001, reason="User not found or inactive")
             return
@@ -239,28 +241,38 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
         )
         return
 
-    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    conv = await asyncio.to_thread(
+        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
     if not conv:
         await websocket.send_json({"error": "Konusma bulunamadi"})
         return
 
-    is_participant = conv.customer_id == user_id or (
-        conv.provider_id and _is_provider_owner(conv.provider_id, user_id, db)
-    )
+    is_provider_owner = False
+    if conv.provider_id:
+        is_provider_owner = await asyncio.to_thread(
+            _is_provider_owner, conv.provider_id, user_id, db
+        )
+
+    is_participant = conv.customer_id == user_id or is_provider_owner
     if not is_participant:
         await websocket.send_json({"error": "Yetkiniz yok"})
         return
 
-    message = Message(
-        conversation_id=conversation_id,
-        sender_id=user_id,
-        content=content,
-        message_type=message_type,
-    )
-    db.add(message)
-    conv.last_message_at = message.created_at
-    db.commit()
-    db.refresh(message)
+    def _save_message():
+        msg = Message(
+            conversation_id=conversation_id,
+            sender_id=user_id,
+            content=content,
+            message_type=message_type,
+        )
+        db.add(msg)
+        conv.last_message_at = msg.created_at
+        db.commit()
+        db.refresh(msg)
+        return msg
+
+    message = await asyncio.to_thread(_save_message)
 
     response = {
         "action": "new_message",
@@ -280,35 +292,46 @@ async def _handle_send_message(websocket: WebSocket, user_id: int, msg_data: dic
 
 async def _handle_mark_read(websocket: WebSocket, user_id: int, msg_data: dict, db):
     conversation_id = msg_data.get("conversation_id")
-    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    conv = await asyncio.to_thread(
+        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
     if not conv:
         return
-    is_part = conv.customer_id == user_id or (
-        conv.provider_id and _is_provider_owner(conv.provider_id, user_id, db)
-    )
+        
+    is_provider_owner = False
+    if conv.provider_id:
+        is_provider_owner = await asyncio.to_thread(
+            _is_provider_owner, conv.provider_id, user_id, db
+        )
+        
+    is_part = conv.customer_id == user_id or is_provider_owner
     if not is_part:
         await websocket.send_json({"error": "Yetkiniz yok"})
         return
-    db.query(Message).filter(
-        Message.conversation_id == conversation_id,
-        Message.sender_id != user_id,
-        not Message.is_read,
-    ).update({"is_read": True})
-    db.commit()
+
+    def _update_read():
+        db.query(Message).filter(
+            Message.conversation_id == conversation_id,
+            Message.sender_id != user_id,
+            Message.is_read == False,  # noqa: E712
+        ).update({"is_read": True})
+        db.commit()
+
+    await asyncio.to_thread(_update_read)
 
 
 async def _handle_typing(user_id: int, msg_data: dict, db):
     conversation_id = msg_data.get("conversation_id")
-    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    conv = await asyncio.to_thread(
+        lambda: db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    )
     if not conv:
         return
     participant_ids = set()
     participant_ids.add(conv.customer_id)
     if conv.provider_id:
-        provider = (
-            db.query(ProviderProfile)
-            .filter(ProviderProfile.id == conv.provider_id)
-            .first()
+        provider = await asyncio.to_thread(
+            lambda: db.query(ProviderProfile).filter(ProviderProfile.id == conv.provider_id).first()
         )
         if provider:
             participant_ids.add(provider.user_id)
