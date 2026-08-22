@@ -128,7 +128,7 @@ const MapSearchPage: React.FC = () => {
                       <Star size={12} fill="#f59e0b" color="#f59e0b" />
                       <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{provider.rating?.toFixed(1)}</span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>({provider.review_count})</span>
-                      {provider.verification_level !== 'NONE' && (
+                      {provider.verification_status && provider.verification_status !== 'NONE' && (
                         <Shield size={11} style={{ color: '#10b981' }} />
                       )}
                     </div>

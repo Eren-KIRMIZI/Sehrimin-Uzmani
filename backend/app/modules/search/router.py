@@ -299,9 +299,13 @@ def search_providers(
             }
         )
 
-    return PaginatedResponse.create(
-        items=result, total=total, page=pagination.page, limit=pagination.limit
-    )
+    return {
+        "providers": result,
+        "total": total,
+        "page": pagination.page,
+        "limit": pagination.limit,
+        "has_next": total > pagination.page * pagination.limit,
+    }
 
 
 @router.get("/autocomplete")

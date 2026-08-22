@@ -10,6 +10,7 @@ import { AdminDisputes } from './AdminDisputes';
 import { AdminPayouts } from './AdminPayouts';
 import { AdminAds } from './AdminAds';
 import { AdminVerifications } from './AdminVerifications';
+import { AdminSystem } from './AdminSystem';
 
 const AdminPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -80,11 +81,11 @@ const AdminPage: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, padding: '32px 40px', background: '#f8fafc', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '32px 40px', background: 'var(--color-bg)', overflowY: 'auto' }}>
           {activeTab === 'overview' && (
             <div className="animate-fade-in max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-8">
-                <h1 style={{ fontWeight: 800, fontSize: '2rem', color: '#111827' }}>Sistem Özeti</h1>
+                <h1 style={{ fontWeight: 800, fontSize: '2rem', color: 'var(--color-text)' }}>Sistem Özeti</h1>
                 <div className="text-sm text-gray-500 flex items-center gap-2">
                   <Clock size={16} /> Son güncelleme: {new Date().toLocaleTimeString('tr-TR')}
                 </div>
@@ -103,7 +104,7 @@ const AdminPage: React.FC = () => {
                       { label: 'Aktif Talepler', value: adminStats?.total_requests || 0, trend: '+18%', color: '#8b5cf6', bg: '#f5f3ff' },
                       { label: 'Tamamlanan İşler', value: adminStats?.total_appointments || 0, trend: '+22%', color: '#f59e0b', bg: '#fffbeb' },
                     ].map(stat => (
-                      <div key={stat.label} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+                      <div key={stat.label} className="card rounded-2xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow">
                         <div style={{ fontSize: '0.95rem', color: 'var(--color-text-muted)', marginBottom: 12, fontWeight: 500 }}>{stat.label}</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                           <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>{stat.value}</div>
@@ -118,8 +119,8 @@ const AdminPage: React.FC = () => {
                   {/* Charts Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     {/* Activity Chart */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                      <h3 className="font-bold text-lg mb-6 text-gray-800">Platform Aktivitesi</h3>
+                    <div className="card rounded-2xl p-6">
+                      <h3 className="font-bold text-lg mb-6" style={{ color: 'var(--color-text)' }}>Platform Aktivitesi</h3>
                       <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={weeklyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -142,8 +143,8 @@ const AdminPage: React.FC = () => {
                     </div>
 
                     {/* Operational Alerts */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col">
-                      <h3 className="font-bold text-lg mb-6 text-gray-800">Operasyonel Durum</h3>
+                    <div className="card rounded-2xl p-6 flex flex-col">
+                      <h3 className="font-bold text-lg mb-6" style={{ color: 'var(--color-text)' }}>Operasyonel Durum</h3>
                       <div className="flex-1 flex flex-col gap-4">
                         
                         <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 flex gap-4 items-start">
@@ -182,23 +183,15 @@ const AdminPage: React.FC = () => {
           
           {activeTab !== 'overview' && (
             <div className="animate-fade-in max-w-7xl mx-auto">
-              <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 24, textTransform: 'capitalize', color: '#111827' }}>
-                {activeTab.replace('_', ' ')}
+              <h1 style={{ fontWeight: 800, fontSize: '1.8rem', marginBottom: 24, textTransform: 'capitalize', color: 'var(--color-text)' }}>
+                {activeTab === 'users' ? 'Kullanıcı & Uzmanlar' : activeTab === 'verifications' ? 'Doğrulama Onayları' : activeTab === 'disputes' ? 'Anlaşmazlık Yönetimi' : activeTab === 'payouts' ? 'Ödemeler & Finans' : activeTab === 'ads' ? 'İlanlar' : activeTab === 'system' ? 'Sistem Ayarları' : activeTab}
               </h1>
               {activeTab === 'users' && <AdminUsers />}
               {activeTab === 'verifications' && <AdminVerifications />}
               {activeTab === 'disputes' && <AdminDisputes />}
               {activeTab === 'payouts' && <AdminPayouts />}
               {activeTab === 'ads' && <AdminAds />}
-              {!['users', 'verifications', 'disputes', 'payouts', 'ads'].includes(activeTab) && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100" style={{ padding: 80, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Settings size={32} />
-                  </div>
-                  <h3 className="font-bold text-xl text-gray-800 mb-2">Modül Hazırlanıyor</h3>
-                  <p className="max-w-md mx-auto">Bu modülün arayüz bileşenleri yapım aşamasındadır. Backend servisleri (`adminApi`) kullanıma hazırdır.</p>
-                </div>
-              )}
+              {activeTab === 'system' && <AdminSystem />}
             </div>
           )}
         </div>

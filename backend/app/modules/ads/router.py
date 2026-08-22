@@ -22,7 +22,8 @@ def _to_list_item(db: Session, ad) -> dict:
     district_name = ad.district.name if ad.district else None
     return {
         "id": ad.id,
-        "title": ad.title,
+        "title_tr": ad.title_tr,
+        "title_en": ad.title_en,
         "price": ad.price,
         "currency": ad.currency,
         "price_type": ad.price_type,

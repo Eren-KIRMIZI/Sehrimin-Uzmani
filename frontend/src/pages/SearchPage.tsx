@@ -91,7 +91,7 @@ const SearchPage: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>{provider.business_name}</div>
-              {provider.verification_level !== 'NONE' && (
+              {provider.verification_status && provider.verification_status !== 'NONE' && (
                 <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.8rem' }}>
                   <Shield size={12} /> Doğrulanmış
                 </span>
@@ -121,23 +121,20 @@ const SearchPage: React.FC = () => {
 
           <div style={{ display: 'flex', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <TrendingUp size={12} /> {provider.completed_jobs} tamamlanan iş
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Clock size={12} /> {provider.years_experience} yıl deneyim
+              <Clock size={12} /> {provider.completed_jobs} tamamlanan iş
             </span>
             {provider.locations?.[0] && (
               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={12} /> {provider.locations[0].city?.name}
+                <MapPin size={12} /> {provider.locations[0].city}
               </span>
             )}
           </div>
 
           {provider.services?.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 10 }}>
-              {provider.services.slice(0, 4).map(s => (
-                <span key={s.id} className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
-                  {s.service?.name}
+              {provider.services.slice(0, 4).map((s: any, idx: number) => (
+                <span key={idx} className="badge badge-primary" style={{ fontSize: '0.7rem' }}>
+                  {s.name || s.service?.name}
                 </span>
               ))}
             </div>

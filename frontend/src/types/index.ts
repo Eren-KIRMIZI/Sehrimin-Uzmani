@@ -45,14 +45,15 @@ export interface ProviderProfile {
   completed_jobs: number;
   years_experience: number;
   verification_level: 'NONE' | 'BASIC' | 'ID' | 'PROFESSIONAL' | 'BUSINESS';
+  verification_status?: string;
   is_available: boolean;
   hourly_rate?: number;
   subscription_plan: string;
   badge_type?: string;
   distance_km?: number;
   user: User;
-  services: ProviderService[];
-  locations: ProviderLocation[];
+  services: any[]; // relaxed to any[] to support both ProviderService[] and the simplified {name, starting_price} from backend
+  locations: any[]; // relaxed to any[] to support both ProviderLocation[] and the simplified {city, district} from backend
   portfolio: PortfolioItem[];
   availability: ProviderAvailability[];
 }
