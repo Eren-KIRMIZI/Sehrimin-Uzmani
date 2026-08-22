@@ -1074,7 +1074,7 @@ class TestFraudDetection:
             elif model_name == "ProviderProfile":
                 provider = MagicMock()
                 provider.id = 1
-                provider.completed_jobs = 0
+                provider.performance = None
                 q.filter.return_value.first.return_value = provider
             elif model_name == "Quote":
                 q.filter.return_value.scalar.return_value = 10
