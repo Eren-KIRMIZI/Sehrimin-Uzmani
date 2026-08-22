@@ -2,12 +2,24 @@ import os
 import random
 import string
 import logging
+import uuid
 from datetime import datetime, timezone
 from sqlalchemy import text
 from app.core.database import SessionLocal, engine
 from app.modules.users.models import User
-from app.modules.providers.models import ProviderProfile, ProviderLocation
-from app.modules.locations.models import City, District
+from app.modules.providers.models import ProviderProfile, ProviderPerformance
+from app.modules.providers.availability_model import ProviderAvailability
+from app.modules.providers.portfolio_model import PortfolioItem
+from app.modules.locations.models import City, District, ProviderLocation
+from app.modules.requests.models import ServiceRequest
+from app.modules.favorites.models import Favorite
+from app.modules.notifications.models import Notification
+from app.modules.users.models import UserAddress, UserPreference
+from app.modules.reviews.models import Review
+from app.modules.categories.models import ProviderService, Service, Category
+from app.modules.messaging.models import Conversation, Message
+from app.modules.appointments.models import Appointment
+from app.modules.quotes.models import Quote
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -66,8 +78,8 @@ def seed_users_and_providers():
 
         district_map = {city.id: db.query(District).filter(District.city_id == city.id).all() for city in cities}
         
-        # SADECE TEST ORTAMINDA KULLANIN!
-        # truncate_tables(db)
+        # SADECE TEST ORTAMINDA KULLANIN! Var olan loadtest kayıtlarını temizler.
+        truncate_tables(db)
         
         logger.info(f"Toplam {TARGET_PROVIDERS} Provider üretiliyor (Batch size: {BATCH_SIZE})...")
         
@@ -79,9 +91,9 @@ def seed_users_and_providers():
                     password_hash="fakehash",
                     first_name=f"Name_{i}",
                     last_name=f"Surname_{i}",
-                    phone=f"555{random.randint(1000000, 9999999)}",
+                    phone=f"555{batch_num:03d}{i:04d}",
                     is_active=True,
-                    is_provider=True
+                    role="PROVIDER"
                 ))
             
             db.bulk_save_objects(users, return_defaults=True)

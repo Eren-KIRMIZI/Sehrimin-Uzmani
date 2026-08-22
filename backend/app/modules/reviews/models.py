@@ -7,6 +7,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Index,
 )
 from sqlalchemy.orm import relationship
 
@@ -19,6 +20,7 @@ class Review(BaseModel):
         UniqueConstraint(
             "request_id", "customer_id", name="uq_review_request_customer"
         ),
+        Index("ix_reviews_provider_created", "provider_id", "created_at"),
     )
 
     request_id = Column(

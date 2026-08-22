@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.core.exceptions import (
@@ -88,7 +89,7 @@ def list_conversations(
     db: Session = Depends(get_db),
 ):
     limit = min(limit, 50)
-    page = max(1, page)
+    offset = (max(1, page) - 1) * limit
 
     provider = (
         db.query(ProviderProfile)
@@ -96,54 +97,48 @@ def list_conversations(
         .first()
     )
 
+    # Konuşmaları ilgili tüm ilişkilerle birlikte TEK sorguda çek (N+1 önlendi)
+    base_q = (
+        db.query(Conversation)
+        .options(
+            joinedload(Conversation.customer),
+            joinedload(Conversation.provider).joinedload(ProviderProfile.user),
+            joinedload(Conversation.messages),
+        )
+        .order_by(Conversation.last_message_at.desc().nullslast())
+    )
+
     if provider:
-        convs = (
-            db.query(Conversation).filter(Conversation.provider_id == provider.id).all()
-        )
+        base_q = base_q.filter(Conversation.provider_id == provider.id)
     else:
-        convs = (
-            db.query(Conversation)
-            .filter(Conversation.customer_id == current_user.id)
-            .all()
-        )
+        base_q = base_q.filter(Conversation.customer_id == current_user.id)
+
+    total = base_q.count()
+    convs = base_q.offset(offset).limit(limit).all()
 
     result = []
     for conv in convs:
-        last_msg = (
-            db.query(Message)
-            .filter(Message.conversation_id == conv.id)
-            .order_by(Message.created_at.desc())
-            .first()
+        # Son mesajı Python tarafında bul (messages joinedload ile geldi)
+        messages_sorted = sorted(conv.messages, key=lambda m: m.created_at, reverse=True)
+        last_msg = messages_sorted[0] if messages_sorted else None
+
+        # Okunmamış mesaj sayısı Python tarafında hesapla
+        unread = sum(
+            1 for m in conv.messages
+            if m.sender_id != current_user.id and m.is_read == False
         )
 
         other_user = None
-        if conv.customer_id == current_user.id and conv.provider_id:
-            p = (
-                db.query(ProviderProfile)
-                .filter(ProviderProfile.id == conv.provider_id)
-                .first()
-            )
-            if p:
-                u = db.query(User).filter(User.id == p.user_id).first()
-                if u:
-                    other_user = {
-                        "id": u.id,
-                        "first_name": u.first_name,
-                        "last_name": u.last_name,
-                        "avatar": u.avatar,
-                    }
+        if conv.customer_id == current_user.id and conv.provider and conv.provider.user:
+            pu = conv.provider.user
+            other_user = {
+                "id": pu.id,
+                "first_name": pu.first_name,
+                "last_name": pu.last_name,
+                "avatar": pu.avatar,
+            }
         elif conv.provider_id:
             other_user = {"id": conv.customer_id}
-
-        unread = (
-            db.query(Message)
-            .filter(
-                Message.conversation_id == conv.id,
-                Message.sender_id != current_user.id,
-                Message.is_read == False,
-            )
-            .count()
-        )
 
         result.append(
             {
@@ -162,11 +157,7 @@ def list_conversations(
             }
         )
 
-    result.sort(
-        key=lambda x: x["last_message"]["created_at"] if x["last_message"] else "",
-        reverse=True,
-    )
-    return result
+    return {"items": result, "total": total, "page": page, "limit": limit}
 
 
 @router.get("/conversations/{conversation_id}/messages")

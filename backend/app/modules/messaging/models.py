@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Index
 from sqlalchemy.orm import relationship
 
 from app.core.base.models import BaseModel
@@ -32,6 +32,10 @@ class Message(BaseModel):
     message_type = Column(String(20), default="TEXT")
     attachment_url = Column(String(500), nullable=True)
     is_read = Column(Boolean, default=False)
+
+    __table_args__ = (
+        Index("ix_messages_conv_created", "conversation_id", "created_at"),
+    )
 
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User", foreign_keys=[sender_id])

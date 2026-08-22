@@ -136,9 +136,10 @@ class ProviderMatcher:
         # Rating score (40%)
         r_score = min(avg_rating * 8, 40)
         # Completion score (25%)
+        perf = profile.performance
         c_score = (
-            min(math.log(1 + (profile.completed_jobs or 0)) / math.log(201) * 25, 25)
-            if (profile.completed_jobs or 0) > 0
+            min(math.log(1 + (perf.completed_jobs or 0)) / math.log(201) * 25, 25)
+            if perf and (perf.completed_jobs or 0) > 0
             else 0
         )
         # Verification score (15%)
@@ -151,7 +152,8 @@ class ProviderMatcher:
         }
         v_score = v_mapping.get((profile.verification_status or "NONE").upper(), 0)
         # Response score (10%)
-        resp_minutes = profile.response_time_minutes or 0
+        resp_minutes = perf.average_response_time if perf else 0
+        resp_minutes = resp_minutes or 0
         if resp_minutes == 0:
             resp_score = 5
         elif resp_minutes <= 15:
@@ -232,12 +234,12 @@ class ProviderMatcher:
                     score += 7
 
         if budget:
-            profile = data["profiles"].get(provider.id)
-            if profile and profile.hourly_rate:
-                # Bütçeye uygun provider'a bonus, fazla pahalıya ceza
-                if profile.hourly_rate <= budget:
+            perf = profile.performance
+            avg_job_value = perf.average_job_value if perf else 0
+            if avg_job_value and avg_job_value > 0:
+                if avg_job_value <= budget:
                     score += 5
-                elif profile.hourly_rate <= budget * 1.2:  # %20 tolerans
+                elif avg_job_value <= budget * 1.2:
                     score += 2
                 else:
                     score -= 3

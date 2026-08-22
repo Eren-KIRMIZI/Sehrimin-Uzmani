@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -53,6 +54,11 @@ class Transaction(BaseModel):
 
     provider = relationship("User", lazy="joined")
     appointment = relationship("Appointment", lazy="joined")
+
+    __table_args__ = (
+        Index("ix_transactions_provider_status", "provider_id", "status"),
+        Index("ix_transactions_provider_created", "provider_id", "created_at"),
+    )
 
 
 class ProviderEarning(BaseModel):

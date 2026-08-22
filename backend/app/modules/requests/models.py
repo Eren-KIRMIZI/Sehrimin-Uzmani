@@ -26,6 +26,10 @@ class ServiceRequest(BaseModel):
         String(20), default="DRAFT"
     )  # DRAFT, PUBLISHED, MATCHING, QUOTING...
 
+    __table_args__ = (
+        Index("ix_service_requests_status_created", "status", "created_at"),
+    )
+
     customer = relationship(
         "User", back_populates="service_requests", foreign_keys=[customer_id]
     )

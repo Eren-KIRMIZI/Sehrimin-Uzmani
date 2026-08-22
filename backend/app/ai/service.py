@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 
@@ -104,6 +105,59 @@ def _try_get_price_context(
         return None
 
 
+def _try_get_price_estimate_from_result(ai_result: dict) -> Optional[dict]:
+    """AI sonucuna göre DB'den fiyat tahmini hesaplar (senkron, to_thread içinde çalışır)."""
+    try:
+        from app.core.database import SessionLocal
+        from app.modules.pricing.service import get_price_estimate
+
+        db = SessionLocal()
+        try:
+            service_name = ai_result.get("service")
+            category_slug = ai_result.get("category_slug")
+            city_name = (
+                ai_result.get("location", {}).get("city")
+                if isinstance(ai_result.get("location"), dict)
+                else None
+            )
+
+            service_id = None
+            category_id = None
+
+            if service_name:
+                from app.modules.categories.models import Service
+                svc = db.query(Service).filter(
+                    Service.name.ilike(f"%{service_name}%"), Service.is_active
+                ).first()
+                if svc:
+                    service_id = svc.id
+
+            if not service_id and category_slug:
+                from app.modules.categories.models import Category
+                cat = db.query(Category).filter(Category.slug == category_slug).first()
+                if cat:
+                    category_id = cat.id
+
+            if service_id or category_id:
+                city_id = None
+                if city_name:
+                    from app.modules.locations.models import City
+                    city = db.query(City).filter(City.name.ilike(f"%{city_name}%")).first()
+                    if city:
+                        city_id = city.id
+
+                est = get_price_estimate(
+                    db, service_id=service_id, category_id=category_id, city_id=city_id
+                )
+                if est["sample_size"] > 0:
+                    return {"min": est["min_price"], "max": est["max_price"], "avg": est["avg_price"]}
+        finally:
+            db.close()
+    except Exception as e:
+        logger.debug("Fiyat tahmini hesaplanamadı: %s", str(e))
+    return None
+
+
 async def chat_service_request(
     user_text: str, chat_history: Optional[list[dict[str, str]]] = None
 ) -> dict:
@@ -123,8 +177,8 @@ async def chat_service_request(
             for msg in chat_history:
                 history_str += f"{msg.get('role', 'user').capitalize()}: {msg.get('content', '')}\n"
 
-        # Fiyat bağlamını DB'den çek (varsa prompt'a ekle)
-        price_context = _try_get_price_context()
+        # Fiyat bağlamını DB'den çek — senkron fonksiyonu to_thread ile izole et
+        price_context = await asyncio.to_thread(_try_get_price_context)
         extra_context = f"\n\n{price_context}" if price_context else ""
 
         prompt = (
@@ -147,77 +201,14 @@ async def chat_service_request(
             }
 
         # AI price_estimate'i varsa, sonucun içine ekle
-        # Eğer AI price_estimate döndürmediyse, DB'den hesapla
+        # Eğer AI price_estimate döndüremediyse, DB'den hesapla (to_thread ile izole)
         if not result.get("price_estimate") or result["price_estimate"] is None:
             try:
-                from app.core.database import SessionLocal
-                from app.modules.pricing.service import get_price_estimate
-
-                db = SessionLocal()
-                try:
-                    service_name = result.get("service")
-                    category_slug = result.get("category_slug")
-                    city_name = (
-                        result.get("location", {}).get("city")
-                        if isinstance(result.get("location"), dict)
-                        else None
-                    )
-
-                    service_id = None
-                    category_id = None
-
-                    if service_name:
-                        from app.modules.categories.models import Service
-
-                        svc = (
-                            db.query(Service)
-                            .filter(
-                                Service.name.ilike(f"%{service_name}%"),
-                                Service.is_active,
-                            )
-                            .first()
-                        )
-                        if svc:
-                            service_id = svc.id
-
-                    if not service_id and category_slug:
-                        from app.modules.categories.models import Category
-
-                        cat = (
-                            db.query(Category)
-                            .filter(Category.slug == category_slug)
-                            .first()
-                        )
-                        if cat:
-                            category_id = cat.id
-
-                    if service_id or category_id:
-                        city_id = None
-                        if city_name:
-                            from app.modules.locations.models import City
-
-                            city = (
-                                db.query(City)
-                                .filter(City.name.ilike(f"%{city_name}%"))
-                                .first()
-                            )
-                            if city:
-                                city_id = city.id
-
-                        est = get_price_estimate(
-                            db,
-                            service_id=service_id,
-                            category_id=category_id,
-                            city_id=city_id,
-                        )
-                        if est["sample_size"] > 0:
-                            result["price_estimate"] = {
-                                "min": est["min_price"],
-                                "max": est["max_price"],
-                                "avg": est["avg_price"],
-                            }
-                finally:
-                    db.close()
+                price_est = await asyncio.to_thread(
+                    _try_get_price_estimate_from_result, result
+                )
+                if price_est:
+                    result["price_estimate"] = price_est
             except Exception as e:
                 logger.debug("Fiyat tahmini hesaplanamadı: %s", str(e))
 

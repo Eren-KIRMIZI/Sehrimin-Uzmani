@@ -2,7 +2,7 @@ from math import radians
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func as sql_func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
 from app.modules.categories.models import (
@@ -272,6 +272,10 @@ def search_providers(
     if provider_ids:
         locs = (
             db.query(ProviderLocation)
+            .options(
+                joinedload(ProviderLocation.city),
+                joinedload(ProviderLocation.district),
+            )
             .filter(ProviderLocation.provider_id.in_(provider_ids))
             .all()
         )

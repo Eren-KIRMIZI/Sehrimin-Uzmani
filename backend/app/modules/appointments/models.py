@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Index
 from sqlalchemy.orm import relationship
 
 from app.core.base.models import BaseModel
@@ -21,6 +21,11 @@ class Appointment(BaseModel):
     location = Column(String(500), nullable=True)
     notes = Column(Text, nullable=True)
     reminder_sent = Column(Boolean, default=False)
+
+    __table_args__ = (
+        Index("ix_appointments_status_start", "status", "start_at"),
+        Index("ix_appointments_provider_status", "provider_id", "status"),
+    )
 
     request = relationship("ServiceRequest", back_populates="appointment")
     provider = relationship(
