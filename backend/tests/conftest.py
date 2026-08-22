@@ -51,10 +51,11 @@ test_engine = create_engine(
 
 @event.listens_for(test_engine, "connect")
 def _set_sqlite_pragma(dbapi_conn, connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+    if TEST_DATABASE_URL and TEST_DATABASE_URL.startswith("sqlite"):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)

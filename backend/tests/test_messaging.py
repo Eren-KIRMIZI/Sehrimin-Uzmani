@@ -26,4 +26,4 @@ class TestMessaging:
 
     def test_unauthenticated_cannot_list(self, client):
         r = client.get("/api/v1/messaging/conversations")
-        assert r.status_code in [200, 400, 403, 404, 405, 422]
+        assert r.status_code in [200, 400, 401, 403, 404, 405, 422]

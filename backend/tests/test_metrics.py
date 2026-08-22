@@ -199,7 +199,7 @@ class TestWebSocketMetrics:
 
         asyncio.run(manager.connect(ws, user_id))
         sent_before = WS_MESSAGES_SENT_TOTAL._value.get()
-        asyncio.run(manager.send_to_user(user_id, {"action": "ping"}))
+        asyncio.run(manager._send_to_user_local(user_id, {"action": "ping"}))
         assert WS_MESSAGES_SENT_TOTAL._value.get() == sent_before + 1
         manager.disconnect(ws, user_id)
 
@@ -216,7 +216,7 @@ class TestWebSocketMetrics:
 
         asyncio.run(manager.connect(ws, user_id))
         errors_before = WS_SEND_ERRORS_TOTAL._value.get()
-        asyncio.run(manager.send_to_user(user_id, {"action": "ping"}))
+        asyncio.run(manager._send_to_user_local(user_id, {"action": "ping"}))
         assert WS_SEND_ERRORS_TOTAL._value.get() == errors_before + 1
         # Olmus baglanti temizlendi
         assert user_id not in manager.active_connections

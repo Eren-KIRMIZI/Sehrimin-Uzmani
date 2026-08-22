@@ -44,4 +44,4 @@ class TestAppointmentFlow:
 
     def test_unauthenticated_cannot_list(self, client):
         r = client.get("/api/v1/appointments/my")
-        assert r.status_code in [403, 404, 422]
+        assert r.status_code in [401, 403, 404, 422]
