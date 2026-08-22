@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 
 from app.ai.service import chat_service_request
-from app.core.rate_limiter import RateLimiter
+from app.core.rate_limiter import rate_limiter
 from app.core.security import get_current_user
 from app.modules.users.models import User
 
@@ -19,10 +19,18 @@ class ChatRequestBody(BaseModel):
     history: list[ChatMessage] | None = []
 
 
-@router.post("/chat-request", dependencies=[Depends(RateLimiter(calls=10, period=60))])
+@router.post("/chat-request")
 async def chat_request(
-    body: ChatRequestBody, current_user: User = Depends(get_current_user)
+    request: Request,
+    body: ChatRequestBody, 
+    current_user: User = Depends(get_current_user)
 ):
+    rate_limiter.check(
+        key=f"ai_chat:{current_user.id}",
+        max_requests=10,
+        window_seconds=60,
+        strict=True
+    )
     """
     Kullanıcının serbest metin talebini diyalog bazlı analiz eder.
     Eksik bilgi varsa soru sorar, tamamlandıysa JSON döndürür.
