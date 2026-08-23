@@ -125,7 +125,7 @@ const SearchPage: React.FC = () => {
             </span>
             {provider.locations?.[0] && (
               <span style={{ fontSize: '0.8rem', color: 'var(--color-text-dim)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <MapPin size={12} /> {provider.locations[0].city}
+                <MapPin size={12} /> {typeof provider.locations[0].city === 'object' ? provider.locations[0].city?.name : provider.locations[0].city}{provider.locations[0].district ? `, ${typeof provider.locations[0].district === 'object' ? provider.locations[0].district?.name : provider.locations[0].district}` : ''}
               </span>
             )}
           </div>

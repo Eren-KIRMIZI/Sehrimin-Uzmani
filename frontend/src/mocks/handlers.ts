@@ -305,12 +305,21 @@ const applySearchFilters = (filters: SearchFilters) => {
 
   if (filters.q) {
     const q = filters.q.toLocaleLowerCase('tr');
-    list = list.filter(p =>
-      p.business_name?.toLocaleLowerCase('tr').includes(q) ||
-      p.bio?.toLocaleLowerCase('tr').includes(q) ||
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      p.services.some((s: any) => s.service.name.toLocaleLowerCase('tr').includes(q))
-    );
+    // If q matches a city name, use city filtering instead of text search
+    const matchedCity = cities.find(c => c.name.toLocaleLowerCase('tr') === q || c.name.toLocaleLowerCase('tr').startsWith(q));
+    if (matchedCity && !filters.city_id) {
+      list = list.filter(p =>
+        p.locations.some((l: any) => l.city?.id === matchedCity.id || l.city?.name?.toLocaleLowerCase('tr').includes(q))
+      );
+    } else {
+      list = list.filter(p =>
+        p.business_name?.toLocaleLowerCase('tr').includes(q) ||
+        p.bio?.toLocaleLowerCase('tr').includes(q) ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        p.services.some((s: any) => s.service.name.toLocaleLowerCase('tr').includes(q)) ||
+        p.locations.some((l: any) => l.city?.name?.toLocaleLowerCase('tr').includes(q))
+      );
+    }
   }
   const slugsToServiceIds = (slug: string, level: 'category' | 'subcategory' | 'service') => {
     if (level === 'service') {
@@ -1216,6 +1225,7 @@ export const mockAnalytics = {
 const toAdListItem = (ad: any): AdListItem => ({
   id: ad.id,
   title_tr: ad.title_tr || ad.title || 'İlan',
+  title_en: ad.title_en,
   price: ad.price,
   currency: 'TRY',
   price_type: ad.price_type as AdListItem['price_type'],
@@ -1237,6 +1247,7 @@ const toAdListItem = (ad: any): AdListItem => ({
 const toAdDetail = (ad: any): AdDetail => ({
   ...toAdListItem(ad),
   description_tr: ad.description_tr || ad.description,
+  description_en: ad.description_en,
   contact_count: 3,
   expires_at: null,
   city_id: ad.city_id ?? null,

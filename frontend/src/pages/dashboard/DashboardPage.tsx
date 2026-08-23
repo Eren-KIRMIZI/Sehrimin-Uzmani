@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User, FileText, Calendar, Sparkles, TrendingDown, MessageCircle, Target, Trophy } from 'lucide-react';
+import { Briefcase, MessageSquare, Star, TrendingUp, AlertTriangle, ChevronRight, CheckCircle, Clock, User, FileText, Calendar, Sparkles, TrendingDown, MessageCircle, Target, Trophy, Zap, Shield, CreditCard, X, Search } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { analyticsApi, adminApi } from '../../services';
 import type { ProviderAnalytics, AdminDashboard } from '../../types';
 import { useMyRequests, useAppointments } from '../../hooks/useQueries';
@@ -14,12 +14,15 @@ import {
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const isProvider = user?.role === 'PROVIDER';
   const isAdmin = user?.role === 'ADMIN';
 
   const [analytics, setAnalytics] = useState<ProviderAnalytics | null>(null);
   const [adminStats, setAdminStats] = useState<AdminDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSmartMatch, setShowSmartMatch] = useState(false);
+  const [matchQuery, setMatchQuery] = useState('');
 
   // Müşteri istatistikleri için gerçek veri
   const isCustomer = !isProvider && !isAdmin;
@@ -76,10 +79,106 @@ const DashboardPage: React.FC = () => {
           </div>
           
           <div style={{ display: 'flex', gap: 12 }}>
+            {!isProvider && !isAdmin && (
+              <button
+                onClick={() => setShowSmartMatch(true)}
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <Zap size={16} fill="currentColor" /> Akıllı Eşleştirme
+              </button>
+            )}
             <Link to="/profile" className="btn btn-outline">Profili Düzenle</Link>
             {isAdmin && <Link to="/admin" className="btn btn-primary">Yönetim Paneli</Link>}
           </div>
         </div>
+
+        {/* Smart Match Modal */}
+        {showSmartMatch && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+          }} onClick={() => setShowSmartMatch(false)}>
+            <div
+              style={{
+                background: 'var(--color-surface)', borderRadius: 20,
+                padding: 32, maxWidth: 520, width: '100%',
+                boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
+                border: '1px solid var(--color-border)',
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #6366f1, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Zap size={18} color="white" fill="white" />
+                    </div>
+                    <h2 style={{ fontWeight: 800, fontSize: '1.3rem', margin: 0 }}>Akıllı Eşleştirme</h2>
+                  </div>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', margin: 0 }}>
+                    İhtiyacını yaz, sana en uygun uzmanı bulalım
+                  </p>
+                </div>
+                <button onClick={() => setShowSmartMatch(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--color-text-muted)' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
+                  <input
+                    className="input"
+                    value={matchQuery}
+                    onChange={e => setMatchQuery(e.target.value)}
+                    placeholder="Örn: Evim için elektrikçi arıyorum, acil..."
+                    style={{ paddingLeft: 42, height: 48 }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && matchQuery.trim()) {
+                        setShowSmartMatch(false);
+                        navigate(`/search?q=${encodeURIComponent(matchQuery.trim())}`);
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <button
+                  className="btn btn-primary"
+                  style={{ height: 48, paddingLeft: 20, paddingRight: 20 }}
+                  disabled={!matchQuery.trim()}
+                  onClick={() => {
+                    if (matchQuery.trim()) {
+                      setShowSmartMatch(false);
+                      navigate(`/search?q=${encodeURIComponent(matchQuery.trim())}`);
+                    }
+                  }}
+                >
+                  Eşleştir
+                </button>
+              </div>
+
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginBottom: 16 }}>Örnek aramalar:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['Kombi arızası acil', 'Ev temizliği haftalık', 'LGS matematik özel ders', 'Nakliyat İstanbul içi', 'Saç boyama randevu'].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setMatchQuery(s)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 999, fontSize: '0.8rem',
+                      background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+                      cursor: 'pointer', color: 'var(--color-text-muted)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Insights for Providers */}
         {isProvider && analytics?.ai_insights && analytics.ai_insights.length > 0 && (
@@ -173,6 +272,7 @@ const DashboardPage: React.FC = () => {
                   <span className="font-semibold text-gray-500">Toplam Kullanıcı</span>
                 </div>
                 <div className="text-3xl font-bold">{adminStats?.total_users || 0}</div>
+                <p className="text-xs text-gray-400 mt-1">+{adminStats?.new_users_today || 0} bugün</p>
               </div>
               <div className="card">
                 <div className="flex items-center gap-3 mb-3">
@@ -182,15 +282,47 @@ const DashboardPage: React.FC = () => {
                   <span className="font-semibold text-gray-500">Kayıtlı Uzman</span>
                 </div>
                 <div className="text-3xl font-bold">{adminStats?.total_providers || 0}</div>
+                <p className="text-xs text-gray-400 mt-1">+{adminStats?.new_providers_today || 0} bugün</p>
               </div>
               <div className="card">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-                    <Clock size={20} />
+                    <Shield size={20} />
                   </div>
-                  <span className="font-semibold text-gray-500">Aktif Talepler</span>
+                  <span className="font-semibold text-gray-500">Bekleyen Doğrulama</span>
                 </div>
-                <div className="text-3xl font-bold">{adminStats?.total_requests || 0}</div>
+                <div className="text-3xl font-bold text-amber-600">{adminStats?.pending_verifications || 0}</div>
+                <p className="text-xs text-gray-400 mt-1">İnceleme bekliyor</p>
+              </div>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                    <AlertTriangle size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Açık Anlaşmazlık</span>
+                </div>
+                <div className="text-3xl font-bold text-red-500">{adminStats?.open_disputes || 0}</div>
+                <p className="text-xs text-gray-400 mt-1">Çözüm bekliyor</p>
+              </div>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <CreditCard size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Ödeme Talebi</span>
+                </div>
+                <div className="text-3xl font-bold">{adminStats?.pending_payouts || 0}</div>
+                <p className="text-xs text-gray-400 mt-1">Onay bekliyor</p>
+              </div>
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                    <TrendingUp size={20} />
+                  </div>
+                  <span className="font-semibold text-gray-500">Toplam Gelir</span>
+                </div>
+                <div className="text-3xl font-bold text-green-600">₺{(adminStats?.total_revenue || 0).toLocaleString('tr-TR')}</div>
+                <p className="text-xs text-gray-400 mt-1">+₺{(adminStats?.revenue_today || 0).toLocaleString('tr-TR')} bugün</p>
               </div>
             </>
           ) : (

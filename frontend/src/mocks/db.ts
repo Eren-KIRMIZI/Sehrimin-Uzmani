@@ -236,7 +236,7 @@ export const providers: any[] = [
       { id: 2, service: { id: 4, name: 'Kombi Bakımı', slug: 'kombi-bakimi', subcategory_id: 2 }, starting_price: 550, description: 'Yıllık bakım, arıza tespiti ve onarım — tüm markalar' },
       { id: 3, service: { id: 3, name: 'Tesisatçı', slug: 'tesisatci', subcategory_id: 2 }, starting_price: 250, description: 'Su tesisatı, gider açma, batarya montajı' },
     ],
-    locations: [{ id: 1, city: cities[0], district: districts[0] }],
+    locations: [{ id: 1, city: cities[0], district: districts[0], latitude: 40.9901, longitude: 29.0292 }],
     portfolio: [
       { id: 1, image_url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&h=450&fit=crop', title: 'Apartman elektrik panosu yenileme' },
       { id: 2, image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=450&fit=crop', title: 'Endüstriyel aydınlatma kurulumu' },
@@ -268,7 +268,7 @@ export const providers: any[] = [
       { id: 5, service: { id: 7, name: 'Derin Temizlik', slug: 'derin-temizlik', subcategory_id: 4 }, starting_price: 1400, description: 'Detaylı, ekipmanlı derin temizlik — mutfak, banyo, tüm yüzeyler' },
       { id: 12, service: { id: 8, name: 'Boya Badana', slug: 'boya-badana', subcategory_id: 5 }, starting_price: 900, description: 'Tadilat sonrası duman ve toz temizliği paketi' },
     ],
-    locations: [{ id: 2, city: cities[0], district: districts[1] }],
+    locations: [{ id: 2, city: cities[0], district: districts[1], latitude: 41.0422, longitude: 29.0067 }],
     portfolio: [
       { id: 4, image_url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&h=450&fit=crop', title: 'Mutfak derin temizlik — sonrası' },
       { id: 5, image_url: 'https://images.unsplash.com/photo-1527515637462-cff94ebb84be?w=600&h=450&fit=crop', title: 'Ofis periyodik temizlik' },
@@ -330,7 +330,7 @@ export const providers: any[] = [
       { id: 7, service: { id: 3, name: 'Tesisatçı', slug: 'tesisatci', subcategory_id: 2 }, starting_price: 220, description: 'Gider açma, batarya, klozet montajı' },
       { id: 15, service: { id: 4, name: 'Kombi Bakımı', slug: 'kombi-bakimi', subcategory_id: 2 }, starting_price: 400, description: 'Kalorifer ve kombi sistemi revizyonu' },
     ],
-    locations: [{ id: 4, city: cities[0], district: districts[2] }],
+    locations: [{ id: 4, city: cities[0], district: districts[2], latitude: 41.0256, longitude: 29.0175 }],
     portfolio: [
       { id: 17, image_url: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=600&h=450&fit=crop', title: 'Kalorifer tesisatı yenileme' },
       { id: 18, image_url: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&h=450&fit=crop', title: 'Banyo renovasyonu tesisat işleri' },
@@ -391,7 +391,7 @@ export const providers: any[] = [
       { id: 9, service: { id: 16, name: 'Evden Eve Nakliyat', slug: 'evden-eve-nakliyat', subcategory_id: 13 }, starting_price: 3500, description: '3+1 daire şehir içi komple taşıma (ambalaj dahil)' },
       { id: 17, service: { id: 16, name: 'Ofis Taşıma', slug: 'evden-eve-nakliyat', subcategory_id: 13 }, starting_price: 5000, description: 'Ofis ve işyeri taşıma paketi' },
     ],
-    locations: [{ id: 6, city: cities[0], district: districts[3] }],
+    locations: [{ id: 6, city: cities[0], district: districts[3], latitude: 41.0613, longitude: 28.9877 }],
     portfolio: [
       { id: 21, image_url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=450&fit=crop', title: 'Asansörlü araç ile taşıma' },
       { id: 22, image_url: 'https://images.unsplash.com/photo-1600518464441-9306a3e2b59c?w=600&h=450&fit=crop', title: 'Profesyonel ambalajlama' },
@@ -425,7 +425,7 @@ export const providers: any[] = [
       { id: 18, service: { id: 21, name: 'Röfle & Ombre', slug: 'sac-kesimi', subcategory_id: 18 }, starting_price: 650, description: 'Balayage, ombre, röfle uygulamaları' },
       { id: 19, service: { id: 21, name: 'Gelin Paketi', slug: 'sac-kesimi', subcategory_id: 18 }, starting_price: 2500, description: 'Gelin saçı + makyaj tam paket' },
     ],
-    locations: [{ id: 7, city: cities[0], district: districts[0] }],
+    locations: [{ id: 7, city: cities[0], district: districts[0], latitude: 40.9880, longitude: 29.0255 }],
     portfolio: [
       { id: 24, image_url: 'https://images.unsplash.com/photo-1562322140-8baeacacf3df?w=600&h=450&fit=crop', title: 'Gelin saçı tasarımı' },
       { id: 25, image_url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=450&fit=crop', title: 'Balayage & ombre uygulaması' },
@@ -456,7 +456,7 @@ export const providers: any[] = [
       { id: 11, service: { id: 15, name: 'Mekanik', slug: 'mekanik', subcategory_id: 11 }, starting_price: 800, description: 'Periyodik bakım paketi (yağ, filtre, kontroller dahil)' },
       { id: 20, service: { id: 15, name: 'Fren Bakımı', slug: 'mekanik', subcategory_id: 11 }, starting_price: 600, description: 'Balata + disk kontrolü ve değişimi' },
     ],
-    locations: [{ id: 8, city: cities[0], district: districts[2] }],
+    locations: [{ id: 8, city: cities[0], district: districts[2], latitude: 41.0234, longitude: 29.0140 }],
     portfolio: [
       { id: 28, image_url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&h=450&fit=crop', title: 'Motor revizyonu' },
       { id: 29, image_url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=600&h=450&fit=crop', title: 'Lastik ve jant servisi' },
@@ -488,7 +488,7 @@ export const providers: any[] = [
       { id: 21, service: { id: 22, name: 'Özel Ders', slug: 'ozel-ders-spor', subcategory_id: 19 }, starting_price: 600, description: 'Kişisel antrenman seansı (60 dk)' },
       { id: 22, service: { id: 22, name: 'Online Koçluk', slug: 'ozel-ders-spor', subcategory_id: 19 }, starting_price: 1500, description: 'Aylık online koçluk + beslenme programı' },
     ],
-    locations: [{ id: 9, city: cities[0], district: districts[1] }],
+    locations: [{ id: 9, city: cities[0], district: districts[0], latitude: 40.9920, longitude: 29.0310 }],
     portfolio: [
       { id: 31, image_url: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&h=450&fit=crop', title: 'Fonksiyonel antrenman seansı' },
       { id: 32, image_url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=450&fit=crop', title: 'Kuvvet antrenmanı' },
@@ -615,38 +615,108 @@ export const appointments: any[] = [
 export const reviews: any[] = [
   {
     id: 1, provider_id: 1, customer_id: 2, rating: 5,
-    comment: 'Kombi bakımını aynı gün tamamladı, fiyat da teklifte kaldı. Kesinlikle tavsiye ederim.',
+    comment: 'Kombi bakımını aynı gün tamamladı, fiyat da teklifte kaldı. Kesinlikle tavsiye ederim. Yıllardır aradığım güvenilir elektrikçiyi buldum!',
     communication_rating: 5, quality_rating: 5, price_rating: 4, punctuality_rating: 5,
-    provider_reply: 'Teşekkürler Ayşe Hanım, güveniniz için biz teşekkür ederiz. ğŸ™‚',
+    provider_reply: 'Teşekkürler Ayşe Hanım, güveniniz için biz teşekkür ederiz. 🙂 Gelecekte de hizmetinizdeyiz.',
     created_at: daysFromNow(-17),
   },
   {
     id: 2, provider_id: 1, customer_id: 11, rating: 4,
-    comment: 'İşi iyi yaptı ama biraz geç geldi.',
+    comment: 'Elektrik tesisatını kusursuz yaptı, sadece biraz geç geldi ama iş kalitesi mükemmeldi.',
     communication_rating: 4, quality_rating: 5, price_rating: 4, punctuality_rating: 3,
-    provider_reply: '',
+    provider_reply: 'Ali Bey, gecikme için özür dilerim. Bir önceki işimiz uzadı. Bir dahaki randevunuzda dakik olacağım!',
     created_at: daysFromNow(-10),
   },
   {
-    id: 3, provider_id: 2, customer_id: 12, rating: 5,
-    comment: 'Ekip çok titizdi, ev mis gibi oldu. Fiyat da çok uygundu.',
-    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
-    provider_reply: 'Biz teşekkür ederiz, tekrar bekleriz!',
-    created_at: daysFromNow(-30),
-  },
-  {
-    id: 4, provider_id: 5, customer_id: 11, rating: 5,
-    comment: 'Kızım matematikte büyük ilerleme kaydetti. Fatma Hanım harika bir öğretmen.',
-    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
-    provider_reply: '',
-    created_at: daysFromNow(-3),
-  },
-  {
-    id: 5, provider_id: 1, customer_id: 12, rating: 5,
-    comment: 'Sigorta kutusunu aynı gün değiştirdi, çok memnun kaldım.',
+    id: 3, provider_id: 1, customer_id: 12, rating: 5,
+    comment: 'Sigorta kutusunu aynı gün değiştirdi, çok memnun kaldım. Fiyat makul, iş kalitesi yüksek.',
     communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 4,
     provider_reply: '',
     created_at: daysFromNow(-40),
+  },
+  {
+    id: 4, provider_id: 1, customer_id: 12, rating: 5,
+    comment: 'Aydınlatma sistemini tamamen yeniledi. Hem hızlı hem de titiz çalıştı. Tekrar çalışacağım.',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: 'Teşekkürler Merve Hanım! Her zaman hizmetinizdeyim. 🔌',
+    created_at: daysFromNow(-55),
+  },
+  {
+    id: 5, provider_id: 2, customer_id: 2, rating: 5,
+    comment: 'Ekip çok titizdi, ev mis gibi oldu. Derin temizlik paketini aldım, her köşe pırıl pırıl. Fiyat da çok uygundu.',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: 'Biz teşekkür ederiz, tekrar bekleriz! Sizi ağırlamak her zaman mutluluk.',
+    created_at: daysFromNow(-30),
+  },
+  {
+    id: 6, provider_id: 2, customer_id: 11, rating: 5,
+    comment: 'Tadilat sonrası temizlik için çağırdım. İnanılmaz titiz çalıştılar, boyacıların bıraktığı tüm kalıntıları temizlediler.',
+    communication_rating: 5, quality_rating: 5, price_rating: 4, punctuality_rating: 5,
+    provider_reply: 'Güveniniz için teşekkürler! Tadilat sonrası temizlik uzmanlık alanımız. 🏠',
+    created_at: daysFromNow(-45),
+  },
+  {
+    id: 7, provider_id: 2, customer_id: 12, rating: 4,
+    comment: 'Ofis temizliğini haftalık yapıyorlar. Genel olarak memnunum, ancak bazen bazı köşeleri atlıyorlar.',
+    communication_rating: 4, quality_rating: 4, price_rating: 5, punctuality_rating: 4,
+    provider_reply: 'Geri bildiriminiz için teşekkürler. Dikkatli olacağız!',
+    created_at: daysFromNow(-8),
+  },
+  {
+    id: 8, provider_id: 3, customer_id: 2, rating: 5,
+    comment: 'Zeynep Hanım çok profesyonel ve anlayışlı. Kaygı bozukluğum için online terapi aldım, çok faydalı oldu.',
+    communication_rating: 5, quality_rating: 5, price_rating: 4, punctuality_rating: 5,
+    provider_reply: 'İyileşme sürecinizde yanınızda olmak onur verici. Çalışmaya devam edelim! 💙',
+    created_at: daysFromNow(-20),
+  },
+  {
+    id: 9, provider_id: 3, customer_id: 11, rating: 5,
+    comment: 'Çift terapisine eşimle birlikte gittik. İletişim sorunlarımızı çözmemize çok yardımcı oldu.',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: '',
+    created_at: daysFromNow(-35),
+  },
+  {
+    id: 10, provider_id: 5, customer_id: 11, rating: 5,
+    comment: 'Kızım matematikte büyük ilerleme kaydetti. Fatma Hanım harika bir öğretmen, çok sabırlı ve açıklayıcı.',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: 'Çok teşekkürler! Başarıları devam edecek. 🎓',
+    created_at: daysFromNow(-3),
+  },
+  {
+    id: 11, provider_id: 5, customer_id: 12, rating: 5,
+    comment: 'Oğlum TYT sınavında matematik bölümünde çok başarılı oldu. Fatma Hanım sayesinde konuları sistematik öğrendi.',
+    communication_rating: 5, quality_rating: 5, price_rating: 4, punctuality_rating: 5,
+    provider_reply: 'Harika! Emeklerinizin karşılığını aldınız. Başarılar diliyorum! 🌟',
+    created_at: daysFromNow(-12),
+  },
+  {
+    id: 12, provider_id: 7, customer_id: 2, rating: 5,
+    comment: 'Gelin saçım için Elif Hanım\'a gittim. Hayallerimden güzel oldu! Tüm ekip çok ilgili ve profesyoneldi.',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: 'Çok mutlu olduğuma sevindim! Düğününüz kutlu olsun! 👰',
+    created_at: daysFromNow(-7),
+  },
+  {
+    id: 13, provider_id: 7, customer_id: 11, rating: 4,
+    comment: 'Balayage uygulaması çok başarılıydı. Renk tam istediğim gibi çıktı. Randevu biraz geç başladı.',
+    communication_rating: 4, quality_rating: 5, price_rating: 4, punctuality_rating: 3,
+    provider_reply: 'Teşekkürler! Zamanlamada daha iyi olacağız. 💇',
+    created_at: daysFromNow(-22),
+  },
+  {
+    id: 14, provider_id: 9, customer_id: 2, rating: 5,
+    comment: 'Hasan Bey harika bir antrenör! İlk seans ücretsiz değerlendirmede hedeflerimi doğru belirledi. 3 ayda 12 kilo verdim!',
+    communication_rating: 5, quality_rating: 5, price_rating: 5, punctuality_rating: 5,
+    provider_reply: 'Bu sonuç sizin azminizin ürünü! Harika iş çıkardınız. Devam edelim! 💪',
+    created_at: daysFromNow(-5),
+  },
+  {
+    id: 15, provider_id: 9, customer_id: 12, rating: 5,
+    comment: 'Online koçluk programı mükemmeldi. Beslenme planı ve egzersiz programı kişiye özel hazırlandı.',
+    communication_rating: 5, quality_rating: 5, price_rating: 4, punctuality_rating: 5,
+    provider_reply: 'Teşekkürler! Hedefinize ulaşana kadar yanınızdayım. 🏋️',
+    created_at: daysFromNow(-18),
   },
 ];
 
@@ -673,14 +743,45 @@ export const conversations: any[] = [
     customer: users[1], provider: providers[1],
     last_message: { id: 5, conversation_id: 2, sender_id: 2, content: 'Teşekkürler, cumartesi görüşürüz!', message_type: 'TEXT', created_at: daysFromNow(-3, 18), is_read: true },
   },
+  {
+    id: 3, customer_id: 2, provider_id: 9, created_at: daysFromNow(-6),
+    unread_count: 0,
+    customer: users[1], provider: providers[8],
+    last_message: { id: 12, conversation_id: 3, sender_id: 2, content: 'Peki, haftalık programı kabul ediyorum. Ne zaman başlayabiliriz?', message_type: 'TEXT', created_at: daysFromNow(-5, 16), is_read: true },
+  },
+  {
+    id: 4, customer_id: 11, provider_id: 5, created_at: daysFromNow(-10),
+    unread_count: 2,
+    customer: users[10], provider: providers[4],
+    last_message: { id: 15, conversation_id: 4, sender_id: 5, content: 'Bu haftaki ödevleri bitirmeyi unutma! Pazartesi görüşelim.', message_type: 'TEXT', created_at: daysFromNow(-1, 20), is_read: false },
+  },
 ];
 
 export const messages: any[] = [
-  { id: 1, conversation_id: 1, sender_id: 2, content: 'Merhaba, salondaki priz arızası için ne kadar sürede gelebilirsiniz?', message_type: 'TEXT', created_at: daysFromNow(-1, 20), is_read: true },
-  { id: 2, conversation_id: 1, sender_id: 3, content: 'Merhaba Ayşe Hanım, teklifi incelediniz mi? Yarın öğleden sonra müsaitim.', message_type: 'TEXT', created_at: daysFromNow(-1, 21), is_read: true },
-  { id: 3, conversation_id: 1, sender_id: 3, content: 'Yarın 11:00 uygun mu?', message_type: 'TEXT', created_at: daysFromNow(0, 9, 30), is_read: false },
-  { id: 4, conversation_id: 2, sender_id: 4, content: 'Cumartesi 14:00 için randevunuz onaylandı.', message_type: 'TEXT', created_at: daysFromNow(-3, 12), is_read: true },
-  { id: 5, conversation_id: 2, sender_id: 2, content: 'Teşekkürler, cumartesi görüşürüz!', message_type: 'TEXT', created_at: daysFromNow(-3, 18), is_read: true },
+  // Konuşma 1 — Elektrik arızası
+  { id: 1, conversation_id: 1, sender_id: 2, content: 'Merhaba Mehmet Bey, salondaki üç priz çalışmıyor. Acil bakabilir misiniz?', message_type: 'TEXT', created_at: daysFromNow(-2, 14), is_read: true },
+  { id: 2, conversation_id: 1, sender_id: 3, content: 'Merhaba Ayşe Hanım! Evet bakabilirim. Yarın öğleden önce müsaitim. Size teklif gönderdim, incelemenizi öneririm.', message_type: 'TEXT', created_at: daysFromNow(-2, 15), is_read: true },
+  { id: 3, conversation_id: 1, sender_id: 2, content: 'Teklifi gördüm, uygun görünüyor. Sigorta panosu da kontrol edilecek mi?', message_type: 'TEXT', created_at: daysFromNow(-1, 9), is_read: true },
+  { id: 4, conversation_id: 1, sender_id: 3, content: 'Evet tabii, sigorta panosu da dahil. Herhangi bir sorun varsa anında ilgilenirim.', message_type: 'TEXT', created_at: daysFromNow(-1, 10), is_read: true },
+  { id: 5, conversation_id: 1, sender_id: 3, content: 'Yarın 11:00 uygun mu? Yaklaşık 2 saat sürer.', message_type: 'TEXT', created_at: daysFromNow(0, 9, 30), is_read: false },
+  // Konuşma 2 — Temizlik randevusu
+  { id: 6, conversation_id: 2, sender_id: 2, content: 'Merhaba! 3+1 ev için taşınma sonrası derin temizlik istiyorum. Müsaitlik durumunuz nedir?', message_type: 'TEXT', created_at: daysFromNow(-5, 10), is_read: true },
+  { id: 7, conversation_id: 2, sender_id: 4, content: 'Merhaba Ayşe Hanım! Tabii ki yapabiliriz. Cumartesi 14:00\'a müsaitiz. Teklif gönderdim.', message_type: 'TEXT', created_at: daysFromNow(-5, 11), is_read: true },
+  { id: 8, conversation_id: 2, sender_id: 2, content: 'Harika! Beyaz eşyaları da temizleyecek misiniz?', message_type: 'TEXT', created_at: daysFromNow(-4, 14), is_read: true },
+  { id: 9, conversation_id: 2, sender_id: 4, content: 'Evet, buzdolabı dışı ve çamaşır makinesi dışı dahil. Fırın içi ekstra ücrete tabidir.', message_type: 'TEXT', created_at: daysFromNow(-4, 15), is_read: true },
+  { id: 10, conversation_id: 2, sender_id: 2, content: 'Fırın içini de temizleyin lütfen, toplam fiyat kaç olur?', message_type: 'TEXT', created_at: daysFromNow(-3, 10), is_read: true },
+  { id: 11, conversation_id: 2, sender_id: 4, content: 'Fırın dahil toplam ₺1.250 olur. Cumartesi 14:00 için randevunuzu onayladım!', message_type: 'TEXT', created_at: daysFromNow(-3, 12), is_read: true },
+  { id: 12, conversation_id: 2, sender_id: 2, content: 'Teşekkürler, cumartesi görüşürüz!', message_type: 'TEXT', created_at: daysFromNow(-3, 18), is_read: true },
+  // Konuşma 3 — Antrenman
+  { id: 13, conversation_id: 3, sender_id: 2, content: 'Merhaba Hasan Bey! Kilo vermek istiyorum, ilk ücretsiz seansı ne zaman yapabiliriz?', message_type: 'TEXT', created_at: daysFromNow(-7, 12), is_read: true },
+  { id: 14, conversation_id: 3, sender_id: 13, content: 'Merhaba! Çarşamba akşamı 19:00 uygun mu? Önce hedeflerinizi konuşalım, sonra program oluşturalım.', message_type: 'TEXT', created_at: daysFromNow(-7, 14), is_read: true },
+  { id: 15, conversation_id: 3, sender_id: 2, content: 'Peki, haftalık programı kabul ediyorum. Ne zaman başlayabiliriz?', message_type: 'TEXT', created_at: daysFromNow(-5, 16), is_read: true },
+  // Konuşma 4 — Matematik dersi
+  { id: 16, conversation_id: 4, sender_id: 11, content: 'Fatma Hanım merhaba! Oğlum için LGS matematik dersi istiyoruz. Online verebilir misiniz?', message_type: 'TEXT', created_at: daysFromNow(-11, 10), is_read: true },
+  { id: 17, conversation_id: 4, sender_id: 5, content: 'Merhaba Ali Bey! Evet, online ders veriyorum. Önce oğlunuzun seviyesini değerlendirmek için ücretsiz 30 dk. yapalım.', message_type: 'TEXT', created_at: daysFromNow(-11, 11), is_read: true },
+  { id: 18, conversation_id: 4, sender_id: 11, content: 'Çok iyi! Hangi gün uygun?', message_type: 'TEXT', created_at: daysFromNow(-10, 9), is_read: true },
+  { id: 19, conversation_id: 4, sender_id: 5, content: 'Salı ve Perşembe 18:00-19:30 öneririm. Müsait misiniz?', message_type: 'TEXT', created_at: daysFromNow(-10, 10), is_read: true },
+  { id: 20, conversation_id: 4, sender_id: 5, content: 'Bu haftaki ödevleri bitirmeyi unutma! Pazartesi görüşelim.', message_type: 'TEXT', created_at: daysFromNow(-1, 20), is_read: false },
 ];
 
 // â”€â”€ Kazançlar / Komisyonlar (uzman görünümü) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -782,93 +883,15 @@ export const promotions: any[] = [
   },
 ];
 
-
 export const ads: any[] = [
   {
-    id: 1, title: 'iPhone 15 Pro 256GB — Doğal Titanyum', price: 42500, price_type: 'FIXED',
-    condition: 'LIKE_NEW', status: 'ACTIVE', category_id: 8,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 214, favorite_count: 18, is_featured: true, is_negotiable: false,
-    seller_id: 2, published_at: daysFromNow(-2), created_at: daysFromNow(-2),
-    description: '2 aylık, kutulu, faturalı, Apple garantisi devam ediyor. Batarya sağlığı %100. Hiç düşürülmedi, çizik yok. Orijinal aksesuar dahil.',
-    attributes: [
-      { attribute_key: 'Marka', attribute_value: 'Apple' },
-      { attribute_key: 'Bellek', attribute_value: '256 GB' },
-      { attribute_key: 'Renk', attribute_value: 'Doğal Titanyum' },
-      { attribute_key: 'Garanti', attribute_value: 'Apple Garantisi - 10 ay kaldı' },
-    ],
-    images: [
-      { id: 1, url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&h=600&fit=crop', is_cover: true },
-      { id: 2, url: 'https://images.unsplash.com/photo-1696426012768-b4c5f07e2523?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 2, title: 'BMW 520i Luxury — 2020 Model', price: 1850000, price_type: 'NEGOTIABLE',
-    condition: 'USED', status: 'ACTIVE', category_id: 2,
-    city_name: 'İstanbul', district_name: 'Şişli', city_id: 1, district_id: 4,
-    view_count: 1893, favorite_count: 74, is_featured: true, is_negotiable: true,
-    seller_id: 5, published_at: daysFromNow(-6), created_at: daysFromNow(-6),
-    description: 'Tek elden, hatasız araç. Tüm servis bakımları yetkili serviste yapılmış. Sunroof, deri döşeme, ekstra donanımlı. Takas yalnızca üst model BMW ile.',
-    attributes: [
-      { attribute_key: 'Marka', attribute_value: 'BMW' },
-      { attribute_key: 'Model', attribute_value: '520i Luxury' },
-      { attribute_key: 'Yıl', attribute_value: '2020' },
-      { attribute_key: 'KM', attribute_value: '62.000 km' },
-      { attribute_key: 'Yakıt', attribute_value: 'Benzin' },
-      { attribute_key: 'Vites', attribute_value: 'Otomatik' },
-    ],
-    images: [
-      { id: 3, url: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&h=600&fit=crop', is_cover: true },
-      { id: 4, url: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&h=600&fit=crop' },
-      { id: 5, url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 3, title: 'MacBook Air M2 — 8GB/256GB Midnight', price: 27500, price_type: 'FIXED',
-    condition: 'GOOD', status: 'ACTIVE', category_id: 9,
-    city_name: 'İzmir', district_name: 'Bornova', city_id: 3, district_id: 7,
-    view_count: 342, favorite_count: 29, is_featured: false, is_negotiable: false,
-    seller_id: 7, published_at: daysFromNow(-4), created_at: daysFromNow(-4),
-    description: 'Öğrenci kullanımından, çok temiz. Şarj döngüsü: 87. Orijinal şarj adaptörü dahil. Üzerinde herhangi bir hasar veya çizik bulunmuyor.',
-    attributes: [
-      { attribute_key: 'İşlemci', attribute_value: 'Apple M2' },
-      { attribute_key: 'RAM', attribute_value: '8 GB' },
-      { attribute_key: 'Depolama', attribute_value: '256 GB SSD' },
-      { attribute_key: 'Ekran', attribute_value: '13.6 inç Liquid Retina' },
-      { attribute_key: 'Renk', attribute_value: 'Midnight' },
-    ],
-    images: [
-      { id: 6, url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&h=600&fit=crop', is_cover: true },
-      { id: 100, url: 'https://images.unsplash.com/photo-1611186871525-7c9736c48c87?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 4, title: '3+1 Kiralık Daire — Kadıköy Moda', price: 22000, price_type: 'FIXED',
-    condition: undefined, status: 'ACTIVE', category_id: 5,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 967, favorite_count: 51, is_featured: false, is_negotiable: false,
-    seller_id: 6, published_at: daysFromNow(-1), created_at: daysFromNow(-1),
-    description: 'Moda\'ya 5 dk yürüme mesafesi. 4. kat, asansörlü bina. Yeni tadilat görmüş, eşyasız. Isıtma doğalgaz, aidat 800 TL. 2+1 banyo.',
-    attributes: [
-      { attribute_key: 'Oda / Salon', attribute_value: '3+1' },
-      { attribute_key: 'Brüt m²', attribute_value: '130 m²' },
-      { attribute_key: 'Kat', attribute_value: '4/8' },
-      { attribute_key: 'Isıtma', attribute_value: 'Doğalgaz Kombi' },
-      { attribute_key: 'Bina Yaşı', attribute_value: '2 yıl' },
-    ],
-    images: [
-      { id: 7, url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop', is_cover: true },
-      { id: 8, url: 'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop' },
-      { id: 101, url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 5, title: 'Electrikçi Hizmetleri — Acil & Randevulu', price: 300, price_type: 'FIXED',
-    condition: undefined, status: 'ACTIVE', category_id: 14,
+    id: 1, title: 'Electrikçi Hizmetleri — Acil & Randevulu', title_en: 'Electrician Services — Urgent & by Appointment', price: 300, price_type: 'FIXED',
+    condition: undefined, status: 'ACTIVE', category_id: 1,
     city_name: 'İstanbul', district_name: 'Beşiktaş', city_id: 1, district_id: 2,
     view_count: 245, favorite_count: 12, is_featured: false, is_negotiable: true,
     seller_id: 3, published_at: daysFromNow(-3), created_at: daysFromNow(-3),
     description: '15 yıllık deneyimle priz, anahtar, sigorta değişimi, aydınlatma ve elektrik tesisatı. Aynı gün hizmet, malzeme dahil, işçilik garantisi.',
+    description_en: 'With 15 years of experience: outlet, switch, fuse replacement, lighting, and electrical wiring. Same-day service, materials included, workmanship guaranteed.',
     attributes: [
       { attribute_key: 'Hizmet Türü', attribute_value: 'Elektrik Tesisatı' },
       { attribute_key: 'Bölge', attribute_value: 'İstanbul Avrupa Yakası' },
@@ -880,122 +903,32 @@ export const ads: any[] = [
     ],
   },
   {
-    id: 6, title: 'Vespa GTS 300 Super — 2023 Model', price: 185000, price_type: 'NEGOTIABLE',
-    condition: 'LIKE_NEW', status: 'ACTIVE', category_id: 3,
-    city_name: 'İzmir', district_name: 'Karşıyaka', city_id: 3, district_id: 8,
-    view_count: 611, favorite_count: 38, is_featured: false, is_negotiable: true,
-    seller_id: 11, published_at: daysFromNow(-8), created_at: daysFromNow(-8),
-    description: '2023 model, 6.200 km. Garajda, özenle kullanıldı. Kask ve koruyucu eldiven hediye. İlk sahibinden, boyasız.',
-    attributes: [
-      { attribute_key: 'Marka', attribute_value: 'Vespa' },
-      { attribute_key: 'Model', attribute_value: 'GTS 300 Super' },
-      { attribute_key: 'Yıl', attribute_value: '2023' },
-      { attribute_key: 'KM', attribute_value: '6.200 km' },
-      { attribute_key: 'Silindir', attribute_value: '300 cc' },
-    ],
-    images: [
-      { id: 10, url: 'https://images.unsplash.com/photo-1558981285-6f0c8d87a4fc?w=800&h=600&fit=crop', is_cover: true },
-      { id: 103, url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 7, title: 'Ev Temizliği Hizmeti — Haftalık & Tekil', price: 750, price_type: 'FIXED',
-    condition: undefined, status: 'ACTIVE', category_id: 14,
-    city_name: 'Ankara', district_name: 'Çankaya', city_id: 2, district_id: 5,
-    view_count: 430, favorite_count: 22, is_featured: true, is_negotiable: false,
-    seller_id: 4, published_at: daysFromNow(-2), created_at: daysFromNow(-2),
-    description: 'Organik temizlik ürünleri kullanıyoruz. 3+1 standart temizlik, mutfak ve banyo özel ilgi. Çalışanlarımız sigortalı ve referanslı. Memnun kalmazsanız para iadesi.',
-    attributes: [
-      { attribute_key: 'Hizmet Türü', attribute_value: 'Ev Temizliği' },
-      { attribute_key: 'Kapsam', attribute_value: '3+1 daire' },
-      { attribute_key: 'Süre', attribute_value: '4-5 saat' },
-      { attribute_key: 'Ürünler', attribute_value: 'Organik & Eco-Friendly' },
-    ],
-    images: [
-      { id: 11, url: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&h=600&fit=crop', is_cover: true },
-      { id: 104, url: 'https://images.unsplash.com/photo-1527515637462-cff94ebb84be?w=800&h=600&fit=crop' },
-    ],
-  },
-  // Demo kullanıcısının (id=2) ilanları
-  {
-    id: 8, title: 'Özel Matematik Dersi — LGS & TYT Hazırlık', price: 400, price_type: 'FIXED',
-    condition: undefined, status: 'ACTIVE', category_id: 14,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 188, favorite_count: 17, is_featured: false, is_negotiable: true,
-    seller_id: 2, published_at: daysFromNow(-5), created_at: daysFromNow(-5),
-    description: 'Boğaziçi mezunu matematik öğretmeninden birebir özel ders. LGS ve TYT-AYT için konu anlatımı ve soru çözümü. Online veya yüz yüze seçenekler mevcut. İlk ders ücretsiz deneme.',
-    attributes: [
-      { attribute_key: 'Ders', attribute_value: 'Matematik' },
-      { attribute_key: 'Seviye', attribute_value: 'LGS, TYT, AYT' },
-      { attribute_key: 'Format', attribute_value: 'Online & Yüz Yüze' },
-      { attribute_key: 'Süre', attribute_value: '60 dakika' },
-    ],
-    images: [
-      { id: 12, url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800&h=600&fit=crop', is_cover: true },
-      { id: 105, url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 9, title: 'Trek Marlin 7 MTB Bisiklet — 2022', price: 11200, price_type: 'FIXED',
-    condition: 'LIKE_NEW', status: 'PAUSED', category_id: 2,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 156, favorite_count: 21, is_featured: false, is_negotiable: false,
-    seller_id: 2, published_at: daysFromNow(-10), created_at: daysFromNow(-10),
-    description: 'M beden, 300 km kullanıldı. Herhangi bir kaza veya düşme kaydı yok. Ön ve arka göz pınarı orijinal. Arka ışık ve çanta hediye.',
-    attributes: [
-      { attribute_key: 'Marka', attribute_value: 'Trek' },
-      { attribute_key: 'Model', attribute_value: 'Marlin 7' },
-      { attribute_key: 'Beden', attribute_value: 'M (17.5")' },
-      { attribute_key: 'Vites', attribute_value: 'Shimano 21 Hız' },
-    ],
-    images: [
-      { id: 13, url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop', is_cover: true },
-      { id: 106, url: 'https://images.unsplash.com/photo-1601972599720-36938d4ecd31?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 10, title: 'Salon Koltuk Takımı — 3+2+1 Chester', price: 8500, price_type: 'NEGOTIABLE',
-    condition: 'GOOD', status: 'DRAFT', category_id: 11,
-    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
-    view_count: 0, favorite_count: 0, is_featured: false, is_negotiable: true,
-    seller_id: 2, published_at: undefined, created_at: daysFromNow(-1),
-    description: 'Taşınma nedeniyle satılık. 3+2+1 Chester koltuk takımı, kadife kumaş, gri renk. 2 yıllık, çok az kullanıldı, iyi durumda.',
-    attributes: [
-      { attribute_key: 'Takım', attribute_value: '3+2+1' },
-      { attribute_key: 'Renk', attribute_value: 'Koyu Gri' },
-      { attribute_key: 'Kumaş', attribute_value: 'Kadife' },
-      { attribute_key: 'Yaş', attribute_value: '2 yıl' },
-    ],
-    images: [
-      { id: 14, url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop', is_cover: true },
-      { id: 107, url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop' },
-    ],
-  },
-  {
-    id: 11, title: 'Kişisel Antrenör — Online & Gym Koçluğu', price: 600, price_type: 'FIXED',
+    id: 2, title: 'Kişisel Antrenör — Online & Gym Koçluğu', title_en: 'Personal Trainer — Online & Gym Coaching', price: 600, price_type: 'FIXED',
     condition: undefined, status: 'ACTIVE', category_id: 14,
     city_name: 'İstanbul', district_name: 'Beşiktaş', city_id: 1, district_id: 2,
-    view_count: 321, favorite_count: 34, is_featured: true, is_negotiable: false,
+    view_count: 521, favorite_count: 44, is_featured: true, is_negotiable: false,
     seller_id: 13, published_at: daysFromNow(-3), created_at: daysFromNow(-3),
-    description: 'NASM sertifikalı kişisel antrenör. Kilo verme, kas geliştirme ve fonksiyonel fitness programı. İlk seans ücretsiz değerlendirme. Online ve spor salonu seçenekleri.',
+    description: 'NASM sertifikalı kişisel antrenör. Kilo verme, kas geliştirme ve fonksiyonel fitness programı. İlk seans ücretsiz değerlendirme. Online ve spor salonu seçenekleri. Aylık beslenme + egzersiz paketi mevcut.',
+    description_en: 'NASM certified personal trainer. Weight loss, muscle building, and functional fitness programs. Free initial assessment session. Online and gym options. Monthly nutrition + exercise package available.',
     attributes: [
       { attribute_key: 'Uzmanlık', attribute_value: 'Kilo Verme & Kas Geliştirme' },
       { attribute_key: 'Format', attribute_value: 'Online & Spor Salonu' },
-      { attribute_key: 'Süre', attribute_value: '60 dakika' },
+      { attribute_key: 'Süre', attribute_value: '60 dakika/seans' },
       { attribute_key: 'Sertifika', attribute_value: 'NASM USA' },
     ],
     images: [
-      { id: 15, url: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&h=600&fit=crop', is_cover: true },
-      { id: 108, url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop' },
+      { id: 9, url: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=800&h=600&fit=crop', is_cover: true },
+      { id: 10, url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop' },
     ],
   },
   {
-    id: 12, title: 'Evden Eve Nakliyat — Sigortalı & Asansörlü', price: 3500, price_type: 'NEGOTIABLE',
-    condition: undefined, status: 'ACTIVE', category_id: 14,
+    id: 3, title: 'Evden Eve Nakliyat — Sigortalı & Asansörlü', title_en: 'Moving Services — Insured & Elevator Vehicle', price: 3500, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 8,
     city_name: 'İstanbul', district_name: 'Şişli', city_id: 1, district_id: 4,
-    view_count: 512, favorite_count: 28, is_featured: false, is_negotiable: true,
+    view_count: 712, favorite_count: 38, is_featured: false, is_negotiable: true,
     seller_id: 8, published_at: daysFromNow(-4), created_at: daysFromNow(-4),
-    description: 'Profesyonel evden eve nakliyat. Asansörlü araç, iç ve dış ambalaj dahil, nakliyat sigortası. Şehir içi ve şehirlerarası. 3+1 daire için fiyat belirlidir.',
+    description: 'Profesyonel evden eve nakliyat. Asansörlü araç, iç ve dış ambalaj dahil, nakliyat sigortası. Şehir içi ve şehirlerarası hizmet. Kırılabilir eşyalara özel balonlu ambalaj, tekstil askı sistemi.',
+    description_en: 'Professional moving services. Elevator vehicle, interior and exterior packaging included, transport insurance. Inter-city and intra-city services. Special bubble wrap for fragile items, textile hanging system.',
     attributes: [
       { attribute_key: 'Hizmet', attribute_value: 'Evden Eve Nakliyat' },
       { attribute_key: 'Araç', attribute_value: 'Asansörlü Kamyon' },
@@ -1003,8 +936,122 @@ export const ads: any[] = [
       { attribute_key: 'Ambalaj', attribute_value: 'Tüm Ambalaj Dahil' },
     ],
     images: [
-      { id: 16, url: 'https://images.unsplash.com/photo-1600518464441-9306a3e2b59c?w=800&h=600&fit=crop', is_cover: true },
-      { id: 109, url: 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&h=600&fit=crop' },
+      { id: 11, url: 'https://images.unsplash.com/photo-1600518464441-9306a3e2b59c?w=800&h=600&fit=crop', is_cover: true },
+      { id: 12, url: 'https://images.unsplash.com/photo-1553413077-190dd305871c?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 4, title: 'Psikoloji & Terapi Hizmeti — Online', title_en: 'Psychology & Therapy Services — Online', price: 900, price_type: 'FIXED',
+    condition: undefined, status: 'ACTIVE', category_id: 3,
+    city_name: 'Ankara', district_name: 'Çankaya', city_id: 2, district_id: 5,
+    view_count: 267, favorite_count: 19, is_featured: false, is_negotiable: false,
+    seller_id: 5, published_at: daysFromNow(-6), created_at: daysFromNow(-6),
+    description: 'BDT eğitimli klinik psikolog. Kaygı bozukluğu, depresyon, stres yönetimi ve ilişki sorunlarında online ve yüz yüze seans. İlk görüşme değerlendirme amaçlıdır. Gizlilik garantisi, Sağlık Bakanlığı kayıtlı psikolog.',
+    description_en: 'CBT-trained clinical psychologist. Online and face-to-face sessions for anxiety disorder, depression, stress management, and relationship issues. Initial consultation is for assessment. Privacy guaranteed, registered psychologist.',
+    attributes: [
+      { attribute_key: 'Uzmanlık', attribute_value: 'Kaygı, Depresyon, BDT' },
+      { attribute_key: 'Format', attribute_value: 'Online & Yüz Yüze' },
+      { attribute_key: 'Süre', attribute_value: '50 dk/seans' },
+      { attribute_key: 'Belge', attribute_value: 'Sağlık Bak. Kayıtlı' },
+    ],
+    images: [
+      { id: 13, url: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=800&h=600&fit=crop', is_cover: true },
+      { id: 14, url: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 5, title: 'Boya Badana — İç & Dış Cephe', title_en: 'Painting — Interior & Exterior', price: 1200, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 2,
+    city_name: 'İzmir', district_name: 'Bornova', city_id: 3, district_id: 7,
+    view_count: 445, favorite_count: 28, is_featured: false, is_negotiable: true,
+    seller_id: 11, published_at: daysFromNow(-7), created_at: daysFromNow(-7),
+    description: 'Profesyonel boya badana ekibi. İç cephe, dış cephe, tavan boyaması. Alçı tamir, saten boya, ipek saten seçenekleri. Malzeme dahil paket fiyatlandırma. 10 yıllık sektör deneyimi.',
+    description_en: 'Professional painting team. Interior, exterior, and ceiling painting. Plaster repair, satin paint, and silk satin options. Package pricing includes materials. 10 years of industry experience.',
+    attributes: [
+      { attribute_key: 'Hizmet', attribute_value: 'Boya Badana' },
+      { attribute_key: 'Kapsam', attribute_value: 'İç Cephe, Dış Cephe, Tavan' },
+      { attribute_key: 'Malzeme', attribute_value: 'Dahil' },
+      { attribute_key: 'Bölge', attribute_value: 'İzmir geneli' },
+    ],
+    images: [
+      { id: 15, url: 'https://images.unsplash.com/photo-1562259929-b4e1fd3aef09?w=800&h=600&fit=crop', is_cover: true },
+      { id: 16, url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 6, title: 'Periyodik Araç Bakımı & Mekanik', title_en: 'Periodic Vehicle Maintenance & Mechanics', price: 800, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 7,
+    city_name: 'İstanbul', district_name: 'Üsküdar', city_id: 1, district_id: 3,
+    view_count: 389, favorite_count: 22, is_featured: false, is_negotiable: true,
+    seller_id: 10, published_at: daysFromNow(-5), created_at: daysFromNow(-5),
+    description: 'Tüm marka araçlara periyodik bakım, motor revizyonu, fren sistemi, lastik servisi. TSE belgeli atölyemizde 4 teknisyen. Araç teslim ve getirme seçeneği mevcut. Balata, disk, yağ değişimi dahil.',
+    description_en: 'Periodic maintenance, engine overhaul, brake system, and tire service for all vehicle brands. TSE-certified workshop with 4 technicians. Vehicle pickup and drop-off options available. Includes pads, discs, and oil change.',
+    attributes: [
+      { attribute_key: 'Hizmet', attribute_value: 'Periyodik Bakım' },
+      { attribute_key: 'Tüm Markalar', attribute_value: 'Tüm markalar kabul' },
+      { attribute_key: 'Belge', attribute_value: 'TSE Belgeli Atölye' },
+      { attribute_key: 'Ek Hizmet', attribute_value: 'Araç teslim/getirme' },
+    ],
+    images: [
+      { id: 17, url: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800&h=600&fit=crop', is_cover: true },
+      { id: 18, url: 'https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 7, title: 'Saç Tasarımı & Kuaförlük Hizmetleri', title_en: 'Hair Design & Salon Services', price: 250, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 13,
+    city_name: 'İstanbul', district_name: 'Kadıköy', city_id: 1, district_id: 1,
+    view_count: 534, favorite_count: 47, is_featured: true, is_negotiable: false,
+    seller_id: 9, published_at: daysFromNow(-2), created_at: daysFromNow(-2),
+    description: 'Profesyonel saç tasarımı, renklendirme, balayage, ombre ve röfle. Gelin saçı ve makyaj paketi. L\'Oréal Akademi mezunu, Wella Color Specialist sertifikalı. Randevu zorunludur.',
+    description_en: 'Professional hair design, coloring, balayage, ombre, and highlights. Bridal hair and makeup packages. L\'Oréal Academy graduate, Wella Color Specialist certified. Appointment required.',
+    attributes: [
+      { attribute_key: 'Uzmanlık', attribute_value: 'Balayage, Ombre, Röfle' },
+      { attribute_key: 'Gelin Paketi', attribute_value: 'Saç + Makyaj' },
+      { attribute_key: 'Sertifika', attribute_value: 'L\'Oréal & Wella' },
+      { attribute_key: 'Randevu', attribute_value: 'Zorunlu' },
+    ],
+    images: [
+      { id: 19, url: 'https://images.unsplash.com/photo-1562322140-8baeacacf3df?w=800&h=600&fit=crop', is_cover: true },
+      { id: 20, url: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 8, title: 'Su Tesisatı & Gider Açma — 7/24', title_en: 'Plumbing & Drain Cleaning — 24/7', price: 220, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 1,
+    city_name: 'İstanbul', district_name: 'Üsküdar', city_id: 1, district_id: 3,
+    view_count: 291, favorite_count: 15, is_featured: false, is_negotiable: true,
+    seller_id: 6, published_at: daysFromNow(-8), created_at: daysFromNow(-8),
+    description: '7/24 acil su tesisatı hizmetleri. Gider açma, batarya montajı, klozet takımı, su kaçak tespiti ve onarımı. İstanbul Anadolu Yakası\'nda ekspres servis. Malzeme fiyatları ayrıca belirtilir.',
+    description_en: '24/7 emergency plumbing services. Drain cleaning, faucet installation, toilet installation, water leak detection, and repair. Express service in Istanbul Asian side. Material costs are charged separately.',
+    attributes: [
+      { attribute_key: 'Hizmet', attribute_value: 'Su Tesisatı' },
+      { attribute_key: 'Acil Servis', attribute_value: '7/24' },
+      { attribute_key: 'Bölge', attribute_value: 'İst. Anadolu Yakası' },
+      { attribute_key: 'Yanıt', attribute_value: '< 2 saat' },
+    ],
+    images: [
+      { id: 21, url: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=800&h=600&fit=crop', is_cover: true },
+      { id: 22, url: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&h=600&fit=crop' },
+    ],
+  },
+  {
+    id: 9, title: 'Düğün Fotoğrafçılığı — Tüm Paketler', title_en: 'Wedding Photography — All Packages', price: 5000, price_type: 'STARTING',
+    condition: undefined, status: 'ACTIVE', category_id: 11,
+    city_name: 'İstanbul', district_name: 'Şişli', city_id: 1, district_id: 4,
+    view_count: 467, favorite_count: 53, is_featured: false, is_negotiable: true,
+    seller_id: 14, published_at: daysFromNow(-9), created_at: daysFromNow(-9),
+    description: 'Düğün, nişan, doğum günü ve kurumsal etkinlik fotoğrafçılığı. Tüm fotoğraflar düzenleme ve retouching dahil teslim edilir. Drone çekimi opsiyonel. 5 yıllık stüdyo deneyimi.',
+    description_en: 'Photography for weddings, engagements, birthdays, and corporate events. All photos delivered with editing and retouching. Optional drone shoots. 5 years of studio experience.',
+    attributes: [
+      { attribute_key: 'Hizmet', attribute_value: 'Düğün & Etkinlik' },
+      { attribute_key: 'Paket', attribute_value: 'Tam Gün veya Yarım Gün' },
+      { attribute_key: 'Drone', attribute_value: 'Opsiyonel' },
+      { attribute_key: 'Teslim', attribute_value: 'Düzenleme + Retouching' },
+    ],
+    images: [
+      { id: 23, url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=600&fit=crop', is_cover: true },
+      { id: 24, url: 'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=800&h=600&fit=crop' },
     ],
   },
 ];
@@ -1074,8 +1121,90 @@ export const parseFakeToken = (token: string): { sub: number } | null => {
 
 
 
-export const disputes: any[] = [];
-export const verifications: any[] = [];
-export const adminDashboard: any = {};
-export const auditLogs: any[] = [];
+export const disputes: any[] = [
+  {
+    id: 1, reporter_id: 2, reported_id: 4,
+    reason: 'QUALITY',
+    description: 'Tesisat tamiri sözleşmeye uygun yapılmadı. Bir hafta sonra tekrar su kaçağı başladı. Ücret iadesi talep ediyorum.',
+    status: 'OPEN', priority: 'HIGH',
+    resolution: '',
+    created_at: daysFromNow(-3),
+    reporter: users[1],
+    reported: users[3],
+    messages: [
+      { id: 1, dispute_id: 1, sender_id: 2, message: 'Tamirat düzgün yapılmamış, tekrar aynı sorun çıktı.', is_admin: false, created_at: daysFromNow(-3), sender: users[1] },
+      { id: 2, dispute_id: 1, sender_id: 4, message: 'Farklı bir nedenle kaçak oluşmuş olabilir. Bakabilmek için tekrar gelebilirim.', is_admin: false, created_at: daysFromNow(-2), sender: users[3] },
+      { id: 3, dispute_id: 1, sender_id: 1, message: 'İki taraf da dinlendi. Uzmanın tekrar ziyaret etmesini onaylıyoruz.', is_admin: true, created_at: daysFromNow(-1), sender: users[0] },
+    ],
+  },
+  {
+    id: 2, reporter_id: 11, reported_id: 8,
+    reason: 'NO_SHOW',
+    description: 'Nakliyat için saat 09:00 randevu aldık, saat 12:00 oldu, uzman gelmedi. Ciddi mağduriyet yaşadık.',
+    status: 'UNDER_REVIEW', priority: 'MEDIUM',
+    resolution: '',
+    created_at: daysFromNow(-5),
+    reporter: users[10],
+    reported: users[7],
+    messages: [
+      { id: 4, dispute_id: 2, sender_id: 11, message: 'Nakliyat günü gelmedi, eşyalarım hâlâ yerinde bekliyor!', is_admin: false, created_at: daysFromNow(-5), sender: users[10] },
+      { id: 5, dispute_id: 2, sender_id: 1, message: 'Durum inceleniyor. Uzmanla iletişime geçildi.', is_admin: true, created_at: daysFromNow(-4), sender: users[0] },
+    ],
+  },
+];
+
+export const verifications: any[] = [
+  {
+    id: 1, provider_id: 4, provider_name: 'Çelik Tesisat & Doğalgaz',
+    verification_type: 'PROFESSIONAL',
+    document_url: 'https://example.com/docs/epdk-belgesi.pdf',
+    note: 'EPDK lisans belgesi',
+    status: 'PENDING',
+    created_at: daysFromNow(-2),
+  },
+  {
+    id: 2, provider_id: 6, provider_name: 'Öztürk Nakliyat & Depolama',
+    verification_type: 'BUSINESS',
+    document_url: 'https://example.com/docs/vergi-levhasi.pdf',
+    note: 'Vergi levhası ve ticaret sicil belgesi',
+    status: 'PENDING',
+    created_at: daysFromNow(-1),
+  },
+  {
+    id: 3, provider_id: 8, provider_name: 'Koç Oto Servis & Bakım',
+    verification_type: 'IDENTITY',
+    document_url: 'https://example.com/docs/kimlik.pdf',
+    note: 'Kimlik ön ve arka yüz',
+    status: 'PENDING',
+    created_at: daysFromNow(0),
+  },
+];
+
+export const adminDashboard: any = {
+  total_users: 14,
+  total_providers: 10,
+  total_requests: 4,
+  total_revenue: 87420,
+  pending_verifications: 3,
+  open_disputes: 2,
+  pending_payouts: 1,
+  active_ads: 8,
+  new_users_today: 2,
+  new_providers_today: 1,
+  requests_today: 3,
+  revenue_today: 3240,
+  platform_stats: {
+    avg_rating: 4.7,
+    completion_rate: 94.2,
+    response_time_avg: '1.8 saat',
+  },
+};
+
+export const auditLogs: any[] = [
+  { id: 1, admin_id: 1, action: 'USER_BAN', target: 'user#15', created_at: daysFromNow(-10) },
+  { id: 2, admin_id: 1, action: 'VERIFY_APPROVE', target: 'verification#0', created_at: daysFromNow(-8) },
+  { id: 3, admin_id: 1, action: 'DISPUTE_CLOSE', target: 'dispute#0', created_at: daysFromNow(-6) },
+  { id: 4, admin_id: 1, action: 'PAYOUT_APPROVE', target: 'payout#1', created_at: daysFromNow(-25) },
+];
+
 export const adCategories: any[] = [];
