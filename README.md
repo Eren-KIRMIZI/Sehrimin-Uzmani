@@ -253,7 +253,7 @@ sehriminUzmani/
 
 ### Hizmet Talep Sistemi
 
-- Dogal dil ile hizmet talebi olusturma: Kullanici ne istedigini yazinca sistem kategori, konum, aciliyet, butce ve tarih bilgilerini otomatik cikarir
+- Dogal dil ile hizmet talebi olusturma: Kullanici ne istedigini yazinca sistem kategori, konum, aciliyet, butce ve tarih bilgilerini otomatik cikarir.
 - 10 adimli rehberli hizmet talebi formu
 - Kategori, sehir, ilce, tarih, butce, aciliyet ve not alanlari
 - Talebin kategori ve konuma gore uzmanlara iletilmesi
